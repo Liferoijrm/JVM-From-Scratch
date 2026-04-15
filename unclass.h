@@ -161,7 +161,37 @@ typedef struct ConstantValue_attribute{
     u2 constant_value_index;
 }ConstantValue_attribute;
 
-// Falta LineNumberTable, LocalVariable e InnerClass
+typedef struct LineNumberTable{
+    u2 start_pc;
+    u2 line_number;
+}LineNumberTable;
+
+typedef struct LineNumberTable_attribute{
+    u2 attribute_name_index;
+    u4 attribute_length;
+    u2 line_number_table_length;
+    //LineNumberTable line_number_table[line_number_table_length];
+    LineNumberTable *line_number_table;
+}LineNumberTable_attribute;
+
+typedef struct LocalVariable{
+    u2 start_pc;
+    u2 length;
+    u2 name_index;
+    u2 descriptor_index;
+    u2 index;
+}LocalVariable;
+
+typedef struct LocalVariableTable_attribute{
+    u2 attribute_name_index;
+    u4 attribute_length;
+    u2 local_variable_table_length;
+    //LocalVariable local_variable_table[local_variable_table_length];
+    LocalVariable *local_variable_table;
+}LocalVariableTable_attribute;
+
+// Falta InnerClass
+ 
 
 // Definição de métodos
 typedef struct Method_info{
