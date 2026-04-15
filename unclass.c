@@ -20,7 +20,7 @@ static u4 u4Read(FILE *fd){
 }
 
 static ClassFile *OpenClass(FILE *fd){
-    ClassFile *cf = (ClassFile *) malloc(sizeof(Class));
+    ClassFile *cf = (ClassFile *) malloc(sizeof(ClassFile));
 
     if (!cf)    return NULL;
 

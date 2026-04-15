@@ -3,9 +3,9 @@
 #include <stdio.h>
 
 // Tamanhos fixos
-#define u1 uint_8t
-#define u2 uint_16t
-#define u4 uint_32t
+#define u1 uint8_t
+#define u2 uint16_t
+#define u4 uint32_t
 
 // Tags de caracteres
 #define CONSTANT_Class 7
@@ -43,18 +43,23 @@ typedef struct ClassFile{
     u2 minor_version;
     u2 major_version;
     u2 constant_pool_count;
-    Cp_info constant_pool[constant_pool_count - 1];
+    //Cp_info constant_pool[constant_pool_count - 1];
+    Cp_info *constant_pool;
     u2 access_flags;
     u2 this_class;
     u2 super_class;
     u2 interfaces_count;
-    u2 interfaces[interfaces_count];
+    //u2 interfaces[interfaces_count];
+    u2 *interfaces;
     u2 fields_count;
-    Field_info fields[fields_count];
+    //Field_info fields[fields_count];
+    Field_info *fields;
     u2 methods_count;
-    Method_info methods[methods_count];
+    //Method_info methods[methods_count];
+    Method_info *methods;
     u2 attributes_count;
-    Attribute_info attributes[attributes_count];
+    //Attribute_info attributes[attributes_count];
+    Attribute_info *attributes;
 }ClassFile;
 
 // Definição do pool de constantes
@@ -99,7 +104,8 @@ typedef struct Cp_info{
         }Double;
         struct Utf8{
             u2 length;
-            u1 bytes[length];
+            //u1 bytes[length];
+            u1 *bytes;
         }Utf8;
     }
 }Cp_info;
@@ -107,21 +113,23 @@ typedef struct Cp_info{
 // Definição dos tipos de atributos
 typedef struct SourceFile_attribute{
     u2 attribute_name_index;
-    u4 attribute lenght;
+    u4 attribute_length;
     u2 sourcefile_index;
 }SourceFile_attributes;
 
 typedef struct Attribute_info{
     u2 attribute_name_index;
     u4 attribute_length;
-    u1 info[attribute_length];
+    //u1 info[attribute_length];
+    u1 *info;
 }Attribute_info;
 
 typedef struct Exception_attribute{
     u2 attribute_name_index;
     u4 attribute_length;
     u2 number_of_exceptions;
-    u2 exception_index_table[number_of_exceptions];
+    //u2 exception_index_table[number_of_exceptions];
+    u2 *exception_index_table;
 }Exception_attribute;
 
 typedef struct Exception_code{
@@ -137,11 +145,14 @@ typedef struct Code_attribute{
     u2 max_stack;
     u2 max_locals;
     u4 code_length;
-    u1 code[code_length];
+    //u1 code[code_length];
+    u1 *code;
     u2 exception_table_length;
-    Exception_code exception_table[exception_table_length];
+    //Exception_code exception_table[exception_table_length];
+    Exception_code *exception_table;
     u2 attributes_count;
-    Attribute_info attributes[attributes_count];
+    //Attribute_info attributes[attributes_count];
+    Attribute_info *attributes;
 }Code_attribute;
 
 typedef struct ConstantValue_attribute{
@@ -158,7 +169,8 @@ typedef struct Method_info{
     u2 name_index;
     u2 descriptor_index;
     u2 attributes_count;
-    Attribute_info attributes[attributes_count];
+    //Attribute_info attributes[attributes_count];
+    Attribute_info *attributes;
 }Method_info;
 
 // Definição de fields
@@ -167,7 +179,8 @@ typedef struct Field_info{
     u2 name_index;
     u2 descriptor_index;
     u2 attributes_count;
-    Attribute_info attributes[attributes_count];
+    //Attribute_info attributes[attributes_count];
+    Attribute_info *attributes;
 }Method_info;
 
 // Definição de fields
@@ -176,33 +189,34 @@ typedef struct Field_info{
     u2 name_index;
     u2 descriptor_index;
     u2 attributes_count;
-    Attribute_info attributes[attributes_count];
+    //Attribute_info attributes[attributes_count];
+    Attribute_info *attributes;
 }Field_info;
 
 // Métodos de leitura de arquivo para cada tamanho definido
-static u1 u1Read(File *fd);
+static u1 u1Read(FILE *fd);
 
-static u2 u2Read(File *fd);
+static u2 u2Read(FILE *fd);
 
-static u4 u4Read(File *fd);
+static u4 u4Read(FILE *fd);
 
 // Leitura do .class
-static ClassFile *OpenClass(File *fd);
+static ClassFile *OpenClass(FILE *fd);
 
 // leitura do pool de constantes
-static void Read_cpool(File *fd, u2 constant_pool_count, ClassFile *cf);
+static void Read_cpool(FILE *fd, u2 constant_pool_count, ClassFile *cf);
 
 // leitura do array de interfaces
-static void Read_interfaces(File *fd, u2 constant_pool_count, ClassFile *cf);
+static void Read_interfaces(FILE *fd, u2 constant_pool_count, ClassFile *cf);
 
 // leitura do array de fields
-static void Read_fields(File *fd, u2 constant_pool_count, ClassFile *cf);
+static void Read_fields(FILE *fd, u2 constant_pool_count, ClassFile *cf);
 
 // leitura do array de métodos
-static void Read_methods(File *fd, u2 constant_pool_count, ClassFile *cf);
+static void Read_methods(FILE *fd, u2 constant_pool_count, ClassFile *cf);
 
 // leitura do array de atributos
-static void Read_attributes(File *fd, u2 constant_pool_count, ClassFile *cf);
+static void Read_attributes(FILE *fd, u2 constant_pool_count, ClassFile *cf);
 
 // interpretação dos access_flags
 static char* Read_flags(u2 access_flag);
