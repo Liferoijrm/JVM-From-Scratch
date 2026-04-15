@@ -1,0 +1,208 @@
+#include <stdint.h>
+#include <stdlib.h>
+#include <stdio.h>
+
+// Tamanhos fixos
+#define u1 uint_8t
+#define u2 uint_16t
+#define u4 uint_32t
+
+// Tags de caracteres
+#define CONSTANT_Class 7
+#define CONSTANT_Fieldref 9
+#define CONSTANT_Methodref 10
+#define CONSTANT_InterfaceMethodref 11
+#define CONSTANT_String 8
+#define CONSTANT_Integer 3
+#define CONSTANT_Float 4
+#define CONSTANT_Long 5
+#define CONSTANT_Double 6
+#define CONSTANT_NameAndType 12
+#define CONSTANT_Utf8 1
+
+// Flags de acesso
+#define ACC_PUBLIC 0x0001
+#define ACC_PRIVATE 0x0002
+#define ACC_PROTECTED 0x0004
+#define ACC_STATIC 0x0008
+#define ACC_FINAL 0x0010
+#define ACC_SUPER 0x0020
+#define ACC_BRIDGE 0x0040
+#define ACC_VARARGS 0x0080
+#define ACC_NATIVE 0x0100
+#define ACC_INTERFACE 0x0200
+#define ACC_ABSTRACT 0x0400
+#define ACC_STRICT 0x0800
+#define ACC_SYNTHETIC 0x1000
+#define ACC_ANNOTATION 0x2000
+#define ACC_ENUM 0x4000
+
+// Formato do .class
+typedef struct ClassFile{
+    u4 magic;
+    u2 minor_version;
+    u2 major_version;
+    u2 constant_pool_count;
+    Cp_info constant_pool[constant_pool_count - 1];
+    u2 access_flags;
+    u2 this_class;
+    u2 super_class;
+    u2 interfaces_count;
+    u2 interfaces[interfaces_count];
+    u2 fields_count;
+    Field_info fields[fields_count];
+    u2 methods_count;
+    Method_info methods[methods_count];
+    u2 attributes_count;
+    Attribute_info attributes[attributes_count];
+}ClassFile;
+
+// Definição do pool de constantes
+typedef struct Cp_info{
+    u1 tag;
+    union{
+        struct Class{
+            u2 name_index;
+        }Class;
+        struct Fieldref{
+            u2 class_index;
+            u2 name_and_type_index;
+        }Fieldref;
+        struct NameAndType_info{
+            u2 name_index;
+            u2 descriptor_index;
+        }NameAndType_info;
+        struct Methodref{
+            u2 class_index;
+            u2 name_and_type_index;
+        }Methodref;
+        struct InterfaceMethodRef{
+            u2 class_index;
+            u2 name_and_type_index;
+        }InterfaceMethodRef;
+        struct String{
+            u2 string_index;
+        }String;
+        struct Integer{
+            u4 bytes;
+        }Integer;
+        struct Float{
+            u4 bytes;
+        }Float;
+        struct Long{
+            u4 high_bytes;
+            u4 low_bytes;
+        }Long;
+        struct Double{
+            u4 high_bytes;
+            u4 low_bytes;
+        }Double;
+        struct Utf8{
+            u2 length;
+            u1 bytes[length];
+        }Utf8;
+    }
+}Cp_info;
+
+// Definição dos tipos de atributos
+typedef struct SourceFile_attribute{
+    u2 attribute_name_index;
+    u4 attribute lenght;
+    u2 sourcefile_index;
+}SourceFile_attributes;
+
+typedef struct Attribute_info{
+    u2 attribute_name_index;
+    u4 attribute_length;
+    u1 info[attribute_length];
+}Attribute_info;
+
+typedef struct Exception_attribute{
+    u2 attribute_name_index;
+    u4 attribute_length;
+    u2 number_of_exceptions;
+    u2 exception_index_table[number_of_exceptions];
+}Exception_attribute;
+
+typedef struct Exception_code{
+    u2 start_pc;
+    u2 end_pc;
+    u2 handler_pc;
+    u2 catch_type;
+}Exception_code;
+
+typedef struct Code_attribute{
+    u2 attribute_name_index;
+    u4 attribute_length;
+    u2 max_stack;
+    u2 max_locals;
+    u4 code_length;
+    u1 code[code_length];
+    u2 exception_table_length;
+    Exception_code exception_table[exception_table_length];
+    u2 attributes_count;
+    Attribute_info attributes[attributes_count];
+}Code_attribute;
+
+typedef struct ConstantValue_attribute{
+    u2 attribute_name_index;
+    u4 attribute_length;
+    u2 constant_value_index;
+}ConstantValue_attribute;
+
+// Falta LineNumberTable, LocalVariable e InnerClass
+
+// Definição de métodos
+typedef struct Method_info{
+    u2 acces_flags;
+    u2 name_index;
+    u2 descriptor_index;
+    u2 attributes_count;
+    Attribute_info attributes[attributes_count];
+}Method_info;
+
+// Definição de fields
+typedef struct Field_info{
+    u2 access_flags;
+    u2 name_index;
+    u2 descriptor_index;
+    u2 attributes_count;
+    Attribute_info attributes[attributes_count];
+}Method_info;
+
+// Definição de fields
+typedef struct Field_info{
+    u2 access_flags;
+    u2 name_index;
+    u2 descriptor_index;
+    u2 attributes_count;
+    Attribute_info attributes[attributes_count];
+}Field_info;
+
+// Métodos de leitura de arquivo para cada tamanho definido
+static u1 u1Read(File *fd);
+
+static u2 u2Read(File *fd);
+
+static u4 u4Read(File *fd);
+
+// Leitura do .class
+static ClassFile *OpenClass(File *fd);
+
+// leitura do pool de constantes
+static void Read_cpool(File *fd, u2 constant_pool_count, ClassFile *cf);
+
+// leitura do array de interfaces
+static void Read_interfaces(File *fd, u2 constant_pool_count, ClassFile *cf);
+
+// leitura do array de fields
+static void Read_fields(File *fd, u2 constant_pool_count, ClassFile *cf);
+
+// leitura do array de métodos
+static void Read_methods(File *fd, u2 constant_pool_count, ClassFile *cf);
+
+// leitura do array de atributos
+static void Read_attributes(File *fd, u2 constant_pool_count, ClassFile *cf);
+
+// interpretação dos access_flags
+static char* Read_flags(u2 access_flag);
