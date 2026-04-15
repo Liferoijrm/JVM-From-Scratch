@@ -107,7 +107,7 @@ typedef struct Cp_info{
             //u1 bytes[length];
             u1 *bytes;
         }Utf8;
-    }
+    }info;
 }Cp_info;
 
 // Definição dos tipos de atributos
