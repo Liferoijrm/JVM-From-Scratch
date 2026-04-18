@@ -1,5 +1,7 @@
+#ifndef CLASSLOAD_H
+#define CLASSLOAD_H
+
 #include <stdint.h>
-#include <stdlib.h>
 #include <stdio.h>
 
 // Tamanhos fixos
@@ -7,7 +9,8 @@
 #define u2 uint16_t
 #define u4 uint32_t
 
-// Tags de caracteres
+// Tags para cp_info
+#define CONSTANT_Invalid 0
 #define CONSTANT_Class 7
 #define CONSTANT_Fieldref 9
 #define CONSTANT_Methodref 10
@@ -19,6 +22,10 @@
 #define CONSTANT_Double 6
 #define CONSTANT_NameAndType 12
 #define CONSTANT_Utf8 1
+// TODO: verificar a estrutura dessas tags e modificar a implementação no .c
+#define CONSTANT_MethodHandle 15
+#define CONSTANT_MethodType 16
+#define CONSTANT_InvokeDynamic 18
 
 // Flags de acesso
 #define ACC_PUBLIC 0x0001
@@ -73,18 +80,18 @@ typedef struct Cp_info{
             u2 class_index;
             u2 name_and_type_index;
         }Fieldref;
-        struct NameAndType_info{
+        struct NameAndType{
             u2 name_index;
             u2 descriptor_index;
-        }NameAndType_info;
+        }NameAndType;
         struct Methodref{
             u2 class_index;
             u2 name_and_type_index;
         }Methodref;
-        struct InterfaceMethodRef{
+        struct InterfaceMethodref{
             u2 class_index;
             u2 name_and_type_index;
-        }InterfaceMethodRef;
+        }InterfaceMethodref;
         struct String{
             u2 string_index;
         }String;
@@ -211,16 +218,6 @@ typedef struct Field_info{
     u2 attributes_count;
     //Attribute_info attributes[attributes_count];
     Attribute_info *attributes;
-}Method_info;
-
-// Definição de fields
-typedef struct Field_info{
-    u2 access_flags;
-    u2 name_index;
-    u2 descriptor_index;
-    u2 attributes_count;
-    //Attribute_info attributes[attributes_count];
-    Attribute_info *attributes;
 }Field_info;
 
 // Métodos de leitura de arquivo para cada tamanho definido
@@ -231,22 +228,24 @@ static u2 u2Read(FILE *fd);
 static u4 u4Read(FILE *fd);
 
 // Leitura do .class
-static ClassFile *OpenClass(FILE *fd);
+ClassFile *OpenClass(FILE *fd);
 
 // leitura do pool de constantes
-static void Read_cpool(FILE *fd, u2 constant_pool_count, ClassFile *cf);
+void Read_cpool(FILE *fd, u2 constant_pool_count, ClassFile *cf);
 
 // leitura do array de interfaces
-static void Read_interfaces(FILE *fd, u2 constant_pool_count, ClassFile *cf);
+void Read_interfaces(FILE *fd, u2 constant_pool_count, ClassFile *cf);
 
 // leitura do array de fields
-static void Read_fields(FILE *fd, u2 constant_pool_count, ClassFile *cf);
+void Read_fields(FILE *fd, u2 constant_pool_count, ClassFile *cf);
 
 // leitura do array de métodos
-static void Read_methods(FILE *fd, u2 constant_pool_count, ClassFile *cf);
+void Read_methods(FILE *fd, u2 constant_pool_count, ClassFile *cf);
 
 // leitura do array de atributos
-static void Read_attributes(FILE *fd, u2 constant_pool_count, ClassFile *cf);
+void Read_attributes(FILE *fd, u2 constant_pool_count, ClassFile *cf);
 
 // interpretação dos access_flags
-static char* Read_flags(u2 access_flag);
+char* Read_flags(u2 access_flag);
+
+#endif
