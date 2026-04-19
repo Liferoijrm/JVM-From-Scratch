@@ -39,15 +39,18 @@ ClassFile *OpenClass(FILE *fd){
     Read_fields(fd, cf->fields_count, cf);
     cf->methods = u2Read(fd);
     Read_methods(fd, cf->methods, cf);
-    cf->attributes_count = u2Read(fd);
-    Read_attributes(fd, cf->attributes_count, cf);
+
+    u2 count = u2Read(fd);
+    cf->attributes_count = count;
+    cf->attributes = (Attribute_info*) malloc(count*sizeof(Attribute_info));
+    Read_attributes(fd, count, cf->attributes);
 
     return cf;
 }
 
 void Read_cpool(FILE *fd, u2 size, ClassFile *cf){
     cf->constant_pool = (Cp_info*) malloc(size*sizeof(Cp_info));
-    if (!cf->constant_pool) return NULL;
+    if (!cf->constant_pool) return; // TODO: tratar mallocs melhor
 
     cf->constant_pool[0].tag = 0;
 
@@ -122,14 +125,53 @@ void Read_cpool(FILE *fd, u2 size, ClassFile *cf){
     }
 }
 
-//void Read_interfaces(File *fd, u2 constant_pool_count, ClassFile *cf);
+void Read_interfaces(FILE *fd, u2 size, ClassFile *cf){
+    cf->interfaces = (u2*) malloc(size*sizeof(u2));
 
-//void Read_fields(File *fd, u2 constant_pool_count, ClassFile *cf);
+    if(!cf->interfaces) return; // TODO: tratar mallocs melhor
 
-//void Read_methods(File *fd, u2 constant_pool_count, ClassFile *cf);
+    for(u2 i = 0; i < size; i++)
+        cf->interfaces[i] = u2Read(fd);
+}
 
-//void Read_attributes(File *fd, u2 constant_pool_count, ClassFile *cf);
+void Read_fields(FILE *fd, u2 size, ClassFile *cf){
+    cf->fields = (Field_info*) malloc(size*sizeof(Field_info));
 
+    if(!cf->fields) return; // TODO: tratar mallocs melhor
+
+    for(u2 i = 0; i < size; i++){
+        cf->fields[i].access_flags = u2Read(fd);
+        cf->fields[i].name_index = u2Read(fd);
+        cf->fields[i].descriptor_index = u2Read(fd);
+        u2 count = u2Read(fd);
+        cf->fields[i].attributes_count = count;
+        cf->fields[i].attributes = (Attribute_info*) malloc(count*sizeof(Attribute_info));
+        Read_attributes(fd, cf->fields[i].attributes_count, cf->fields[i].attributes);
+    }
+}
+
+void Read_methods(FILE *fd, u2 size, ClassFile *cf){
+    cf->methods = (Method_info*) malloc(size*sizeof(Method_info));
+
+    if(!cf->methods) return; // TODO: tratar mallocs melhor
+
+    for(u2 i = 0; i < size; i++){
+        cf->methods[i].access_flags = u2Read(fd);
+        cf->methods[i].name_index = u2Read(fd);
+        cf->methods[i].descriptor_index = u2Read(fd);
+        u2 count = u2Read(fd);
+        cf->methods[i].attributes_count = count;
+        cf->methods[i].attributes = (Attribute_info*) malloc(count*sizeof(Attribute_info));
+        Read_attributes(fd, cf->methods[i].attributes_count, cf->methods[i].attributes);
+    }
+}
+
+// recebe ponteiro attributes já inicializado com malloc. Formato diferente para evitar 3 funções "Read_attributes"
+void Read_attributes(FILE *fd, u2 size, Attribute_info *attributes){
+    for(u2 i = 0; i < size; i++){
+        // switch-case para cada atributo (usar #defines e union?) 
+    }
+}
 
 char* Read_flags(u2 access_flag){
     switch(access_flag){

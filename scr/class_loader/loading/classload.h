@@ -128,6 +128,7 @@ typedef struct Attribute_info{
     u2 attribute_name_index;
     u4 attribute_length;
     //u1 info[attribute_length];
+    // TODO: verificar melhor maneira de implementar essa parte de info
     u1 *info;
 }Attribute_info;
 
@@ -202,7 +203,7 @@ typedef struct LocalVariableTable_attribute{
 
 // Definição de métodos
 typedef struct Method_info{
-    u2 acces_flags;
+    u2 access_flags;
     u2 name_index;
     u2 descriptor_index;
     u2 attributes_count;
@@ -231,19 +232,19 @@ static u4 u4Read(FILE *fd);
 ClassFile *OpenClass(FILE *fd);
 
 // leitura do pool de constantes
-void Read_cpool(FILE *fd, u2 constant_pool_count, ClassFile *cf);
+void Read_cpool(FILE *fd, u2 size, ClassFile *cf);
 
 // leitura do array de interfaces
-void Read_interfaces(FILE *fd, u2 constant_pool_count, ClassFile *cf);
+void Read_interfaces(FILE *fd, u2 size, ClassFile *cf);
 
 // leitura do array de fields
-void Read_fields(FILE *fd, u2 constant_pool_count, ClassFile *cf);
+void Read_fields(FILE *fd, u2 size, ClassFile *cf);
 
 // leitura do array de métodos
-void Read_methods(FILE *fd, u2 constant_pool_count, ClassFile *cf);
+void Read_methods(FILE *fd, u2 size, ClassFile *cf);
 
 // leitura do array de atributos
-void Read_attributes(FILE *fd, u2 constant_pool_count, ClassFile *cf);
+void Read_attributes(FILE *fd, u2 size, Attribute_info *attributes);
 
 // interpretação dos access_flags
 char* Read_flags(u2 access_flag);
