@@ -178,13 +178,8 @@ void Read_attributes(FILE *fd, u2 size, Attribute_info *attributes){
             continue;
 
         attributes[i].info = (u1*) malloc(attributes[i].attribute_length * sizeof(u1));
-
-        // se o malloc der errado, le os bytes do atributo e descarta pra não quebrar a leitura
-        if(!attributes[i].info){
-            for(u4 j = 0; j < attributes[i].attribute_length; j++)
-                u1Read(fd);
-            continue;
-        }
+        
+        if(!attributes[i].info) // TODO: tratar mallocs melhor
 
         for(u4 j = 0; j < attributes[i].attribute_length; j++)
             attributes[i].info[j] = u1Read(fd);
