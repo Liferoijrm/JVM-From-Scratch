@@ -244,7 +244,7 @@ void Read_fields(FILE *fd, u2 size, ClassFile *cf);
 void Read_methods(FILE *fd, u2 size, ClassFile *cf);
 
 // leitura do array de atributos
-void Read_attributes(FILE *fd, u2 size, Attribute_info *attributes);
+void Read_attributes(FILE *fd, u2 size, Attribute_info *attributes, ClassFile *cf);
 
 // interpretação dos access_flags
 char* Read_flags(u2 access_flag);

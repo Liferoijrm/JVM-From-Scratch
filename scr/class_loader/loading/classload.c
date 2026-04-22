@@ -167,7 +167,7 @@ void Read_methods(FILE *fd, u2 size, ClassFile *cf){
 }
 
 // recebe ponteiro attributes já inicializado com malloc. Formato diferente para evitar 3 funções "Read_attributes"
-void Read_attributes(FILE *fd, u2 size, Attribute_info *attributes){
+void Read_attributes(FILE *fd, u2 size, Attribute_info *attributes, ClassFile *cf){
     //TODO: decodificar os fields do attributes 
     for(u2 i = 0; i < size; i++){
         attributes[i].attribute_name_index = u2Read(fd);
