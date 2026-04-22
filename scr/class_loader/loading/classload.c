@@ -168,8 +168,26 @@ void Read_methods(FILE *fd, u2 size, ClassFile *cf){
 
 // recebe ponteiro attributes já inicializado com malloc. Formato diferente para evitar 3 funções "Read_attributes"
 void Read_attributes(FILE *fd, u2 size, Attribute_info *attributes){
+    //TODO: decodificar os fields do attributes 
     for(u2 i = 0; i < size; i++){
-        // switch-case para cada atributo (usar #defines e union?) 
+        attributes[i].attribute_name_index = u2Read(fd);
+        attributes[i].attribute_length = u4Read(fd);
+        attributes[i].info = NULL;
+
+        if(attributes[i].attribute_length == 0)
+            continue;
+
+        attributes[i].info = (u1*) malloc(attributes[i].attribute_length * sizeof(u1));
+
+        // se o malloc der errado, le os bytes do atributo e descarta pra não quebrar a leitura
+        if(!attributes[i].info){
+            for(u4 j = 0; j < attributes[i].attribute_length; j++)
+                u1Read(fd);
+            continue;
+        }
+
+        for(u4 j = 0; j < attributes[i].attribute_length; j++)
+            attributes[i].info[j] = u1Read(fd);
     }
 }
 
