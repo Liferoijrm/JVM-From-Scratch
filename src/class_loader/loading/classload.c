@@ -26,7 +26,7 @@ ClassFile *OpenClass(FILE *fd){
 
     if (!cf) return NULL;
 
-    cf->magic = u4Read(fd);
+    cf->magic = u4Read(fd); // TODO: tratar caso magic != 0xCAFEBABE
     cf->minor_version = u2Read(fd);
     cf->major_version = u2Read(fd);
     cf->constant_pool_count = u2Read(fd);
