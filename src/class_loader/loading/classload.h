@@ -44,6 +44,12 @@
 #define ACC_ANNOTATION 0x2000
 #define ACC_ENUM 0x4000
 
+// forward declarations para ClassFile
+typedef struct Cp_info Cp_info;
+typedef struct Field_info Field_info;
+typedef struct Method_info Method_info;
+typedef struct Attribute_info Attribute_info;
+
 // Formato do .class
 typedef struct ClassFile{
     u4 magic;
@@ -222,11 +228,11 @@ typedef struct Field_info{
 }Field_info;
 
 // Métodos de leitura de arquivo para cada tamanho definido
-static u1 u1Read(FILE *fd);
+u1 u1Read(FILE *fd);
 
-static u2 u2Read(FILE *fd);
+u2 u2Read(FILE *fd);
 
-static u4 u4Read(FILE *fd);
+u4 u4Read(FILE *fd);
 
 // Leitura do .class
 ClassFile *OpenClass(FILE *fd);

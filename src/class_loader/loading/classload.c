@@ -1,5 +1,6 @@
 #include "classload.h"
 #include <stdio.h>
+#include <stdlib.h>
 
 u1 u1Read(FILE *fd){
     u1 value = getc(fd);
@@ -37,13 +38,13 @@ ClassFile *OpenClass(FILE *fd){
     Read_interfaces(fd, cf->interfaces_count, cf);
     cf->fields_count = u2Read(fd);
     Read_fields(fd, cf->fields_count, cf);
-    cf->methods = u2Read(fd);
-    Read_methods(fd, cf->methods, cf);
+    cf->methods_count = u2Read(fd);
+    Read_methods(fd, cf->methods_count, cf);
 
     u2 count = u2Read(fd);
     cf->attributes_count = count;
     cf->attributes = (Attribute_info*) malloc(count*sizeof(Attribute_info));
-    Read_attributes(fd, count, cf->attributes);
+    Read_attributes(fd, count, cf->attributes, cf);
 
     return cf;
 }
@@ -103,6 +104,7 @@ void Read_cpool(FILE *fd, u2 size, ClassFile *cf){
                 cf->constant_pool[i].info.NameAndType.descriptor_index = u2Read(fd);
                 break;
             case CONSTANT_Utf8:
+                ; // resolve "error: a label can only be part of a statement and a declaration is not a statement"
                 u2 length = u2Read(fd);
                 cf->constant_pool[i].info.Utf8.length = length;
                 cf->constant_pool[i].info.Utf8.bytes = (u1*) malloc(length*sizeof(u1));
@@ -146,7 +148,7 @@ void Read_fields(FILE *fd, u2 size, ClassFile *cf){
         u2 count = u2Read(fd);
         cf->fields[i].attributes_count = count;
         cf->fields[i].attributes = (Attribute_info*) malloc(count*sizeof(Attribute_info));
-        Read_attributes(fd, cf->fields[i].attributes_count, cf->fields[i].attributes);
+        Read_attributes(fd, cf->fields[i].attributes_count, cf->fields[i].attributes, cf);
     }
 }
 
@@ -162,7 +164,7 @@ void Read_methods(FILE *fd, u2 size, ClassFile *cf){
         u2 count = u2Read(fd);
         cf->methods[i].attributes_count = count;
         cf->methods[i].attributes = (Attribute_info*) malloc(count*sizeof(Attribute_info));
-        Read_attributes(fd, cf->methods[i].attributes_count, cf->methods[i].attributes);
+        Read_attributes(fd, cf->methods[i].attributes_count, cf->methods[i].attributes, cf);
     }
 }
 
@@ -179,7 +181,7 @@ void Read_attributes(FILE *fd, u2 size, Attribute_info *attributes, ClassFile *c
 
         attributes[i].info = (u1*) malloc(attributes[i].attribute_length * sizeof(u1));
         
-        if(!attributes[i].info) // TODO: tratar mallocs melhor
+        //if(!attributes[i].info) // TODO: tratar mallocs melhor
 
         for(u4 j = 0; j < attributes[i].attribute_length; j++)
             attributes[i].info[j] = u1Read(fd);
