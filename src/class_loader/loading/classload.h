@@ -120,6 +120,17 @@ typedef struct Cp_info{
             //u1 bytes[length];
             u1 *bytes;
         }Utf8;
+        struct MethodHandle{
+            u1 reference_kind;
+            u2 reference_index;
+        }MethodHandle;
+        struct MethodType{
+            u2 descriptor_index;
+        }MethodType;
+        struct InvokeDynamic{
+            u2 bootstrap_method_attr_index;
+            u2 name_and_type_index;
+        }InvokeDynamic;
     }info;
 }Cp_info;
 
@@ -205,7 +216,6 @@ typedef struct LocalVariableTable_attribute{
 }LocalVariableTable_attribute;
 
 // Falta InnerClass
- 
 
 // Definição de métodos
 typedef struct Method_info{

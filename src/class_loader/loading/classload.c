@@ -26,7 +26,11 @@ ClassFile *OpenClass(FILE *fd){
 
     if (!cf) return NULL;
 
-    cf->magic = u4Read(fd); // TODO: tratar caso magic != 0xCAFEBABE
+    cf->magic = u4Read(fd);
+    if (cf->magic != 0xCAFEBABE) {
+        free(cf);
+        return NULL;
+    }
     cf->minor_version = u2Read(fd);
     cf->major_version = u2Read(fd);
     cf->constant_pool_count = u2Read(fd);
@@ -112,13 +116,15 @@ void Read_cpool(FILE *fd, u2 size, ClassFile *cf){
                     cf->constant_pool[i].info.Utf8.bytes[j] = u1Read(fd);
                 break;
             case CONSTANT_MethodHandle:
-                // por enquanto, ignora em silêncio
+                cf->constant_pool[i].info.MethodHandle.reference_kind = u1Read(fd);
+                cf->constant_pool[i].info.MethodHandle.reference_index = u2Read(fd);
                 break;
             case CONSTANT_MethodType:
-                // por enquanto, ignora em silêncio
+                cf->constant_pool[i].info.MethodType.descriptor_index = u2Read(fd);
                 break;
             case CONSTANT_InvokeDynamic: 
-                // por enquanto, ignora em silêncio
+                cf->constant_pool[i].info.InvokeDynamic.bootstrap_method_attr_index = u2Read(fd);
+                cf->constant_pool[i].info.InvokeDynamic.name_and_type_index = u2Read(fd);
                 break;
             default : 
                 // por enquanto, ignora em silêncio
@@ -170,7 +176,6 @@ void Read_methods(FILE *fd, u2 size, ClassFile *cf){
 
 // recebe ponteiro attributes já inicializado com malloc. Formato diferente para evitar 3 funções "Read_attributes"
 void Read_attributes(FILE *fd, u2 size, Attribute_info *attributes, ClassFile *cf){
-    //TODO: decodificar os fields do attributes 
     for(u2 i = 0; i < size; i++){
         attributes[i].attribute_name_index = u2Read(fd);
         attributes[i].attribute_length = u4Read(fd);
