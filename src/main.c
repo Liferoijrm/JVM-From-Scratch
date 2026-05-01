@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include "class_loader/loading/classload.h"
+#include "class_loader/loading/classparser.h"
 
 // função temporária de print para testes do ClassFile
 void PrintClassFile(ClassFile *cf) {
@@ -33,17 +33,11 @@ int main(int argc, char **argv){
         return 1;
     }
 
-    FILE *fd = fopen(argv[1], "rb");
-
-    if (!fd) {
-        printf("Erro ao abrir arquivo: %s\n", argv[1]);
-        return 1;
-    }
-
-    ClassFile *cf = OpenClass(fd);
-    fclose(fd);
+    ClassFile *cf = ParseClass(argv[1]);
 
     PrintClassFile(cf);
+
+    FreeClass(cf);
 
     // alocar memória e inicializar processos
 

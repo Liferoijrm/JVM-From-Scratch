@@ -22,7 +22,6 @@
 #define CONSTANT_Double 6
 #define CONSTANT_NameAndType 12
 #define CONSTANT_Utf8 1
-// TODO: verificar a estrutura dessas tags e modificar a implementação no .c
 #define CONSTANT_MethodHandle 15
 #define CONSTANT_MethodType 16
 #define CONSTANT_InvokeDynamic 18
@@ -245,24 +244,30 @@ u2 u2Read(FILE *fd);
 u4 u4Read(FILE *fd);
 
 // Leitura do .class
-ClassFile *OpenClass(FILE *fd);
+ClassFile *ParseClass(char *class_name);
 
 // leitura do pool de constantes
-void Read_cpool(FILE *fd, u2 size, ClassFile *cf);
+u1 Read_cpool(FILE *fd, u2 size, ClassFile *cf);
 
 // leitura do array de interfaces
-void Read_interfaces(FILE *fd, u2 size, ClassFile *cf);
+u1 Read_interfaces(FILE *fd, u2 size, ClassFile *cf);
 
 // leitura do array de fields
-void Read_fields(FILE *fd, u2 size, ClassFile *cf);
+u1 Read_fields(FILE *fd, u2 size, ClassFile *cf);
 
 // leitura do array de métodos
-void Read_methods(FILE *fd, u2 size, ClassFile *cf);
+u1 Read_methods(FILE *fd, u2 size, ClassFile *cf);
 
 // leitura do array de atributos
-void Read_attributes(FILE *fd, u2 size, Attribute_info *attributes, ClassFile *cf);
+u1 Read_attributes(FILE *fd, u2 size, Attribute_info *attributes, ClassFile *cf);
+
+// liberação do ClassFile
+void FreeClass(ClassFile *cf);
+
+// logs de erro do ClassFile
+void Log_error(u1 error_flag, char *class_name);
 
 // interpretação dos access_flags
-char* Read_flags(u2 access_flag);
+char *Read_flags(u2 access_flag);
 
 #endif

@@ -6,7 +6,7 @@ A ground-up implementation of the Java Virtual Machine, exploring class loading,
 Compile the project with:
 
 ```
-gcc src/main.c src/class_loader/loading/classload.c -I src/class_loader/loading -std=c99 -o test
+gcc src/main.c src/class_loader/loading/classparse.c -I src/class_loader/loading -std=c99 -o test
 ```
 
 ## Run
