@@ -89,20 +89,24 @@ ClassFile *ParseClass(char *class_name){
 
     u2 count = u2Read(fd);
     cf->attributes_count = count;
-    cf->attributes = (Attribute_info*) malloc(count*sizeof(Attribute_info));
-    if(!cf->attributes){
-        error_flag = ATTRIBUTE_MALLOC_ERROR;
-        goto error;
-    } 
-    error_flag = Read_attributes(fd, count, cf->attributes, cf);
-    if(error_flag != DEFAULT) goto error; // TODO: verificar se está correto sintaticamente (Read_attributes retorna o erro detectado)
+
+    if(count > 0){
+        cf->attributes = (Attribute_info*) calloc(count, sizeof(Attribute_info));
+        if(!cf->attributes){
+            error_flag = ATTRIBUTE_MALLOC_ERROR;
+            goto error;
+        } 
+        error_flag = Read_attributes(fd, count, cf->attributes, cf);
+        if(error_flag != DEFAULT) goto error; // TODO: verificar se está correto sintaticamente (Read_attributes retorna o erro detectado)
+    }
+    else cf->attributes = NULL;
 
     fclose(fd);
 
     return cf;
 
     error:
-        if (fd) fclose(fd);
+        if(fd) fclose(fd);
         Log_error(error_flag, class_name);
         FreeClass(cf);
         return NULL;
@@ -110,7 +114,7 @@ ClassFile *ParseClass(char *class_name){
 
 // retorno: função retorna DEFAULT (0) ou o erro que detectou
 u1 Read_cpool(FILE *fd, u2 size, ClassFile *cf){
-    cf->constant_pool = (Cp_info*) malloc(size*sizeof(Cp_info));
+    cf->constant_pool = (Cp_info*) calloc(size, sizeof(Cp_info));
     if (!cf->constant_pool) return CPOOL_MALLOC_ERROR;
 
     cf->constant_pool[0].tag = 0;
@@ -192,6 +196,11 @@ u1 Read_cpool(FILE *fd, u2 size, ClassFile *cf){
 
 // retorno: função retorna DEFAULT (0) ou o erro que detectou
 u1 Read_interfaces(FILE *fd, u2 size, ClassFile *cf){
+    if(!size){
+        cf->interfaces = NULL;
+        return 0;
+    }
+
     cf->interfaces = (u2*) malloc(size*sizeof(u2));
 
     if(!cf->interfaces) return INTERFACE_MALLOC_ERROR;
@@ -204,7 +213,12 @@ u1 Read_interfaces(FILE *fd, u2 size, ClassFile *cf){
 
 // retorno: função retorna DEFAULT (0) ou o erro que detectou
 u1 Read_fields(FILE *fd, u2 size, ClassFile *cf){
-    cf->fields = (Field_info*) malloc(size*sizeof(Field_info));
+    if(!size){
+        cf->fields = NULL;
+        return 0;
+    }
+
+    cf->fields = (Field_info*) calloc(size, sizeof(Field_info));
 
     if(!cf->fields) return FIELD_MALLOC_ERROR; 
 
@@ -212,19 +226,28 @@ u1 Read_fields(FILE *fd, u2 size, ClassFile *cf){
         cf->fields[i].access_flags = u2Read(fd);
         cf->fields[i].name_index = u2Read(fd);
         cf->fields[i].descriptor_index = u2Read(fd);
+        
         u2 count = u2Read(fd);
         cf->fields[i].attributes_count = count;
-        cf->fields[i].attributes = (Attribute_info*) malloc(count*sizeof(Attribute_info));
-        if(!cf->fields[i].attributes) return FIELD_ATTRIBUTE_ERROR;
-        if(Read_attributes(fd, cf->fields[i].attributes_count, cf->fields[i].attributes, cf))
-            return ATTRIBUTE_INFO_MALLOC_ERROR;
+        
+        if(count > 0){
+            cf->fields[i].attributes = (Attribute_info*) calloc(count, sizeof(Attribute_info));
+            if(!cf->fields[i].attributes) return FIELD_ATTRIBUTE_ERROR;
+            if(Read_attributes(fd, cf->fields[i].attributes_count, cf->fields[i].attributes, cf)) return ATTRIBUTE_INFO_MALLOC_ERROR;
+        } 
+        else cf->fields[i].attributes = NULL;
     }
     return 0;
 }
 
 // retorno: função retorna DEFAULT (0) ou o erro que detectou
 u1 Read_methods(FILE *fd, u2 size, ClassFile *cf){
-    cf->methods = (Method_info*) malloc(size*sizeof(Method_info));
+    if(!size){
+        cf->methods = NULL;
+        return 0;
+    }
+
+    cf->methods = (Method_info*) calloc(size, sizeof(Method_info));
 
     if(!cf->methods) return METHOD_MALLOC_ERROR;
 
@@ -232,12 +255,16 @@ u1 Read_methods(FILE *fd, u2 size, ClassFile *cf){
         cf->methods[i].access_flags = u2Read(fd);
         cf->methods[i].name_index = u2Read(fd);
         cf->methods[i].descriptor_index = u2Read(fd);
+        
         u2 count = u2Read(fd);
         cf->methods[i].attributes_count = count;
-        cf->methods[i].attributes = (Attribute_info*) malloc(count*sizeof(Attribute_info));
-        if(!cf->methods[i].attributes) return METHOD_ATTRIBUTE_ERROR;
-        if(Read_attributes(fd, cf->methods[i].attributes_count, cf->methods[i].attributes, cf))
-            return ATTRIBUTE_INFO_MALLOC_ERROR;
+        
+        if(count > 0){
+            cf->methods[i].attributes = (Attribute_info*) calloc(count, sizeof(Attribute_info));
+            if(!cf->methods[i].attributes) return METHOD_ATTRIBUTE_ERROR;
+            if(Read_attributes(fd, cf->methods[i].attributes_count, cf->methods[i].attributes, cf)) return ATTRIBUTE_INFO_MALLOC_ERROR;
+        } 
+        else cf->methods[i].attributes = NULL;
     }
     return 0;
 }
@@ -264,8 +291,51 @@ u1 Read_attributes(FILE *fd, u2 size, Attribute_info *attributes, ClassFile *cf)
 }
 
 void FreeClass(ClassFile *cf){
-    // implementar aqui a liberação do cf
-    // todos os campos não lidos já estão inicializados com 0 ou NULL (calloc usado)
+    if(!cf) return;
+
+    if(cf->constant_pool){
+        for(u2 i = 1; i < cf->constant_pool_count; i++){
+            if(cf->constant_pool[i].tag == CONSTANT_Utf8 && cf->constant_pool[i].info.Utf8.bytes) free(cf->constant_pool[i].info.Utf8.bytes);
+        }
+        free(cf->constant_pool);
+    }
+
+    if(cf->interfaces){
+        free(cf->interfaces);
+    }
+
+    if(cf->fields){
+        for(u2 i = 0; i < cf->fields_count; i++){
+            if(cf->fields[i].attributes){
+                for(u2 j = 0; j < cf->fields[i].attributes_count; j++){
+                    if(cf->fields[i].attributes[j].info) free(cf->fields[i].attributes[j].info);
+                }
+                free(cf->fields[i].attributes);
+            }
+        }
+        free(cf->fields);
+    }
+
+    if(cf->methods){
+        for(u2 i = 0; i < cf->methods_count; i++){
+            if(cf->methods[i].attributes){
+                for(u2 j = 0; j < cf->methods[i].attributes_count; j++){
+                    if(cf->methods[i].attributes[j].info) free(cf->methods[i].attributes[j].info);
+                }
+                free(cf->methods[i].attributes);
+            }
+        }
+        free(cf->methods);
+    }
+
+    if(cf->attributes){
+        for(u2 i = 0; i < cf->attributes_count; i++){
+            if(cf->attributes[i].info) free(cf->attributes[i].info);
+        }
+        free(cf->attributes);
+    }
+
+    free(cf);
 }
 
 // TODO: Read-flags não é um switch-case estático, é uma bitmask
