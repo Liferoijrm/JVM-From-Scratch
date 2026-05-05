@@ -16,6 +16,9 @@
 #define METHOD_ATTRIBUTE_ERROR 10
 #define ATTRIBUTE_MALLOC_ERROR 11
 #define ATTRIBUTE_INFO_MALLOC_ERROR 12
+#define INVALID_CLASS_INDEX_ERROR 13
+#define INVALID_FLAG_ERROR 14
+#define INVALID_CLASS_TAG_ERROR 15
 
 u1 u1Read(FILE *fd){
     u1 value = getc(fd);
@@ -71,9 +74,17 @@ ClassFile *ParseClass(char *class_name){
     error_flag = Read_cpool(fd, cf->constant_pool_count, cf);
     if(error_flag != DEFAULT) goto error; // TODO: verificar se cpool está correto sintaticamente (Read_cpool retorna o erro detectado)
 
-    cf->access_flags = u2Read(fd); // TODO: verificar se flags são válidas e não conflitam (bitmask não pode ter final e abstract junto, por exemplo)
-    cf->this_class = u2Read(fd); // TODO: verificar se é indice válido para o cpool, se aponta para CLass_info
-    cf->super_class = u2Read(fd); // TODO: verificar se é indice válido para o cpool, se aponta para CLass_info
+    cf->access_flags = u2Read(fd); 
+    if (!cf->access_flags || log(cf->access_flags) != floor(log(cf->access_flags)) || log(cf->access_flags) < 0 || log(cf->access_flags) > 14){ // verifica se access_flags é uma potência de 2 (ou seja, se tem apenas um bit setado)
+        error_flag = INVALID_FLAG_ERROR;
+        goto error;
+    }
+    cf->this_class = u2Read(fd);
+    cf->super_class = u2Read(fd); 
+    if (cf->this_class == 0 || (cf->super_class < cf->constant_pool_count && cf->constant_pool[cf->super_class].tag == 0)){
+        error_flag = INVALID_CLASS_INDEX_ERROR;
+        goto error;
+    }
 
     cf->interfaces_count = u2Read(fd);
     error_flag = Read_interfaces(fd, cf->interfaces_count, cf);
@@ -188,6 +199,7 @@ u1 Read_cpool(FILE *fd, u2 size, ClassFile *cf){
                 break;
             default : 
                 // por enquanto, ignora em silêncio (TODO: avaliar se faz sentido abortar execução ao não identificar tag)
+                return INVALID_CLASS_TAG_ERROR;
                 break;
         }
     }
@@ -341,7 +353,7 @@ void FreeClass(ClassFile *cf){
 // TODO: Read-flags não é um switch-case estático, é uma bitmask
 // tem que decodificar a bitmask e fazer o retorno
 char* Read_flags(u2 access_flag){
-    switch(access_flag){
+    switch(access_flag & 0xFFFF){ // mascara para considerar apenas os 16 bits de access_flags
         case ACC_PUBLIC:
             return "Public";
             break;
@@ -449,6 +461,18 @@ void Log_error(u1 error_flag, char *class_name){
         case ATTRIBUTE_INFO_MALLOC_ERROR:
             fprintf(stderr, "Failed to allocate memory for attributes info.\n");
             break;
+
+        case INVALID_CLASS_INDEX_ERROR:
+            fprintf(stderr, "Invalid class index in constant pool (this_class or super_class).\n");
+            break;
+        
+        case INVALID_FLAG_ERROR:
+            fprintf(stderr, "Invalid access flag value.\n");
+            break;
+
+        case INVALID_CLASS_TAG_ERROR:
+            fprintf(stderr, "Invalid tag in constant pool.\n");
+             break;
 
         default:
             fprintf(stderr, "Unknown error.\n");
