@@ -5,7 +5,7 @@ void PrintCpool(Cp_info *cpool, u2 count) {
     printf("Constant Pool:\n");
     for (u2 i = 1; i < count; i++) { // constant_pool[0] is unused
         Cp_info entry = cpool[i];
-        printf("#%u: ", i);
+        printf("Constant #%u: ", i);
         switch (entry.tag) {
             case CONSTANT_Class:
                 printf("Class: name_index=%u\n", entry.info.Class.name_index);
