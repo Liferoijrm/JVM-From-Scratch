@@ -1,6 +1,8 @@
 #include "classparser.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <math.h>
 
 // flags para log de erros
 #define DEFAULT 0
@@ -75,7 +77,8 @@ ClassFile *ParseClass(char *class_name){
     if(error_flag != DEFAULT) goto error; // TODO: verificar se cpool está correto sintaticamente (Read_cpool retorna o erro detectado)
 
     cf->access_flags = u2Read(fd); 
-    if (!cf->access_flags || log(cf->access_flags) != floor(log(cf->access_flags)) || log(cf->access_flags) < 0 || log(cf->access_flags) > 14){ // verifica se access_flags é uma potência de 2 (ou seja, se tem apenas um bit setado)
+    if (!cf->access_flags || !strcmp(Read_flags(cf->access_flags), "invalid_flag")){ // verifica se access_flags é uma potência de 2 (ou seja, se tem apenas um bit setado)
+        printf("Invalid access flag value: %u\n", cf->access_flags);
         error_flag = INVALID_FLAG_ERROR;
         goto error;
     }
@@ -353,56 +356,38 @@ void FreeClass(ClassFile *cf){
 // TODO: Read-flags não é um switch-case estático, é uma bitmask
 // tem que decodificar a bitmask e fazer o retorno
 char* Read_flags(u2 access_flag){
-    switch(access_flag & 0xFFFF){ // mascara para considerar apenas os 16 bits de access_flags
-        case ACC_PUBLIC:
-            return "Public";
-            break;
-        case ACC_PRIVATE:
-            return "Private";
-            break;
-        case ACC_PROTECTED:
-            return "Protected";
-            break; 
-        case ACC_STATIC:
-            return "Static";
-            break;
-        case ACC_FINAL:
-            return "Final";
-            break;
-        case ACC_SUPER:
-            return "Super";
-            break;
-        case ACC_BRIDGE:
-            return "Bridge";
-            break;
-        case ACC_VARARGS:
-            return "Variable_args";
-            break;
-        case ACC_NATIVE:
-            return "Native";
-            break;
-        case ACC_INTERFACE: 
-            return "interface";
-            break;
-        case ACC_ABSTRACT:
-            return "Abstract";
-            break;
-        case ACC_STRICT: 
-            return "Strict";
-            break;
-        case ACC_SYNTHETIC: 
-            return "Synthetic";
-            break;
-        case ACC_ANNOTATION: 
-            return "Annotation";
-            break;
-        case ACC_ENUM: 
-            return "Enum";
-            break;
-        default : 
-            return "invalid_flag";
-            break;
-    }
+    if(access_flag & ACC_PUBLIC)
+        return "Public";
+    else if(access_flag & ACC_PRIVATE)
+        return "Private";
+    else if(access_flag & ACC_PROTECTED)
+        return "Protected";
+    else if(access_flag & ACC_STATIC)
+        return "Static";
+    else if(access_flag & ACC_FINAL)
+        return "Final";
+    else if(access_flag & ACC_SUPER)
+        return "Super";
+    else if(access_flag & ACC_BRIDGE)
+        return "Bridge";
+    else if(access_flag & ACC_VARARGS)
+        return "Variable_args";
+    else if(access_flag & ACC_NATIVE)
+        return "Native";
+    else if(access_flag & ACC_INTERFACE) 
+        return "interface";
+    else if(access_flag & ACC_ABSTRACT)
+        return "Abstract";
+    else if(access_flag & ACC_STRICT) 
+        return "Strict";
+    else if(access_flag & ACC_SYNTHETIC) 
+        return "Synthetic";
+    else if(access_flag & ACC_ANNOTATION) 
+        return "Annotation";
+    else if(access_flag & ACC_ENUM) 
+        return "Enum";
+    else
+        return "invalid_flag";
 }
 
 // usa fprintf para gerar a saída no arquivo stderr em vez de stdout
