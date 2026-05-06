@@ -1,6 +1,13 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include "class_loader/loading/classparser.h"
 #include "viewer/classviewer.h"
+
+#ifdef WIN32
+    #define CLEAR "cls"
+#else
+    #define CLEAR "clear" 
+#endif
 
 // função temporária de print para testes do ClassFile
 void PrintClassFile(ClassFile *cf) {
@@ -48,7 +55,7 @@ int main(int argc, char **argv){
             break;
         printf("\nEscolha a opcao:\n1. Exibir informacoes do CPool\n2. Exibir informacoes dos campos\n3. Exibir informacoes dos metodos\n4. Exibir informacoes dos atributos\n5. Sair\n");
         scanf("%d", &option);
-        printf("\n");
+        system(CLEAR);
 
         switch (option)
         {
