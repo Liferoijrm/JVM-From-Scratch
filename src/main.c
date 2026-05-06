@@ -66,17 +66,17 @@ int main(int argc, char **argv){
             break;
         case 2:
             // code for displaying field information
-            PrintFields(cf->fields, cf->fields_count);
+            PrintFields(cf->constant_pool, cf->fields, cf->fields_count);
             printf("\n");
             break;
         case 3:
             // code for displaying method information
-            PrintMethods(cf->methods, cf->methods_count);
+            PrintMethods(cf->constant_pool, cf->methods, cf->methods_count);
             printf("\n");
             break;
         case 4:
             // code for displaying attribute information
-            PrintAttributes(cf->attributes, cf->attributes_count);
+            PrintAttributes(cf->constant_pool, cf->attributes, cf->attributes_count);
             printf("\n");
             break;
         case 5:

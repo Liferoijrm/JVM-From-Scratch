@@ -1,11 +1,15 @@
 #include <stdio.h>
+#include "./classviewer.h"
 #include "../class_loader/loading/classparser.h"
 
 void PrintCpool(Cp_info *cpool, u2 count) {
     printf("Constant Pool:\n");
+
     for (u2 i = 1; i < count; i++) { // constant_pool[0] is unused
         Cp_info entry = cpool[i];
+
         printf("Constant #%u: ", i);
+
         switch (entry.tag) {
             case CONSTANT_Class:
                 printf("Class: name_index=%u\n", entry.info.Class.name_index);
@@ -51,23 +55,137 @@ void PrintCpool(Cp_info *cpool, u2 count) {
     }
 }
 
-void PrintFields(Field_info *fields, u2 count) {
+void PrintFields(Cp_info *cpool, Field_info *fields, u2 count) {
+    u1 *name = NULL, *descriptor = NULL;
+    u2 len;
+
     printf("Fields:\n");
+
     for (u2 i = 0; i < count; i++) {
-        printf("Field #%u: access_flags=%s, name_index=%u, descriptor_index=%u, attributes_count=%u\n", i, Read_flags(fields[i].access_flags), fields[i].name_index, fields[i].descriptor_index, fields[i].attributes_count);
+        name = cpool[fields[i].name_index].info.Utf8.bytes;
+        descriptor = cpool[fields[i].descriptor_index].info.Utf8.bytes;
+        len = cpool[fields[i].descriptor_index].info.Utf8.length;
+        
+        printf("Field #%u: access_flags=%s, name=%s, descriptor=", i, Read_flags(fields[i].access_flags), name);
+
+        DecodeDescriptor(descriptor, len);
+
+        printf(" attributes_count=%u\n", fields[i].attributes_count);
     }
 }
 
-void PrintMethods(Method_info *methods, u2 count) {
+void PrintMethods(Cp_info *cpool, Method_info *methods, u2 count) {
+    u1 *name = NULL, *descriptor = NULL;
+    u2 len;
+
     printf("Methods:\n");
+
     for (u2 i = 0; i < count; i++) {
-        printf("Method #%u: access_flags=%s, name_index=%u, descriptor_index=%u, attributes_count=%u\n", i, Read_flags(methods[i].access_flags), methods[i].name_index, methods[i].descriptor_index, methods[i].attributes_count);
+        name = cpool[methods[i].name_index].info.Utf8.bytes;
+        descriptor = cpool[methods[i].descriptor_index].info.Utf8.bytes;
+        len = cpool[methods[i].descriptor_index].info.Utf8.length;
+
+        printf("Method #%u: access_flags=%s, name=%s, descriptor=", i, Read_flags(methods[i].access_flags), name);
+
+        DecodeDescriptor(descriptor, len);
+
+        printf(" attributes_count=%u\n", methods[i].attributes_count);
     }
 }
 
-void PrintAttributes(Attribute_info *attributes, u2 count) {
+void PrintAttributes(Cp_info *cpool, Attribute_info *attributes, u2 count) {
     printf("Attributes:\n");
+
     for (u2 i = 0; i < count; i++) {
-        printf("Attribute #%u: attribute_name_index=%u, attribute_length=%u\n", i, attributes[i].attribute_name_index, attributes[i].attribute_length);
+        char *name = cpool[attributes[i].attribute_name_index].info.Utf8.bytes;
+
+        printf("Attribute #%u: name=%s, attribute_length=%u\n", i, name, attributes[i].attribute_length);
+    }
+}
+
+void DecodeDescriptor(u1 *descriptor, u2 len){
+    int j, k, arr_count = 0;
+    char current_letter = 'a';
+
+    j = 0;
+    char reference[len], arr_brackets[3] = "[]";
+
+    while(j < len) {
+        if (descriptor[j] == '(' || descriptor[j] == ')') {
+            printf(" %c", descriptor[j]);
+        }
+        if (arr_count > 0) {
+            for (k = 0; k < arr_count; k++)
+                printf("%s", arr_brackets);
+            arr_count = 0;
+        }
+        if (descriptor[j] == 'I'){
+            printf(" int %c", current_letter);
+            current_letter++;
+        }
+        else if (descriptor[j] == 'D'){
+            printf(" double %c", current_letter);
+            current_letter++;
+        }
+        else if (descriptor[j] == 'V'){
+            printf(" void %c", current_letter);
+            current_letter++;
+        }
+        else if (descriptor[j] == 'Z'){
+            printf(" boolean %c", current_letter);
+            current_letter++;
+        }
+        else if (descriptor[j] == 'B'){
+            printf(" byte %c ", current_letter);
+            current_letter++;
+        }
+        else if (descriptor[j] == 'C'){
+            printf(" char %c", current_letter);
+            current_letter++;
+        }
+        else if (descriptor[j] == 'S'){
+            printf(" short %c", current_letter);
+            current_letter++;
+        }
+        else if (descriptor[j] == 'F'){
+            printf(" float %c", current_letter);
+            current_letter++;
+        }
+        else if (descriptor[j] == 'J'){
+            printf(" long %c", current_letter);
+            current_letter++;
+        }
+        else if (descriptor[j] == 'L') {
+            k = 0;
+            j++;
+
+            while(descriptor[j] != ';') {
+
+                if (descriptor[j] == '/') {
+                    k = 0;
+                    j++;
+                    continue;
+                }
+
+                reference[k] = descriptor[j];
+                j++;
+                k++;
+            }
+            reference[k] = '\0';
+
+            printf(" %s %c", reference, current_letter);
+            
+            current_letter++;
+        }
+
+        else if (descriptor[j] == '[') {
+            k = 0;
+
+            while(descriptor[j] == '[') {
+                arr_count++;
+                j++;
+            }
+        }
+        j++;
     }
 }

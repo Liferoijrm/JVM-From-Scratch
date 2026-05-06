@@ -185,9 +185,10 @@ u1 Read_cpool(FILE *fd, u2 size, ClassFile *cf){
                 ; // resolve "error: a label can only be part of a statement and a declaration is not a statement"
                 u2 length = u2Read(fd);
                 cf->constant_pool[i].info.Utf8.length = length;
-                cf->constant_pool[i].info.Utf8.bytes = (u1*) malloc(length*sizeof(u1));
+                cf->constant_pool[i].info.Utf8.bytes = (u1*) malloc((length + 1)*sizeof(u1));
                 for(u2 j = 0; j < length; j++)
                     cf->constant_pool[i].info.Utf8.bytes[j] = u1Read(fd);
+                cf->constant_pool[i].info.Utf8.bytes[length] = '\0'; // adicionar terminador de string
                 break;
             case CONSTANT_MethodHandle:
                 cf->constant_pool[i].info.MethodHandle.reference_kind = u1Read(fd);
