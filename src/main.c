@@ -11,6 +11,7 @@
 
 // função temporária de print para testes do ClassFile
 void PrintClassFile(ClassFile *cf) {
+    int c_index;
     if (!cf) {
         printf("ClassFile NULL\n");
         return;
@@ -22,8 +23,10 @@ void PrintClassFile(ClassFile *cf) {
     printf("constant_pool_count: %u\n======\n", cf->constant_pool_count);
 
     printf("access_flags: %s\n======\n", Read_flags(cf->access_flags));
-    printf("this_class: %u\n======\n", cf->this_class);
-    printf("super_class: %u\n======\n", cf->super_class);
+    c_index = cf->constant_pool[cf->this_class].info.Class.name_index;
+    printf("this_class: %s\n======\n", cf->constant_pool[c_index ].info.Utf8.bytes);
+    c_index = cf->constant_pool[cf->super_class].info.Class.name_index;
+    printf("super_class: %s\n======\n", cf->constant_pool[c_index].info.Utf8.bytes);
 
     printf("interfaces_count: %u\n======\n", cf->interfaces_count);
 
