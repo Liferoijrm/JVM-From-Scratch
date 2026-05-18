@@ -1,0 +1,54 @@
+CC            ?= gcc
+CFLAGS        ?= -Wall -Wextra -std=c99 -I $(SRC_DIR)/class_loader/loading
+DEBUG_FLAGS   ?= -g -fsanitize=address,undefined
+SRC_DIR       := src
+OBJ_DIR       := build
+BIN_DIR       := bin
+TARGET_NAME   := jvm
+EXE_EXT       := .exe
+
+TARGET := $(BIN_DIR)/$(TARGET_NAME)$(EXE_EXT)
+
+# Recursively find all .c files
+SRCS := $(shell dir /b /s $(SRC_DIR)\*.c 2>nul | find /v /c "" | findstr . >nul && (for /r $(SRC_DIR) %F in (*.c) do @echo %F))
+OBJS := $(patsubst $(SRC_DIR)\%.c,$(OBJ_DIR)\%.o,$(SRCS))
+
+.PHONY: all clean debug help
+
+all: $(TARGET)
+
+$(TARGET): $(OBJS) | $(BIN_DIR)
+	@echo Linking...
+	@for /r $(OBJ_DIR) %F in (*.o) do @set "OBJS=!OBJS! %F"
+	$(CC) $(CFLAGS) $(OBJS) -o $@
+	@echo Build complete. Executable: $@
+
+$(OBJ_DIR)\%.o: $(SRC_DIR)\%.c | $(OBJ_DIR)
+	@if not exist "$(dir $@)" mkdir "$(dir $@)"
+	@echo Compiling $<...
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(OBJ_DIR):
+	@if not exist "$@" mkdir "$@"
+
+$(BIN_DIR):
+	@if not exist "$@" mkdir "$@"
+
+clean:
+	@if exist "$(OBJ_DIR)" rmdir /s /q "$(OBJ_DIR)"
+	@if exist "$(BIN_DIR)" rmdir /s /q "$(BIN_DIR)"
+	@echo Clean complete.
+
+debug: CFLAGS += $(DEBUG_FLAGS)
+debug: clean all
+
+help:
+	@echo Targets:
+	@echo   all    - Compile the project (default)
+	@echo   clean  - Remove build artifacts
+	@echo   debug  - Build with debug symbols and sanitizers
+	@echo.
+	@echo Usage:
+	@echo   mingw32-make -f Makefile.win all
+	@echo   mingw32-make -f Makefile.win clean
+	@echo   mingw32-make -f Makefile.win debug
