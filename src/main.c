@@ -3,7 +3,7 @@
 #include "class_loader/loading/classparser.h"
 #include "viewer/classviewer.h"
 
-#ifdef WIN32
+#ifdef _WIN32
     #define CLEAR "cls"
 #else
     #define CLEAR "clear" 
