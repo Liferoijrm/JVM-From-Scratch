@@ -25,6 +25,8 @@ void PrintAttributes(Cp_info *cpool, Attribute_info *attributes, u2 count);
 
 void DecodeDescriptor(u1 *descriptor, u2 len);
 
+void printModfiedUtf8(u1 *bytes, u2 length);
+
 void cleanBuffer();
 
 #endif

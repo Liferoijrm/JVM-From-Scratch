@@ -2,6 +2,10 @@
 #include "./classviewer.h"
 #include "../class_loader/loading/classparser.h"
 
+#define ONE_BYTE 1
+#define TWO_BYTES 2
+#define THREE_BYTES 3
+
 // loop principal do bytecode viewer
 void ViewClass(ClassFile *cf){
     int option, exit = 0;
@@ -18,7 +22,6 @@ void ViewClass(ClassFile *cf){
         case 1:
             // basic cf info
             PrintClassFile(cf);
-            printf("\n");
             break;
         case 2:
             // code for displaying CPool information
@@ -64,7 +67,7 @@ void PrintClassFile(ClassFile *cf){
         return;
     }
 
-    printf("magic: %u\n======\n", cf->magic);
+    printf("magic: 0x%0x\n======\n", cf->magic);
     printf("minor_version: %u\n======\n", cf->minor_version);
     printf("major_version: %u\n======\n", cf->major_version);
     printf("constant_pool_count: %u\n======\n", cf->constant_pool_count);
@@ -87,48 +90,45 @@ void PrintClassFile(ClassFile *cf){
 void PrintCpool(Cp_info *cpool, u2 count) {
     printf("Constant Pool:\n");
 
-    for (u2 i = 1; i < count; i++) { // constant_pool[0] is unused
+    for (u2 i = 1; i < count; i++){ // constant_pool[0] is unused
         Cp_info entry = cpool[i];
 
-        printf("Constant #%u: ", i);
+        printf("[%u] ", i);
 
         switch (entry.tag) {
             case CONSTANT_Class:
-                printf("Class: name_index=%u\n", entry.info.Class.name_index);
+                printf("CONSTANT_Class_info: name_index=%u\n", entry.info.Class.name_index);
                 break;
             case CONSTANT_Fieldref:
-                printf("Fieldref: class_index=%u, name_and_type_index=%u\n", entry.info.Fieldref.class_index, entry.info.Fieldref.name_and_type_index);
+                printf("CONSTANT_Fieldref_info: class_index=%u, name_and_type_index=%u\n", entry.info.Fieldref.class_index, entry.info.Fieldref.name_and_type_index);
                 break;
             case CONSTANT_Methodref:
-                printf("Methodref: class_index=%u, name_and_type_index=%u\n", entry.info.Methodref.class_index, entry.info.Methodref.name_and_type_index);
+                printf("CONSTANT_Methodref_info: class_index=%u, name_and_type_index=%u\n", entry.info.Methodref.class_index, entry.info.Methodref.name_and_type_index);
                 break;
             case CONSTANT_InterfaceMethodref:
-                printf("InterfaceMethodref: class_index=%u, name_and_type_index=%u\n", entry.info.InterfaceMethodref.class_index, entry.info.InterfaceMethodref.name_and_type_index);
+                printf("CONSTANT_InterfaceMethodref_info: class_index=%u, name_and_type_index=%u\n", entry.info.InterfaceMethodref.class_index, entry.info.InterfaceMethodref.name_and_type_index);
                 break;
             case CONSTANT_String:
-                printf("String: string_index=%u\n", entry.info.String.string_index);
+                printf("CONSTANT_String_info: string_index=%u\n", entry.info.String.string_index);
                 break;
             case CONSTANT_Integer:
-                printf("Integer: bytes=%u\n", entry.info.Integer.bytes);
+                printf("CONSTANT_Integer_info: bytes=%u\n", entry.info.Integer.bytes);
                 break;
             case CONSTANT_Float:
-                printf("Float: bytes=%u\n", entry.info.Float.bytes);
+                printf("CONSTANT_Float_info: bytes=%u\n", entry.info.Float.bytes);
                 break;
             case CONSTANT_Long:
-                printf("Long: high_bytes=%u, low_bytes=%u\n", entry.info.Long.high_bytes, entry.info.Long.low_bytes);
+                printf("CONSTANT_Long_info: high_bytes=%u, low_bytes=%u\n", entry.info.Long.high_bytes, entry.info.Long.low_bytes);
                 break;
             case CONSTANT_Double:
-                printf("Double: high_bytes=%u, low_bytes=%u\n", entry.info.Double.high_bytes, entry.info.Double.low_bytes);
+                printf("CONSTANT_Double_info: high_bytes=%u, low_bytes=%u\n", entry.info.Double.high_bytes, entry.info.Double.low_bytes);
                 break;
             case CONSTANT_NameAndType:
-                printf("NameAndType: name_index=%u, descriptor_index=%u\n", entry.info.NameAndType.name_index, entry.info.NameAndType.descriptor_index);
+                printf("CONSTANT_NameAndType_info: name_index=%u, descriptor_index=%u\n", entry.info.NameAndType.name_index, entry.info.NameAndType.descriptor_index);
                 break;
             case CONSTANT_Utf8:
-                printf("Utf8: length=%u, bytes=", entry.info.Utf8.length);
-                for (u2 j = 0; j < entry.info.Utf8.length; j++) {
-                    putchar(entry.info.Utf8.bytes[j]);
-                }
-                printf("\n");
+                printf("CONSTANT_Utf8_info: length=%u, bytes=", entry.info.Utf8.length);
+                printModfiedUtf8(entry.info.Utf8.bytes, entry.info.Utf8.length);
                 break;
             default:
                 printf("Unknown tag: %u\n", entry.tag);
@@ -148,7 +148,7 @@ void PrintFields(Cp_info *cpool, Field_info *fields, u2 count) {
         descriptor = cpool[fields[i].descriptor_index].info.Utf8.bytes;
         len = cpool[fields[i].descriptor_index].info.Utf8.length;
         
-        printf("Field #%u: access_flags=%s, name=%s, descriptor=", i, Read_flags(fields[i].access_flags), name);
+        printf("[%u] access_flags=%s, name=%s, descriptor=", i, Read_flags(fields[i].access_flags), name);
 
         DecodeDescriptor(descriptor, len);
 
@@ -167,7 +167,7 @@ void PrintMethods(Cp_info *cpool, Method_info *methods, u2 count) {
         descriptor = cpool[methods[i].descriptor_index].info.Utf8.bytes;
         len = cpool[methods[i].descriptor_index].info.Utf8.length;
 
-        printf("Method #%u: access_flags=%s, name=%s, descriptor=", i, Read_flags(methods[i].access_flags), name);
+        printf("[%u] access_flags=%s, name=%s, descriptor=", i, Read_flags(methods[i].access_flags), name);
 
         DecodeDescriptor(descriptor, len);
 
@@ -181,7 +181,7 @@ void PrintAttributes(Cp_info *cpool, Attribute_info *attributes, u2 count) {
     for (u2 i = 0; i < count; i++) {
         char *name = cpool[attributes[i].attribute_name_index].info.Utf8.bytes;
 
-        printf("Attribute #%u: name=%s, attribute_length=%u\n", i, name, attributes[i].attribute_length);
+        printf("[%u] name=%s, attribute_length=%u\n", i, name, attributes[i].attribute_length);
     }
 }
 
@@ -270,6 +270,28 @@ void DecodeDescriptor(u1 *descriptor, u2 len){
         }
         j++;
     }
+}
+
+void printModfiedUtf8(u1 *bytes, u2 length){
+    for (u2 i = 0; i < length; i++) {
+        // mostra \n literalmente
+        if (bytes[i] == '\n') {
+            printf("\\n");
+            continue;
+        }
+
+        // Caso especial do Modified UTF-8 0xC080 representa U+0000 ('\0')
+        if (i + 1 < length && bytes[i] == 0xC0 && bytes[i+1] == 0x80){
+            putchar('\0');
+            i++;
+            continue;
+        }
+
+        // Para todos os demais casos, basta printar os bytes
+        putchar(bytes[i]);
+    }
+
+    putchar('\n');
 }
 
 // limpa o buffer de entrada
