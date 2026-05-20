@@ -1,5 +1,5 @@
-#ifndef CLASSLOAD_H
-#define CLASSLOAD_H
+#ifndef CLASSPARSE_H
+#define CLASSPARSE_H
 
 #include <stdint.h>
 #include <stdio.h>
