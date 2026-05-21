@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include "./classviewer.h"
+#include "./attribute_decoder.h"
 #include "../class_loader/loading/classparser.h"
 
 #define ONE_BYTE 1
@@ -153,6 +154,10 @@ void PrintFields(Cp_info *cpool, Field_info *fields, u2 count) {
         DecodeDescriptor(descriptor, len);
 
         printf(" attributes_count=%u\n", fields[i].attributes_count);
+
+        for (u2 j = 0; j < fields[i].attributes_count; j++) {
+            PrintAttributeInfo(cpool, &fields[i].attributes[j]);
+        }
     }
 }
 
@@ -172,6 +177,10 @@ void PrintMethods(Cp_info *cpool, Method_info *methods, u2 count) {
         DecodeDescriptor(descriptor, len);
 
         printf(" attributes_count=%u\n", methods[i].attributes_count);
+
+        for (u2 j = 0; j < methods[i].attributes_count; j++) {
+            PrintAttributeInfo(cpool, &methods[i].attributes[j]);
+        }
     }
 }
 
