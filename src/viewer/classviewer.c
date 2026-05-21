@@ -186,58 +186,13 @@ void PrintAttributes(Cp_info *cpool, Attribute_info *attributes, u2 count) {
 }
 
 void DecodeDescriptor(u1 *descriptor, u2 len){
-    int j, k, arr_count = 0;
-    char current_letter = 'a';
+    int j, k;
 
     j = 0;
-    char reference[len], arr_brackets[3] = "[]";
+    char reference[len];
 
     while(j < len) {
-        if (descriptor[j] == '(' || descriptor[j] == ')') {
-            printf(" %c", descriptor[j]);
-        }
-        if (arr_count > 0) {
-            for (k = 0; k < arr_count; k++)
-                printf("%s", arr_brackets);
-            arr_count = 0;
-        }
-        if (descriptor[j] == 'I'){
-            printf(" int %c", current_letter);
-            current_letter++;
-        }
-        else if (descriptor[j] == 'D'){
-            printf(" double %c", current_letter);
-            current_letter++;
-        }
-        else if (descriptor[j] == 'V'){
-            printf(" void %c", current_letter);
-            current_letter++;
-        }
-        else if (descriptor[j] == 'Z'){
-            printf(" boolean %c", current_letter);
-            current_letter++;
-        }
-        else if (descriptor[j] == 'B'){
-            printf(" byte %c ", current_letter);
-            current_letter++;
-        }
-        else if (descriptor[j] == 'C'){
-            printf(" char %c", current_letter);
-            current_letter++;
-        }
-        else if (descriptor[j] == 'S'){
-            printf(" short %c", current_letter);
-            current_letter++;
-        }
-        else if (descriptor[j] == 'F'){
-            printf(" float %c", current_letter);
-            current_letter++;
-        }
-        else if (descriptor[j] == 'J'){
-            printf(" long %c", current_letter);
-            current_letter++;
-        }
-        else if (descriptor[j] == 'L') {
+        if (descriptor[j] == 'L') {
             k = 0;
             j++;
 
@@ -255,19 +210,11 @@ void DecodeDescriptor(u1 *descriptor, u2 len){
             }
             reference[k] = '\0';
 
-            printf(" %s %c", reference, current_letter);
-            
-            current_letter++;
+            printf("%s", reference);
         }
 
-        else if (descriptor[j] == '[') {
-            k = 0;
-
-            while(descriptor[j] == '[') {
-                arr_count++;
-                j++;
-            }
-        }
+        else 
+            printf("%c", descriptor[j]);
         j++;
     }
 }
