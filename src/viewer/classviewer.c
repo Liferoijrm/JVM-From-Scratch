@@ -191,6 +191,7 @@ void PrintAttributes(Cp_info *cpool, Attribute_info *attributes, u2 count) {
         char *name = cpool[attributes[i].attribute_name_index].info.Utf8.bytes;
 
         printf("[%u] name=%s, attribute_length=%u\n", i, name, attributes[i].attribute_length);
+        printf("Info: %d\n", attributes[i].info[0] << 4 | attributes[i].info[1]); 
     }
 }
 
