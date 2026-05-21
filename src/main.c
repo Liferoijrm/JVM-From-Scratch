@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include "class_loader/loading/classparser.h"
 #include "viewer/classviewer.h"
+#include "viewer/printer.h"
 
 int main(int argc, char **argv){
     if (argc < 2) {
@@ -16,6 +17,7 @@ int main(int argc, char **argv){
         return 1;
     }
 
+    printClass(cf);
     ViewClass(cf);
 
     // alocar memória e inicializar processos

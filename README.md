@@ -6,7 +6,7 @@ A ground-up implementation of the Java Virtual Machine, exploring class loading,
 Compile the project with:
 
 ```
-gcc src/main.c src/class_loader/loading/classparser.c src/viewer/classviewer.c -I src/class_loader/loading -I src/viewer -std=c99 -o test
+gcc src/main.c src/class_loader/loading/classparser.c src/viewer/classviewer.c src/viewer/printer.c -I src/class_loader/loading -I src/viewer -std=c99 -o test
 ```
 
 Alternatively, use the makefile or build.bat on Windows:
