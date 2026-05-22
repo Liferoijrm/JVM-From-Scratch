@@ -24,8 +24,8 @@ int main(int argc, char **argv){
     // alocar memória e inicializar processos
 
     // chamar funções da JVM e do exibidor
-
     // liberar memória
+    FreeClass(cf);
 
     return 0;
 }

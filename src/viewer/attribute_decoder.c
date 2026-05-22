@@ -309,6 +309,16 @@ void PrintAttributeInfo(Cp_info *cpool, Attribute_info *attribute) {
         code_attr->attribute_length = attribute->attribute_length;
         DisassembleCodeAttribute(cpool, code_attr, attribute);
         ReadCode(cpool, code_attr);
+        // liberar memória alocada por DisassembleCodeAttribute
+        if (code_attr->code) free(code_attr->code);
+        if (code_attr->exception_table) free(code_attr->exception_table);
+        if (code_attr->attributes) {
+            for (u2 ai = 0; ai < code_attr->attributes_count; ai++) {
+                if (code_attr->attributes[ai].info) free(code_attr->attributes[ai].info);
+            }
+            free(code_attr->attributes);
+        }
+        free(code_attr);
         return;
     }
 
