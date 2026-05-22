@@ -238,116 +238,69 @@ u1 NthBitIsLit(u2 bitmask, u1 n){
     return 0;
 }
 
-char* AddFlag(char *buffer, const char *flag){
-    u2 buffer_size = strlen(buffer);
-    u1 increment_size = strlen(flag);
-    u1 virgula = 0; 
+// Append `flag` to `buffer` if bit `n` in `bitmask` is set.
+// `buffer` is a caller-provided buffer with size `bufsize`.
+// `first` should point to an int initially set to 1; it will be cleared when a flag is appended.
+static void AddFlag(char *buffer, size_t bufsize, u2 bitmask, u1 n, const char *flag, int *first) {
+    if (!NthBitIsLit(bitmask, n)) return;
 
-    if(buffer_size != 0){
-        increment_size+=2;
-        virgula = 1; 
+    size_t len = strlen(buffer);
+    if (len >= bufsize) return;
+
+    if (*first) {
+        snprintf(buffer + len, bufsize - len, "%s", flag);
+        *first = 0;
+    } else {
+        snprintf(buffer + len, bufsize - len, ", %s", flag);
     }
-
-    buffer = (char*) realloc(buffer, (buffer_size + increment_size + 1)*sizeof(char));
-
-    if(virgula) buffer = strcat(buffer, ", ");
-    buffer = strcat(buffer, flag);
-
-    return buffer;
 }
 
 // recebe a bitmask de 16 bits e retorna string com nomes das access flags separadas por ", "
 char *DecodeAccessFlags(u2 bitmask){
-    char *buffer = (char*) malloc(sizeof(char));
-    buffer[0] = '\0';
+    static char buffer[256];
+    int len = 0;
+    int first = 1;
 
-    if(NthBitIsLit(bitmask, 0)) 
-        buffer = AddFlag(buffer, "Public");
+    AddFlag(buffer, sizeof(buffer), bitmask, 0, "Public", &first);
+    AddFlag(buffer, sizeof(buffer), bitmask, 1, "Private", &first);
+    AddFlag(buffer, sizeof(buffer), bitmask, 2, "Protected", &first);
+    AddFlag(buffer, sizeof(buffer), bitmask, 3, "Static", &first);
+    AddFlag(buffer, sizeof(buffer), bitmask, 4, "Final", &first);
+    AddFlag(buffer, sizeof(buffer), bitmask, 5, "Super", &first);
+    AddFlag(buffer, sizeof(buffer), bitmask, 6, "Volatile", &first);
+    AddFlag(buffer, sizeof(buffer), bitmask, 7, "Transient", &first);
+    AddFlag(buffer, sizeof(buffer), bitmask, 9, "Interface", &first);
+    AddFlag(buffer, sizeof(buffer), bitmask, 10, "Abstract", &first);
+    AddFlag(buffer, sizeof(buffer), bitmask, 11, "Strict", &first);
+    AddFlag(buffer, sizeof(buffer), bitmask, 12, "Synthetic", &first);
+    AddFlag(buffer, sizeof(buffer), bitmask, 13, "Annotation", &first);
+    AddFlag(buffer, sizeof(buffer), bitmask, 14, "Enum", &first);
 
-    if(NthBitIsLit(bitmask, 1)) 
-        buffer = AddFlag(buffer, "Private");
-
-    if(NthBitIsLit(bitmask, 2)) 
-        buffer = AddFlag(buffer, "Protected");
-
-    if(NthBitIsLit(bitmask, 3))
-        buffer = AddFlag(buffer, "Static");
-
-    if(NthBitIsLit(bitmask, 4))
-        buffer = AddFlag(buffer, "Final");
-
-    if(NthBitIsLit(bitmask, 5))
-        buffer = AddFlag(buffer, "Super");
-
-    if(NthBitIsLit(bitmask, 6))
-        buffer = AddFlag(buffer, "Volatile");
-
-    if(NthBitIsLit(bitmask, 7))
-        buffer = AddFlag(buffer, "Transient");
-
-    if(NthBitIsLit(bitmask, 9))
-        buffer = AddFlag(buffer, "Interface");
-
-    if(NthBitIsLit(bitmask, 10))
-        buffer = AddFlag(buffer, "Abstract");
-
-    if(NthBitIsLit(bitmask, 11))
-        buffer = AddFlag(buffer, "Strict");
-
-    if(NthBitIsLit(bitmask, 12))
-        buffer = AddFlag(buffer, "Synthetic");
-
-    if(NthBitIsLit(bitmask, 13))
-        buffer = AddFlag(buffer, "Annotation");
-
-    if(NthBitIsLit(bitmask, 14))
-        buffer = AddFlag(buffer, "Enum");
-
+    if (len == 0) buffer[0] = '\0';
     return buffer;
 }
 
 // recebe a bitmask de 16 bits e retorna string com nomes das access flags separadas por ", "
 // essa função especifica para metodos foi necessaria pois suas flags diferem em relacao a outras estruturas
 char* DecodeMethodAccessFlags(u2 bitmask){
-    char *buffer = (char*) malloc(sizeof(char));
-    buffer[0] = '\0';
+    static char buffer[256];
+    int len = 0;
+    int first = 1;
 
-    if(NthBitIsLit(bitmask, 0)) 
-        buffer = AddFlag(buffer, "Public");
+    AddFlag(buffer, sizeof(buffer), bitmask, 0, "Public", &first);
+    AddFlag(buffer, sizeof(buffer), bitmask, 1, "Private", &first);
+    AddFlag(buffer, sizeof(buffer), bitmask, 2, "Protected", &first);
+    AddFlag(buffer, sizeof(buffer), bitmask, 3, "Static", &first);
+    AddFlag(buffer, sizeof(buffer), bitmask, 4, "Final", &first);
+    AddFlag(buffer, sizeof(buffer), bitmask, 5, "Synchronized", &first);
+    AddFlag(buffer, sizeof(buffer), bitmask, 6, "Bridge", &first);
+    AddFlag(buffer, sizeof(buffer), bitmask, 7, "Varargs", &first);
+    AddFlag(buffer, sizeof(buffer), bitmask, 8, "Native", &first);
+    AddFlag(buffer, sizeof(buffer), bitmask, 10, "Abstract", &first);
+    AddFlag(buffer, sizeof(buffer), bitmask, 11, "Strict", &first);
+    AddFlag(buffer, sizeof(buffer), bitmask, 12, "Synthetic", &first);
 
-    if(NthBitIsLit(bitmask, 1)) 
-        buffer = AddFlag(buffer, "Private");
-
-    if(NthBitIsLit(bitmask, 2)) 
-        buffer = AddFlag(buffer, "Protected");
-
-    if(NthBitIsLit(bitmask, 3))
-        buffer = AddFlag(buffer, "Static");
-
-    if(NthBitIsLit(bitmask, 4))
-        buffer = AddFlag(buffer, "Final");
-
-    if(NthBitIsLit(bitmask, 5))
-        buffer = AddFlag(buffer, "Synchronized");
-
-    if(NthBitIsLit(bitmask, 6))
-        buffer = AddFlag(buffer, "Bridge");
-
-    if(NthBitIsLit(bitmask, 7))
-        buffer = AddFlag(buffer, "Varargs");
-
-    if(NthBitIsLit(bitmask, 8))
-        buffer = AddFlag(buffer, "Native");
-
-    if(NthBitIsLit(bitmask, 10))
-        buffer = AddFlag(buffer, "Abstract");
-
-    if(NthBitIsLit(bitmask, 11))
-        buffer = AddFlag(buffer, "Strict");
-
-    if(NthBitIsLit(bitmask, 12))
-        buffer = AddFlag(buffer, "Synthetic");
-
+    if (len == 0) buffer[0] = '\0';
     return buffer;
 }
 
