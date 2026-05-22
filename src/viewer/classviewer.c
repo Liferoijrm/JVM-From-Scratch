@@ -238,9 +238,8 @@ u1 NthBitIsLit(u2 bitmask, u1 n){
     return 0;
 }
 
-// Append `flag` to `buffer` if bit `n` in `bitmask` is set.
-// `buffer` is a caller-provided buffer with size `bufsize`.
-// `first` should point to an int initially set to 1; it will be cleared when a flag is appended.
+// função auxiliar para construir a string de flags a partir da bitmask
+// recebe o buffer, seu tamanho, a bitmask, o número do bit a verificar, o nome da flag e um ponteiro para indicar se é a primeira flag a ser adicionada (para formatação)
 static void AddFlag(char *buffer, size_t bufsize, u2 bitmask, u1 n, const char *flag, int *first) {
     if (!NthBitIsLit(bitmask, n)) return;
 
