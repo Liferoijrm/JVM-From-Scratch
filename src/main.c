@@ -18,8 +18,8 @@ int main(int argc, char **argv){
         return 1;
     }
 
-    //printClass(cf);
-    ViewClass(cf);
+    printClass(cf);
+    //ViewClass(cf);
 
     // alocar memória e inicializar processos
 
