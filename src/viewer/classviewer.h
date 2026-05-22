@@ -13,6 +13,8 @@
 
 void ViewClass(ClassFile *cf);
 
+const char* GetJavaVersionText(u2 major);
+
 void PrintClassFile(ClassFile *cf);
 
 void PrintCpool(Cp_info *cpool, u2 count);

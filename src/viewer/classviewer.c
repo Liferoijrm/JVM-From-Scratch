@@ -63,6 +63,20 @@ void ViewClass(ClassFile *cf){
     }
 }
 
+const char* GetJavaVersionText(u2 major){
+    switch (major)
+    {
+    case 45: return "JDK 1.1";
+    case 46: return "JDK 1.2";
+    case 47: return "JDK 1.3";
+    case 48: return "JDK 1.4";
+    case 49: return "Java SE 5";
+    case 50: return "Java SE 6";
+    case 51: return "Java SE 7";
+    case 52: return "Java SE 8";
+    }
+}
+
 // função temporária de print para testes do ClassFile
 void PrintClassFile(ClassFile *cf){
     int c_index;
@@ -72,9 +86,21 @@ void PrintClassFile(ClassFile *cf){
     }
 
     printf("magic: 0x%0x\n======\n", cf->magic);
+    // Como a JVM deve suportar ate Java 8, deve tratar o erro de encontrar uma versao mais nova ou desconhecida
+    if(cf->major_version < 45 && cf->minor_version != 0){
+        // TODO: Tratamento de excessao para versao invalida
+        printf("minor_version: INVALID\n");
+        goto MAJOR;
+    }
     printf("minor_version: %u\n======\n", cf->minor_version);
-    printf("major_version: %u\n======\n", cf->major_version);
-    printf("constant_pool_count: %u\n======\n", cf->constant_pool_count);
+MAJOR:
+    if(cf->major_version < 45 || cf->major_version > 52){
+        // TODO: Tratamento de excessao para versao invalida
+        printf("major_version: INVALID\n");
+        goto CP;
+    }
+    printf("major_version: %u (%s)\n======\n", cf->major_version, GetJavaVersionText(cf->major_version));
+CP: printf("constant_pool_count: %u\n======\n", cf->constant_pool_count);
 
     printf("access_flags: %s\n======\n", DecodeAccessFlags(cf->access_flags));
     c_index = cf->constant_pool[cf->this_class].info.Class.name_index;
