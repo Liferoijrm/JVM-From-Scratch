@@ -5,9 +5,9 @@
 
 void printClass(ClassFile *cf){
 
-    char filename[100];
+    char filename[1000];
 
-    //pegar o nome da classe
+    // pegar o nome da classe
     int c_index = cf->constant_pool[cf->this_class].info.Class.name_index;
     strcpy(filename, cf->constant_pool[c_index].info.Utf8.bytes);
     strcat(filename, ".txt");

@@ -19,7 +19,7 @@
 #define ATTRIBUTE_MALLOC_ERROR 11
 #define ATTRIBUTE_INFO_MALLOC_ERROR 12
 #define INVALID_CLASS_INDEX_ERROR 13
-#define INVALID_FLAG_ERROR 14
+#define INVALID_FLAG_ERROR 14 // TODO: depois tem que tirar esse erro e as partes do código que usam ele
 #define INVALID_CLASS_TAG_ERROR 15
 
 u1 u1Read(FILE *fd){
@@ -76,12 +76,7 @@ ClassFile *ParseClass(char *class_name){
     error_flag = Read_cpool(fd, cf->constant_pool_count, cf);
     if(error_flag != DEFAULT) goto error; // TODO: verificar se cpool está correto sintaticamente (Read_cpool retorna o erro detectado)
 
-    cf->access_flags = u2Read(fd); 
-    if (!cf->access_flags || !strcmp(Read_flags(cf->access_flags), "invalid_flag")){ // verifica se access_flags é uma potência de 2 (ou seja, se tem apenas um bit setado)
-        printf("Invalid access flag value: %u\n", cf->access_flags);
-        error_flag = INVALID_FLAG_ERROR;
-        goto error;
-    }
+    cf->access_flags = u2Read(fd);
     cf->this_class = u2Read(fd);
     cf->super_class = u2Read(fd); 
     if (cf->this_class == 0 || (cf->super_class < cf->constant_pool_count && cf->constant_pool[cf->super_class].tag == 0)){
@@ -168,14 +163,14 @@ u1 Read_cpool(FILE *fd, u2 size, ClassFile *cf){
                 cf->constant_pool[i].info.Long.high_bytes = u4Read(fd);
                 cf->constant_pool[i].info.Long.low_bytes = u4Read(fd);
                 i++;
-                cf->constant_pool[i].tag = 0; // marca como inválido
+                if(i < size) cf->constant_pool[i].tag = 0; // marca como inválido
                 break;
             case CONSTANT_Double:
                 // big-endian
                 cf->constant_pool[i].info.Double.high_bytes = u4Read(fd);
                 cf->constant_pool[i].info.Double.low_bytes = u4Read(fd);
                 i++;
-                cf->constant_pool[i].tag = 0; // marca como inválido
+                if(i < size) cf->constant_pool[i].tag = 0; // marca como inválido
                 break;
             case CONSTANT_NameAndType:
                 cf->constant_pool[i].info.NameAndType.name_index = u2Read(fd);
@@ -352,43 +347,6 @@ void FreeClass(ClassFile *cf){
     }
 
     free(cf);
-}
-
-// TODO: Read-flags não é um switch-case estático, é uma bitmask
-// tem que decodificar a bitmask e fazer o retorno
-char* Read_flags(u2 access_flag){
-    if(access_flag & ACC_PUBLIC)
-        return "Public";
-    else if(access_flag & ACC_PRIVATE)
-        return "Private";
-    else if(access_flag & ACC_PROTECTED)
-        return "Protected";
-    else if(access_flag & ACC_STATIC)
-        return "Static";
-    else if(access_flag & ACC_FINAL)
-        return "Final";
-    else if(access_flag & ACC_SUPER)
-        return "Super";
-    else if(access_flag & ACC_BRIDGE)
-        return "Bridge";
-    else if(access_flag & ACC_VARARGS)
-        return "Variable_args";
-    else if(access_flag & ACC_NATIVE)
-        return "Native";
-    else if(access_flag & ACC_INTERFACE) 
-        return "interface";
-    else if(access_flag & ACC_ABSTRACT)
-        return "Abstract";
-    else if(access_flag & ACC_STRICT) 
-        return "Strict";
-    else if(access_flag & ACC_SYNTHETIC) 
-        return "Synthetic";
-    else if(access_flag & ACC_ANNOTATION) 
-        return "Annotation";
-    else if(access_flag & ACC_ENUM) 
-        return "Enum";
-    else
-        return "invalid_flag";
 }
 
 // usa fprintf para gerar a saída no arquivo stderr em vez de stdout

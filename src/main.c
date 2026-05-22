@@ -5,6 +5,7 @@
 #include "viewer/printer.h"
 
 int main(int argc, char **argv){
+    
     if (argc < 2) {
         printf("Uso: %s <arquivo.class>\n", argv[0]);
         return 1;
@@ -18,6 +19,7 @@ int main(int argc, char **argv){
     }
 
     printClass(cf);
+
     ViewClass(cf);
 
     // alocar memória e inicializar processos

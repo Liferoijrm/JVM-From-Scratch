@@ -26,7 +26,8 @@
 #define CONSTANT_MethodType 16
 #define CONSTANT_InvokeDynamic 18
 
-// Flags de acesso
+// Flags de acesso (lembrete)
+/*
 #define ACC_PUBLIC 0x0001
 #define ACC_PRIVATE 0x0002
 #define ACC_PROTECTED 0x0004
@@ -42,6 +43,7 @@
 #define ACC_SYNTHETIC 0x1000
 #define ACC_ANNOTATION 0x2000
 #define ACC_ENUM 0x4000
+*/
 
 // forward declarations para ClassFile
 typedef struct Cp_info Cp_info;
