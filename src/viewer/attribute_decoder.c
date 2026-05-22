@@ -108,7 +108,9 @@ void PrintAttributeInfo(Cp_info *cpool, Attribute_info *attribute) {
 
     if (strcmp(attribute_name, "SourceFile") == 0 && attribute->attribute_length >= 2) {
         u2 sourcefile_index = (u2)((attribute->info[0] << 8) | attribute->info[1]);
-        printf(", sourcefile_index=%u\n", sourcefile_index);
+        char *sourcefile_name = (char *) cpool[sourcefile_index].info.Utf8.bytes;
+        printf(", sourcefile_index=%u", sourcefile_index);
+        printf(", sourcefile_name=%s\n", sourcefile_name);
         return;
     }
 
