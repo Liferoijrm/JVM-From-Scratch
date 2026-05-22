@@ -185,14 +185,17 @@ void PrintMethods(Cp_info *cpool, Method_info *methods, u2 count) {
     }
 }
 
-void PrintAttributes(Cp_info *cpool, Attribute_info *attributes, u2 count) {
-    printf("Attributes:\n");
+void PrintAttributes(Cp_info *cpool, Attribute_info *attributes, u2 attributes_count){
 
-    for (u2 i = 0; i < count; i++) {
-        char *name = cpool[attributes[i].attribute_name_index].info.Utf8.bytes;
+    printf("\nAttributes:\n");
 
-        printf("[%u] name=%s, attribute_length=%u\n", i, name, attributes[i].attribute_length);
-        printf("Info: %d\n", attributes[i].info[0] << 4 | attributes[i].info[1]); 
+    for(u2 i = 0; i < attributes_count; i++){
+        char *name = (char *) cpool[attributes[i].attribute_name_index].info.Utf8.bytes;
+
+        printf("\n[%u] %s\n", i, name);
+        printf("Attribute length: %u\n", attributes[i].attribute_length);
+
+        PrintAttributeInfo(cpool, &attributes[i]);
     }
 }
 
