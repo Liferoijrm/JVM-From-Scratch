@@ -31,7 +31,9 @@ void ViewClass(ClassFile *cf){
             printf("\n");
             break;
         case 3:
-            // TODO: implementar
+            // visualizacao de interfaces
+            PrintInterfaces(cf->constant_pool, cf->interfaces, cf->interfaces_count);
+            printf("\n");
             break;
         case 4:
             // code for displaying field information
@@ -196,6 +198,22 @@ void PrintAttributes(Cp_info *cpool, Attribute_info *attributes, u2 attributes_c
         printf("Attribute length: %u\n", attributes[i].attribute_length);
 
         PrintAttributeInfo(cpool, &attributes[i]);
+    }
+}
+
+void PrintInterfaces(Cp_info* cpool, u2* interfaces, u2 count){
+    printf("Interfaces (%u):\n", count);
+    if(count == 0 || !interfaces){
+        printf("    Nenhuma interface implementada.\n");
+        return;
+    }
+
+    for(u2 i = 0 ; i < count ; i++){
+        u2 cp_class_index = interfaces[i];
+        u2 name_index = cpool[cp_class_index].info.Class.name_index;
+        u1 *interface_name = cpool[name_index].info.Utf8.bytes;
+
+        printf("    [%u] Interface: cp_index=%u -> Class Name: %s\n", i, cp_class_index, interface_name);
     }
 }
 
