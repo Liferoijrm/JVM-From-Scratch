@@ -84,7 +84,7 @@ void PrintClassFile(ClassFile *cf){
         printf("ClassFile NULL\n");
         return;
     }
-
+    printf("General Information: \n\n======\n");
     printf("magic: 0x%0x\n======\n", cf->magic);
     // Como a JVM deve suportar ate Java 8, deve tratar o erro de encontrar uma versao mais nova ou desconhecida
     if(cf->major_version < 45 && cf->minor_version != 0){
@@ -118,7 +118,12 @@ CP: printf("constant_pool_count: %u\n======\n", cf->constant_pool_count);
 }
 
 void PrintCpool(Cp_info *cpool, u2 count) {
-    printf("Constant Pool:\n");
+    printf("\nConstant Pool:\n");
+
+    if(count <= 1 || !cpool){
+        printf("    Nenhuma constante no Constant Pool.\n");
+        return;
+    }
 
     for (u2 i = 1; i < count; i++){ // constant_pool[0] is unused
         Cp_info entry = cpool[i];
@@ -148,10 +153,10 @@ void PrintCpool(Cp_info *cpool, u2 count) {
                 printf("CONSTANT_Float_info: bytes=%u\n", entry.info.Float.bytes);
                 break;
             case CONSTANT_Long:
-                printf("CONSTANT_Long_info: high_bytes=%u, low_bytes=%u\n", entry.info.Long.high_bytes, entry.info.Long.low_bytes);
+                printf("CONSTANT_Long_info: high_bytes=%u, low_bytes=%u\n", entry.info.Long.high_bytes, entry.info.Long.low_bytes); i++;
                 break;
             case CONSTANT_Double:
-                printf("CONSTANT_Double_info: high_bytes=%u, low_bytes=%u\n", entry.info.Double.high_bytes, entry.info.Double.low_bytes);
+                printf("CONSTANT_Double_info: high_bytes=%u, low_bytes=%u\n", entry.info.Double.high_bytes, entry.info.Double.low_bytes); i++;
                 break;
             case CONSTANT_NameAndType:
                 printf("CONSTANT_NameAndType_info: name_index=%u, descriptor_index=%u\n", entry.info.NameAndType.name_index, entry.info.NameAndType.descriptor_index);
@@ -171,7 +176,12 @@ void PrintFields(Cp_info *cpool, Field_info *fields, u2 count) {
     u1 *name = NULL, *descriptor = NULL;
     u2 len;
 
-    printf("Fields:\n");
+    printf("\nFields (%u):\n", count);
+
+    if(count == 0 || !fields){
+        printf("    Nenhum campo implementado.\n");
+        return;
+    }
 
     for (u2 i = 0; i < count; i++) {
         name = cpool[fields[i].name_index].info.Utf8.bytes;
@@ -194,28 +204,40 @@ void PrintMethods(Cp_info *cpool, Method_info *methods, u2 count) {
     u1 *name = NULL, *descriptor = NULL;
     u2 len;
 
-    printf("Methods:\n");
+    printf("\nMethods (%u):\n\n", count);
+
+    if(count == 0 || !methods){
+        printf("    Nenhum metodo implementado.\n");
+        return;
+    }
 
     for (u2 i = 0; i < count; i++) {
         name = cpool[methods[i].name_index].info.Utf8.bytes;
         descriptor = cpool[methods[i].descriptor_index].info.Utf8.bytes;
         len = cpool[methods[i].descriptor_index].info.Utf8.length;
 
-        printf("[%u] access_flags=%s, name=%s, descriptor=", i, DecodeMethodAccessFlags(methods[i].access_flags), name);
+        printf("[%u] %s\n", i, name);
+        printf("access_flags=%s\nname=%s\ndescriptor=", DecodeMethodAccessFlags(methods[i].access_flags));
 
         DecodeDescriptor(descriptor, len);
+        printf("\n");
 
-        printf(" attributes_count=%u\n", methods[i].attributes_count);
-
+        if(methods[i].attributes_count > 0) printf("\nMethod Attributes (%u):\n", methods[i].attributes_count);
         for (u2 j = 0; j < methods[i].attributes_count; j++) {
             PrintAttributeInfo(cpool, &methods[i].attributes[j]);
         }
+        printf("=====\n\n");
     }
 }
 
 void PrintAttributes(Cp_info *cpool, Attribute_info *attributes, u2 attributes_count){
 
-    printf("\nAttributes:\n");
+    printf("\nAttributes (%u):\n", attributes_count);
+
+    if(attributes_count == 0 || !attributes){
+        printf("    Nenhum atributo de classe.\n");
+        return;
+    }
 
     for(u2 i = 0; i < attributes_count; i++){
         char *name = (char *) cpool[attributes[i].attribute_name_index].info.Utf8.bytes;

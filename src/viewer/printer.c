@@ -16,18 +16,21 @@ void printClass(ClassFile *cf){
         perror("Nao conseguiu abrir\n");
     }
     
+    printf("================================================\n\n");
     PrintClassFile(cf);
+    printf("\n================================================\n");
     PrintCpool(cf->constant_pool, cf->constant_pool_count);
-    printf("\n");
-    //print interface
+    printf("\n================================================\n\n");
+    PrintInterfaces(cf->constant_pool, cf->interfaces, cf->interfaces_count);
+    printf("\n================================================\n\n");
     PrintFields(cf->constant_pool, cf->fields, cf->fields_count);
-    printf("\n");
+    printf("\n================================================\n\n");
     PrintMethods(cf->constant_pool, cf->methods, cf->methods_count);
-    printf("\n");
+    printf("\n================================================\n\n");
     PrintAttributes(cf->constant_pool, cf->attributes, cf->attributes_count);
-    printf("\n");
+    printf("\n================================================\n\n");
     fclose(stdout);
-    //FreeClass(cf);
+    FreeClass(cf);
 
     return;
 }
