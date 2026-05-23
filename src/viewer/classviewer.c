@@ -301,7 +301,7 @@ static void AddFlag(char *buffer, size_t bufsize, u2 bitmask, u1 n, const char *
 // recebe a bitmask de 16 bits e retorna string com nomes das access flags separadas por ", "
 const char *DecodeAccessFlags(u2 bitmask){
     static char buffer[256] = "";
-    int len = 0;
+    buffer[0] = '\0';
     int first = 1;
 
     AddFlag(buffer, sizeof(buffer), bitmask, 0, "Public", &first);
@@ -326,7 +326,7 @@ const char *DecodeAccessFlags(u2 bitmask){
 // essa função especifica para metodos foi necessaria pois suas flags diferem em relacao a outras estruturas
 const char* DecodeMethodAccessFlags(u2 bitmask){
     static char buffer[256] = "";
-    int len = 0;
+    buffer[0] = '\0';
     int first = 1;
 
     AddFlag(buffer, sizeof(buffer), bitmask, 0, "Public", &first);
