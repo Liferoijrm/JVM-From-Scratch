@@ -75,6 +75,7 @@ const char* GetJavaVersionText(u2 major){
     case 51: return "Java SE 7";
     case 52: return "Java SE 8";
     }
+    return "Versao desconhecida ou futura";
 }
 
 // função temporária de print para testes do ClassFile
@@ -130,22 +131,72 @@ void PrintCpool(Cp_info *cpool, u2 count) {
 
         printf("[%u] ", i);
 
+        // TODO: tratamento de excessao para acesso de indices invalidos no pool de constantes, como um indice que aponte para uma entrada do tipo errado ou indices fora do range
+
         switch (entry.tag) {
-            case CONSTANT_Class:
-                printf("CONSTANT_Class_info: name_index=%u\n", entry.info.Class.name_index);
+            case CONSTANT_Class: {
+                u2 n_idx = entry.info.Class.name_index;
+                u1* class_name = cpool[n_idx].info.Utf8.bytes;
+                printf("CONSTANT_Class_info:\n\t- name_index: %u (-> \"%s\")\n", n_idx, class_name);
                 break;
-            case CONSTANT_Fieldref:
-                printf("CONSTANT_Fieldref_info: class_index=%u, name_and_type_index=%u\n", entry.info.Fieldref.class_index, entry.info.Fieldref.name_and_type_index);
+            }
+            case CONSTANT_Fieldref: {
+                u2 class_idx = entry.info.Fieldref.class_index;
+                u2 nat_idx = entry.info.Fieldref.name_and_type_index;
+
+                // Resolvendo o nome da classe através do CONSTANT_Class
+                u2 class_name_idx = cpool[class_idx].info.Class.name_index;
+                u1 *class_name = cpool[class_name_idx].info.Utf8.bytes;
+
+                // Resolvendo o NameAndType
+                u2 name_idx = cpool[nat_idx].info.NameAndType.name_index;
+                u2 desc_idx = cpool[nat_idx].info.NameAndType.descriptor_index;
+                u1 *field_name = cpool[name_idx].info.Utf8.bytes;
+                u1 *field_desc = cpool[desc_idx].info.Utf8.bytes;
+
+                printf("CONSTANT_Fieldref_info:\n\t- class_index: %u (-> Classe: \"%s\")\n\t- name_and_type_index: %u (-> Campo: \"%s\", Descriptor: \"%s\")\n", class_idx, class_name, nat_idx, field_name, field_desc);
                 break;
-            case CONSTANT_Methodref:
-                printf("CONSTANT_Methodref_info: class_index=%u, name_and_type_index=%u\n", entry.info.Methodref.class_index, entry.info.Methodref.name_and_type_index);
+            }
+            case CONSTANT_Methodref: {
+                u2 class_idx = entry.info.Methodref.class_index;
+                u2 nat_idx = entry.info.Methodref.name_and_type_index;
+
+                // Resolvendo o nome da classe através do CONSTANT_Class
+                u2 class_name_idx = cpool[class_idx].info.Class.name_index;
+                u1 *class_name = cpool[class_name_idx].info.Utf8.bytes;
+
+                // Resolvendo o NameAndType
+                u2 name_idx = cpool[nat_idx].info.NameAndType.name_index;
+                u2 desc_idx = cpool[nat_idx].info.NameAndType.descriptor_index;
+                u1 *method_name = cpool[name_idx].info.Utf8.bytes;
+                u1 *method_desc = cpool[desc_idx].info.Utf8.bytes;
+
+                printf("CONSTANT_Methodref_info:\n\t- class_index: %u (-> Classe: \"%s\")\n\t- name_and_type_index: %u (-> Metodo: \"%s\", Descriptor: \"%s\")\n", class_idx, class_name, nat_idx, method_name, method_desc);
                 break;
-            case CONSTANT_InterfaceMethodref:
-                printf("CONSTANT_InterfaceMethodref_info: class_index=%u, name_and_type_index=%u\n", entry.info.InterfaceMethodref.class_index, entry.info.InterfaceMethodref.name_and_type_index);
+            }
+            case CONSTANT_InterfaceMethodref: {
+                u2 class_idx = entry.info.InterfaceMethodref.class_index;
+                u2 nat_idx = entry.info.InterfaceMethodref.name_and_type_index;
+
+                // Resolvendo o nome da classe através do CONSTANT_Class
+                u2 class_name_idx = cpool[class_idx].info.Class.name_index;
+                u1 *class_name = cpool[class_name_idx].info.Utf8.bytes;
+                
+                // Resolvendo o NameAndType
+                u2 name_idx = cpool[nat_idx].info.NameAndType.name_index;
+                u2 desc_idx = cpool[nat_idx].info.NameAndType.descriptor_index;
+                u1 *method_name = cpool[name_idx].info.Utf8.bytes;
+                u1 *method_desc = cpool[desc_idx].info.Utf8.bytes;
+
+                printf("CONSTANT_InterfaceMethodref_info:\n\t- class_index: %u (-> Classe: \"%s\")\n\t- name_and_type_index: %u (-> Metodo: \"%s\", Descriptor: \"%s\")\n", class_idx, class_name, nat_idx, method_name, method_desc);
                 break;
-            case CONSTANT_String:
-                printf("CONSTANT_String_info: string_index=%u\n", entry.info.String.string_index);
+            }
+            case CONSTANT_String: {
+                u2 s_idx = entry.info.String.string_index;
+                u1 *str_val = cpool[s_idx].info.Utf8.bytes;
+                printf("CONSTANT_String_info:\n\t- string_index: %u (-> \"%s\")\n", s_idx, str_val);
                 break;
+            }
             case CONSTANT_Integer:
                 printf("CONSTANT_Integer_info: bytes=%u\n", entry.info.Integer.bytes);
                 break;
@@ -158,9 +209,14 @@ void PrintCpool(Cp_info *cpool, u2 count) {
             case CONSTANT_Double:
                 printf("CONSTANT_Double_info: high_bytes=%u, low_bytes=%u\n", entry.info.Double.high_bytes, entry.info.Double.low_bytes); i++;
                 break;
-            case CONSTANT_NameAndType:
-                printf("CONSTANT_NameAndType_info: name_index=%u, descriptor_index=%u\n", entry.info.NameAndType.name_index, entry.info.NameAndType.descriptor_index);
+            case CONSTANT_NameAndType: {
+                u2 name_idx = entry.info.NameAndType.name_index;
+                u2 desc_idx = entry.info.NameAndType.descriptor_index;
+                u1 *name = cpool[name_idx].info.Utf8.bytes;
+                u1 *desc = cpool[desc_idx].info.Utf8.bytes;
+                printf("CONSTANT_NameAndType_info:\n\t- name_index: %u (-> \"%s\")\n\t- descriptor_index: %u (-> \"%s\")\n", name_idx, name, desc_idx, desc);
                 break;
+            }
             case CONSTANT_Utf8:
                 printf("CONSTANT_Utf8_info: length=%u, bytes=", entry.info.Utf8.length);
                 printModfiedUtf8(entry.info.Utf8.bytes, entry.info.Utf8.length);
@@ -217,7 +273,7 @@ void PrintMethods(Cp_info *cpool, Method_info *methods, u2 count) {
         len = cpool[methods[i].descriptor_index].info.Utf8.length;
 
         printf("[%u] %s\n", i, name);
-        printf("access_flags=%s\nname=%s\ndescriptor=", DecodeMethodAccessFlags(methods[i].access_flags));
+        printf("access_flags=%s\nname=%s\ndescriptor=", DecodeMethodAccessFlags(methods[i].access_flags), name);
 
         DecodeDescriptor(descriptor, len);
         printf("\n");

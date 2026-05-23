@@ -30,7 +30,5 @@ void printClass(ClassFile *cf){
     PrintAttributes(cf->constant_pool, cf->attributes, cf->attributes_count);
     printf("\n================================================\n\n");
     fclose(stdout);
-    FreeClass(cf);
-
     return;
 }
