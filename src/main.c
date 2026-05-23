@@ -18,8 +18,9 @@ int main(int argc, char **argv){
         return 1;
     }
 
+    // invertendo os dois ele exibe o menu e depois salva o txt
+    ViewClass(cf);
     printClass(cf);
-    //ViewClass(cf);
 
     // alocar memória e inicializar processos
 

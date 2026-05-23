@@ -53,7 +53,6 @@ void ViewClass(ClassFile *cf){
         case 7:
             // code for exiting
             printf("Saindo...\n");
-            FreeClass(cf);
             exit = 1;
             break;
         default:
@@ -136,8 +135,12 @@ void PrintCpool(Cp_info *cpool, u2 count) {
         switch (entry.tag) {
             case CONSTANT_Class: {
                 u2 n_idx = entry.info.Class.name_index;
+                u2 class_name_length = cpool[n_idx].info.Utf8.length;
                 u1* class_name = cpool[n_idx].info.Utf8.bytes;
-                printf("CONSTANT_Class_info:\n\t- name_index: %u (-> \"%s\")\n", n_idx, class_name);
+
+                printf("CONSTANT_Class_info:\n\t- name_index: %u ", n_idx);
+                printf("- name: "); printModifiedUtf8(class_name, class_name_length);
+                printf("\n");
                 break;
             }
             case CONSTANT_Fieldref: {
@@ -146,15 +149,27 @@ void PrintCpool(Cp_info *cpool, u2 count) {
 
                 // Resolvendo o nome da classe através do CONSTANT_Class
                 u2 class_name_idx = cpool[class_idx].info.Class.name_index;
+                u2 class_name_length = cpool[class_name_idx].info.Utf8.length;
                 u1 *class_name = cpool[class_name_idx].info.Utf8.bytes;
 
                 // Resolvendo o NameAndType
                 u2 name_idx = cpool[nat_idx].info.NameAndType.name_index;
                 u2 desc_idx = cpool[nat_idx].info.NameAndType.descriptor_index;
+                u2 field_name_length = cpool[name_idx].info.Utf8.length;
+                u2 field_desc_length = cpool[desc_idx].info.Utf8.length;
                 u1 *field_name = cpool[name_idx].info.Utf8.bytes;
                 u1 *field_desc = cpool[desc_idx].info.Utf8.bytes;
 
-                printf("CONSTANT_Fieldref_info:\n\t- class_index: %u (-> Classe: \"%s\")\n\t- name_and_type_index: %u (-> Campo: \"%s\", Descriptor: \"%s\")\n", class_idx, class_name, nat_idx, field_name, field_desc);
+                printf("CONSTANT_Fieldref_info:\n\t- class_index: %u (-> Classe: \"", class_idx);
+                printModifiedUtf8(class_name, class_name_length);
+
+                printf("\")\n\t- name_and_type_index: %u (-> Campo: \"", nat_idx);
+                printModifiedUtf8(field_name, field_name_length);
+
+                printf("\", Descriptor: \"");
+                DecodeDescriptor(field_desc, field_desc_length);
+
+                printf("\")\n");
                 break;
             }
             case CONSTANT_Methodref: {
@@ -163,15 +178,27 @@ void PrintCpool(Cp_info *cpool, u2 count) {
 
                 // Resolvendo o nome da classe através do CONSTANT_Class
                 u2 class_name_idx = cpool[class_idx].info.Class.name_index;
+                u2 class_name_length = cpool[class_name_idx].info.Utf8.length;
                 u1 *class_name = cpool[class_name_idx].info.Utf8.bytes;
 
                 // Resolvendo o NameAndType
                 u2 name_idx = cpool[nat_idx].info.NameAndType.name_index;
                 u2 desc_idx = cpool[nat_idx].info.NameAndType.descriptor_index;
+                u2 method_name_length = cpool[name_idx].info.Utf8.length;
+                u2 method_desc_length = cpool[desc_idx].info.Utf8.length;
                 u1 *method_name = cpool[name_idx].info.Utf8.bytes;
                 u1 *method_desc = cpool[desc_idx].info.Utf8.bytes;
 
-                printf("CONSTANT_Methodref_info:\n\t- class_index: %u (-> Classe: \"%s\")\n\t- name_and_type_index: %u (-> Metodo: \"%s\", Descriptor: \"%s\")\n", class_idx, class_name, nat_idx, method_name, method_desc);
+                printf("CONSTANT_Methodref_info:\n\t- class_index: %u (-> Classe: \"", class_idx);
+                printModifiedUtf8(class_name, class_name_length);
+
+                printf("\")\n\t- name_and_type_index: %u (-> Metodo: \"", nat_idx);
+                printModifiedUtf8(method_name, method_name_length);
+
+                printf("\", Descriptor: \"");
+                DecodeDescriptor(method_desc, method_desc_length);
+
+                printf("\")\n");
                 break;
             }
             case CONSTANT_InterfaceMethodref: {
@@ -180,46 +207,89 @@ void PrintCpool(Cp_info *cpool, u2 count) {
 
                 // Resolvendo o nome da classe através do CONSTANT_Class
                 u2 class_name_idx = cpool[class_idx].info.Class.name_index;
+                u2 class_name_length = cpool[class_name_idx].info.Utf8.length;
                 u1 *class_name = cpool[class_name_idx].info.Utf8.bytes;
-                
+
                 // Resolvendo o NameAndType
                 u2 name_idx = cpool[nat_idx].info.NameAndType.name_index;
                 u2 desc_idx = cpool[nat_idx].info.NameAndType.descriptor_index;
+                u2 method_name_length = cpool[name_idx].info.Utf8.length;
+                u2 method_desc_length = cpool[desc_idx].info.Utf8.length;
                 u1 *method_name = cpool[name_idx].info.Utf8.bytes;
                 u1 *method_desc = cpool[desc_idx].info.Utf8.bytes;
 
-                printf("CONSTANT_InterfaceMethodref_info:\n\t- class_index: %u (-> Classe: \"%s\")\n\t- name_and_type_index: %u (-> Metodo: \"%s\", Descriptor: \"%s\")\n", class_idx, class_name, nat_idx, method_name, method_desc);
+                printf("CONSTANT_InterfaceMethodref_info:\n\t- class_index: %u (-> Classe: \"", class_idx);
+                printModifiedUtf8(class_name, class_name_length);
+
+                printf("\")\n\t- name_and_type_index: %u (-> Metodo: \"", nat_idx);
+                printModifiedUtf8(method_name, method_name_length);
+
+                printf("\", Descriptor: \"");
+                DecodeDescriptor(method_desc, method_desc_length);
+
+                printf("\")\n");
                 break;
             }
             case CONSTANT_String: {
                 u2 s_idx = entry.info.String.string_index;
+
+                u2 str_length = cpool[s_idx].info.Utf8.length;
                 u1 *str_val = cpool[s_idx].info.Utf8.bytes;
-                printf("CONSTANT_String_info:\n\t- string_index: %u (-> \"%s\")\n", s_idx, str_val);
+
+                printf("CONSTANT_String_info:\n\t- string_index: %u (-> \"", s_idx);
+                printModifiedUtf8(str_val, str_length);
+                printf("\")\n");
                 break;
             }
             case CONSTANT_Integer:
-                printf("CONSTANT_Integer_info: bytes=%u\n", entry.info.Integer.bytes);
+                printf("CONSTANT_Integer_info: bytes=%d\n", entry.info.Integer.bytes);
                 break;
             case CONSTANT_Float:
-                printf("CONSTANT_Float_info: bytes=%u\n", entry.info.Float.bytes);
+                ;
+                u4 f_bytes = entry.info.Float.bytes;
+                float f;
+                memcpy(&f, &f_bytes, sizeof(f_bytes));
+                printf("CONSTANT_Float_info: bytes=%f\n", f);
                 break;
             case CONSTANT_Long:
-                printf("CONSTANT_Long_info: high_bytes=%u, low_bytes=%u\n", entry.info.Long.high_bytes, entry.info.Long.low_bytes); i++;
+                ;  
+                u4 l_high = entry.info.Long.high_bytes;
+                u4 l_low = entry.info.Long.low_bytes;
+                int64_t l_bytes = (int64_t)(((uint64_t)l_high << 32) | l_low);
+                printf("CONSTANT_Long_info: bytes=%lld\n", l_bytes); i++;
                 break;
             case CONSTANT_Double:
-                printf("CONSTANT_Double_info: high_bytes=%u, low_bytes=%u\n", entry.info.Double.high_bytes, entry.info.Double.low_bytes); i++;
+                ;
+                u4 d_high = entry.info.Double.high_bytes;
+                u4 d_low = entry.info.Double.low_bytes;
+                uint64_t d_bytes = ((uint64_t)d_high << 32) | d_low;
+                double d;
+                memcpy(&d, &d_bytes, sizeof(d_bytes));
+                printf("CONSTANT_Double_info: bytes=%lf\n", d); i++;
                 break;
             case CONSTANT_NameAndType: {
                 u2 name_idx = entry.info.NameAndType.name_index;
                 u2 desc_idx = entry.info.NameAndType.descriptor_index;
+
+                u2 name_length = cpool[name_idx].info.Utf8.length;
                 u1 *name = cpool[name_idx].info.Utf8.bytes;
+
+                u2 desc_length = cpool[desc_idx].info.Utf8.length;
                 u1 *desc = cpool[desc_idx].info.Utf8.bytes;
-                printf("CONSTANT_NameAndType_info:\n\t- name_index: %u (-> \"%s\")\n\t- descriptor_index: %u (-> \"%s\")\n", name_idx, name, desc_idx, desc);
+
+                printf("CONSTANT_NameAndType_info:\n\t- name_index: %u (-> \"", name_idx);
+                printModifiedUtf8(name, name_length);
+
+                printf("\")\n\t- descriptor_index: %u (-> \"", desc_idx);
+                DecodeDescriptor(desc, desc_length);
+
+                printf("\")\n");
                 break;
             }
             case CONSTANT_Utf8:
                 printf("CONSTANT_Utf8_info: length=%u, bytes=", entry.info.Utf8.length);
-                printModfiedUtf8(entry.info.Utf8.bytes, entry.info.Utf8.length);
+                printModifiedUtf8(entry.info.Utf8.bytes, entry.info.Utf8.length);
+                printf("\n");
                 break;
             default:
                 printf("Unknown tag: %u\n", entry.tag);
@@ -423,7 +493,7 @@ const char* DecodeMethodAccessFlags(u2 bitmask){
     return buffer;
 }
 
-void printModfiedUtf8(u1 *bytes, u2 length){
+void printModifiedUtf8(u1 *bytes, u2 length){
     for (u2 i = 0; i < length; i++) {
         // mostra \n literalmente
         if (bytes[i] == '\n') {
@@ -433,7 +503,7 @@ void printModfiedUtf8(u1 *bytes, u2 length){
 
         // Caso especial do Modified UTF-8 0xC080 representa U+0000 ('\0')
         if (i + 1 < length && bytes[i] == 0xC0 && bytes[i+1] == 0x80){
-            putchar('\0');
+            printf("\\0");
             i++;
             continue;
         }
@@ -441,8 +511,6 @@ void printModfiedUtf8(u1 *bytes, u2 length){
         // Para todos os demais casos, basta printar os bytes
         putchar(bytes[i]);
     }
-
-    putchar('\n');
 }
 
 // limpa o buffer de entrada
