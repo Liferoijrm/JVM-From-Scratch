@@ -3,6 +3,13 @@
 #include <string.h>
 
 #include "./attribute_decoder.h"
+//funcao especifica pro tableswitch (pode colocar em outro lugar depois)
+static int32_t ReadS4BE(const u1 *code, u4 idx) {
+    return (int32_t)((uint32_t)code[idx] << 24 |
+                     (uint32_t)code[idx + 1] << 16 |
+                     (uint32_t)code[idx + 2] << 8 |
+                     (uint32_t)code[idx + 3]);
+}
 
 static void PrintRawBytes(const u1 *bytes, u4 length) {
     for (u4 i = 0; i < length; i++) {
@@ -242,6 +249,51 @@ void ReadCode(Cp_info *cpool, Code_attribute *code_attr) {
             case 0xC7: offset = (int16_t)((code_attr->code[pc+1]<<8)|code_attr->code[pc+2]); printf("ifnonnull %d (+%d)\n", pc+offset, offset); pc+=3; break;
             // iinc
             case 0x84: printf("iinc %u by %d\n", code_attr->code[pc+1], (int8_t)code_attr->code[pc+2]); pc+=3; break;
+
+            // tableswitch: opcode, padding(0-3), default(4), low(4), high(4), jump_offsets(4 * (high-low+1))
+            // offset com sinal relativo ao endereço do opcode (pc), mas nao cuida do branching de vdd
+            case 0xAA: {
+                u4 start_pc = pc;
+                u4 pad = (4 - ((start_pc + 1) % 4)) % 4;
+                u4 idx = start_pc + 1 + pad;
+
+                if (idx + 12 > code_attr->code_length) {
+                    printf("tableswitch <truncada>\n");
+                    pc += 1;
+                    break;
+                }
+
+                int32_t default_off = ReadS4BE(code_attr->code, idx);
+                int32_t low = ReadS4BE(code_attr->code, idx + 4);
+                int32_t high = ReadS4BE(code_attr->code, idx + 8);
+                idx += 12;
+
+                printf("tableswitch low=%d high=%d default=%d (+%d)\n",
+                       (int)low, (int)high, (int)(start_pc + default_off), (int)default_off);
+
+                if (high < low) {
+                    printf("            <range invalido>\n");
+                    pc = idx;
+                    break;
+                }
+
+                u4 n = (u4)((high - low) + 1);
+                if (idx + (u4)(4 * n) > code_attr->code_length) {
+                    printf("            <jump table truncada>\n");
+                    pc = code_attr->code_length;
+                    break;
+                }
+
+                for (u4 i = 0; i < n; i++) {
+                    int32_t off = ReadS4BE(code_attr->code, idx + 4 * i);
+                    int32_t key = low + (int32_t)i;
+                    int32_t target = (int32_t)start_pc + off;
+                    printf("            %d: %d (+%d)\n", (int)key, (int)target, (int)off);
+                }
+
+                pc = idx + 4 * n;
+                break;
+            }
             // erro
             default: printf("UNKNOWN_OPCODE (0x%02X)\n", opcode); pc+=1; break;
         }
