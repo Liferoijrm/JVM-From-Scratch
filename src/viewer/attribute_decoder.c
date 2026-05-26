@@ -294,6 +294,42 @@ void ReadCode(Cp_info *cpool, Code_attribute *code_attr) {
                 pc = idx + 4 * n;
                 break;
             }
+
+            // lookupswitch
+            case 0xAB: {
+                u4 start_pc = pc;
+                u4 pad = (4 - ((start_pc + 1) % 4)) % 4;
+                u4 idx = start_pc + 1 + pad;
+
+                if (idx + 8 > code_attr->code_length) {
+                    printf("lookupswitch <truncada>\n");
+                    pc += 1;
+                    break;
+                }
+
+                int32_t default_off = ReadS4BE(code_attr->code, idx);
+                int32_t npairs = ReadS4BE(code_attr->code, idx + 4);
+                idx += 8;
+
+                printf("lookupswitch npairs=%d default=%d (+%d)\n",
+                       (int)npairs, (int)(start_pc + default_off), (int)default_off);
+
+                if (idx + (u4)(8 * npairs) > code_attr->code_length) {
+                    printf("            <pairs truncados>\n");
+                    pc = code_attr->code_length;
+                    break;
+                }
+
+                for (u4 i = 0; i < npairs; i++) {
+                    int32_t key = ReadS4BE(code_attr->code, idx + 8 * i);
+                    int32_t off = ReadS4BE(code_attr->code, idx + 8 * i + 4);
+                    int32_t target = (int32_t)start_pc + off;
+                    printf("            %d: %d (+%d)\n", (int)key, (int)target, (int)off);
+                }
+
+                pc = idx + 8 * npairs;
+                break;
+            }
             // erro
             default: printf("UNKNOWN_OPCODE (0x%02X)\n", opcode); pc+=1; break;
         }
