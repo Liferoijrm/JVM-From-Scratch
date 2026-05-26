@@ -123,7 +123,8 @@ void ReadCode(Cp_info *cpool, Code_attribute *code_attr) {
         u1 opcode = code_attr->code[pc];
         printf("        %u: ", pc);
         switch(opcode){
-            // constantes
+            // 0x00 - 0x0F
+            case 0x00: printf("nop\n"); pc += 1; break;
             case 0x01: printf("aconst_null\n"); pc += 1; break;
             case 0x02: printf("iconst_m1\n"); pc += 1; break;
             case 0x03: printf("iconst_0\n"); pc += 1; break;
@@ -132,13 +133,29 @@ void ReadCode(Cp_info *cpool, Code_attribute *code_attr) {
             case 0x06: printf("iconst_3\n"); pc += 1; break;
             case 0x07: printf("iconst_4\n"); pc += 1; break;
             case 0x08: printf("iconst_5\n"); pc += 1; break;
+            case 0x0D: printf("fconst_2\n"); pc += 1; break;
             case 0x0E: printf("dconst_0\n"); pc += 1; break;
             case 0x0F: printf("dconst_1\n"); pc += 1; break;
-            // loads
+            
+            // 0x10 - 0x1F
+            case 0x10: printf("bipush %d\n", (int8_t)code_attr->code[pc + 1]); pc += 2; break;
+            case 0x11: { int16_t sipush_val = (int16_t)((code_attr->code[pc + 1] << 8) | code_attr->code[pc + 2]); printf("sipush %d\n", sipush_val); pc += 3; break; }
+            case 0x12: printf("ldc #%u\n", code_attr->code[pc + 1]); pc += 2; break;
+            case 0x13: cp_index = (code_attr->code[pc+1]<<8)|code_attr->code[pc+2]; printf("ldc_w #%u\n", cp_index); pc+=3; break;
+            case 0x14: cp_index = (code_attr->code[pc+1]<<8)|code_attr->code[pc+2]; printf("ldc2_w #%u\n", cp_index); pc+=3; break;
+            case 0x15: printf("iload %u\n", code_attr->code[pc + 1]); pc += 2; break;
+            case 0x16: printf("lload %u\n", code_attr->code[pc + 1]); pc += 2; break;
+            case 0x17: printf("fload %u\n", code_attr->code[pc + 1]); pc += 2; break;
+            case 0x18: printf("dload %u\n", code_attr->code[pc + 1]); pc += 2; break;
+            case 0x19: printf("aload %u\n", code_attr->code[pc + 1]); pc += 2; break;
             case 0x1A: printf("iload_0\n"); pc += 1; break;
             case 0x1B: printf("iload_1\n"); pc += 1; break;
             case 0x1C: printf("iload_2\n"); pc += 1; break;
             case 0x1D: printf("iload_3\n"); pc += 1; break;
+            case 0x1E: printf("lload_0\n"); pc += 1; break;
+            
+            // 0x20 - 0x2F
+            case 0x20: printf("lload_2\n"); pc += 1; break;
             case 0x26: printf("dload_0\n"); pc += 1; break;
             case 0x27: printf("dload_1\n"); pc += 1; break;
             case 0x28: printf("dload_2\n"); pc += 1; break;
@@ -147,11 +164,26 @@ void ReadCode(Cp_info *cpool, Code_attribute *code_attr) {
             case 0x2B: printf("aload_1\n"); pc += 1; break;
             case 0x2C: printf("aload_2\n"); pc += 1; break;
             case 0x2D: printf("aload_3\n"); pc += 1; break;
-            // stores
+            case 0x2E: printf("iaload\n"); pc += 1; break;
+            
+            // 0x30 - 0x3F
+            case 0x30: printf("faload\n"); pc += 1; break;
+            case 0x31: printf("daload\n"); pc += 1; break;
+            case 0x32: printf("aaload\n"); pc += 1; break;
+            case 0x33: printf("baload\n"); pc += 1; break;
+            case 0x34: printf("caload\n"); pc += 1; break;
+            case 0x35: printf("saload\n"); pc += 1; break;
+            case 0x36: printf("istore %u\n", code_attr->code[pc + 1]); pc += 2; break;
+            case 0x37: printf("lstore %u\n", code_attr->code[pc + 1]); pc += 2; break;
+            case 0x38: printf("fstore %u\n", code_attr->code[pc + 1]); pc += 2; break;
+            case 0x39: printf("dstore %u\n", code_attr->code[pc + 1]); pc += 2; break;
+            case 0x3A: printf("astore %u\n", code_attr->code[pc + 1]); pc += 2; break;
             case 0x3B: printf("istore_0\n"); pc += 1; break;
             case 0x3C: printf("istore_1\n"); pc += 1; break;
             case 0x3D: printf("istore_2\n"); pc += 1; break;
             case 0x3E: printf("istore_3\n"); pc += 1; break;
+            
+            // 0x40 - 0x4F
             case 0x47: printf("dstore_0\n"); pc += 1; break;
             case 0x48: printf("dstore_1\n"); pc += 1; break;
             case 0x49: printf("dstore_2\n"); pc += 1; break;
@@ -160,78 +192,47 @@ void ReadCode(Cp_info *cpool, Code_attribute *code_attr) {
             case 0x4C: printf("astore_1\n"); pc += 1; break;
             case 0x4D: printf("astore_2\n"); pc += 1; break;
             case 0x4E: printf("astore_3\n"); pc += 1; break;
-            // acesso arrays
-            case 0x2E: printf("iaload\n"); pc += 1; break;
-            case 0x30: printf("faload\n"); pc += 1; break;
-            case 0x31: printf("daload\n"); pc += 1; break;
-            case 0x32: printf("aaload\n"); pc += 1; break;
-            case 0x33: printf("baload\n"); pc += 1; break;
-            case 0x34: printf("caload\n"); pc += 1; break;
-            case 0x35: printf("saload\n"); pc += 1; break;
             case 0x4F: printf("iastore\n"); pc += 1; break;
+            
+            // 0x50 - 0x5F
+            case 0x51: printf("fastore\n"); pc += 1; break;
             case 0x52: printf("dastore\n"); pc += 1; break;
             case 0x53: printf("aastore\n"); pc += 1; break;
             case 0x54: printf("bastore\n"); pc += 1; break;
             case 0x55: printf("castore\n"); pc += 1; break;
             case 0x56: printf("sastore\n"); pc += 1; break;
-            case 0x51: printf("fastore\n"); pc += 1; break;
-            case 0xBE: printf("arraylength\n"); pc += 1; break;
-            // aritmetica
-            case 0x60: printf("iadd\n"); pc += 1; break;
-            case 0x64: printf("isub\n"); pc += 1; break;
-            case 0x68: printf("imul\n"); pc += 1; break;
-            case 0x6C: printf("idiv\n"); pc += 1; break;
-            case 0x70: printf("irem\n"); pc += 1; break;
-            case 0x63: printf("dadd\n"); pc += 1; break;
-            case 0x67: printf("dsub\n"); pc += 1; break;
-            case 0x6B: printf("dmul\n"); pc += 1; break;
-            case 0x6F: printf("ddiv\n"); pc += 1; break;
-            case 0x73: printf("drem\n"); pc += 1; break;
-            // casts
+            case 0x57: printf("pop\n"); pc += 1; break;
             case 0x59: printf("dup\n"); pc += 1; break;
+            case 0x5C: printf("dup2\n"); pc += 1; break;
+            
+            // 0x60 - 0x6F
+            case 0x60: printf("iadd\n"); pc += 1; break;
+            case 0x63: printf("dadd\n"); pc += 1; break;
+            case 0x64: printf("isub\n"); pc += 1; break;
+            case 0x65: printf("lsub\n"); pc += 1; break;
+            case 0x67: printf("dsub\n"); pc += 1; break;
+            case 0x68: printf("imul\n"); pc += 1; break;
+            case 0x6B: printf("dmul\n"); pc += 1; break;
+            case 0x6C: printf("idiv\n"); pc += 1; break;
+            case 0x6F: printf("ddiv\n"); pc += 1; break;
+            
+            // 0x70 - 0x7F
+            case 0x70: printf("irem\n"); pc += 1; break;
+            case 0x73: printf("drem\n"); pc += 1; break;
+            case 0x77: printf("dneg\n"); pc += 1; break;
+            
+            // 0x80 - 0x8F
+            case 0x84: printf("iinc %u by %d\n", code_attr->code[pc+1], (int8_t)code_attr->code[pc+2]); pc+=3; break;
+            case 0x86: printf("i2f\n"); pc += 1; break;
             case 0x87: printf("i2d\n"); pc += 1; break;
             case 0x8D: printf("f2d\n"); pc += 1; break;
             case 0x8E: printf("d2i\n"); pc += 1; break;
-            // retornos
-            case 0xAC: printf("ireturn\n"); pc += 1; break;
-            case 0xAF: printf("dreturn\n"); pc += 1; break;
-            case 0xB0: printf("areturn\n"); pc += 1; break;
-            case 0xB1: printf("return\n"); pc += 1; break;
-            // bipush
-            case 0x10: printf("bipush %d\n", (int8_t)code_attr->code[pc + 1]); pc += 2; break;
-            // ldc pequeno
-            case 0x12: printf("ldc #%u\n", code_attr->code[pc + 1]); pc += 2; break;
-            // loads c/ 1 arg
-            case 0x15: printf("iload %u\n", code_attr->code[pc + 1]); pc += 2; break;
-            case 0x16: printf("lload %u\n", code_attr->code[pc + 1]); pc += 2; break;
-            case 0x17: printf("fload %u\n", code_attr->code[pc + 1]); pc += 2; break;
-            case 0x18: printf("dload %u\n", code_attr->code[pc + 1]); pc += 2; break;
-            case 0x19: printf("aload %u\n", code_attr->code[pc + 1]); pc += 2; break;
-            //stores c/ 1 arg
-            case 0x36: printf("istore %u\n", code_attr->code[pc + 1]); pc += 2; break;
-            case 0x37: printf("lstore %u\n", code_attr->code[pc + 1]); pc += 2; break;
-            case 0x38: printf("fstore %u\n", code_attr->code[pc + 1]); pc += 2; break;
-            case 0x39: printf("dstore %u\n", code_attr->code[pc + 1]); pc += 2; break;
-            case 0x3A: printf("astore %u\n", code_attr->code[pc + 1]); pc += 2; break;
-            // newarray
-            case 0xBC: PrintNewArray(code_attr->code[pc + 1]); pc += 2; break;
-            // ldc grande
-            case 0x13: cp_index = (code_attr->code[pc+1]<<8)|code_attr->code[pc+2]; printf("ldc_w #%u\n", cp_index); pc+=3; break;
-            case 0x14: cp_index = (code_attr->code[pc+1]<<8)|code_attr->code[pc+2]; printf("ldc2_w #%u\n", cp_index); pc+=3; break;
-            // acesso fields
-            case 0xB2: cp_index = (code_attr->code[pc+1]<<8)|code_attr->code[pc+2]; printf("getstatic #%u ", cp_index); PrintCPoolItem(cpool, cp_index); printf("\n"); pc+=3; break;
-            case 0xB3: cp_index = (code_attr->code[pc+1]<<8)|code_attr->code[pc+2]; printf("putstatic #%u ", cp_index); PrintCPoolItem(cpool, cp_index); printf("\n"); pc+=3; break;
-            case 0xB4: cp_index = (code_attr->code[pc+1]<<8)|code_attr->code[pc+2]; printf("getfield #%u ", cp_index); PrintCPoolItem(cpool, cp_index); printf("\n"); pc+=3; break;
-            case 0xB5: cp_index = (code_attr->code[pc+1]<<8)|code_attr->code[pc+2]; printf("putfield #%u ", cp_index); PrintCPoolItem(cpool, cp_index); printf("\n"); pc+=3; break;
-            // invocação metodos
-            case 0xB6: cp_index = (code_attr->code[pc+1]<<8)|code_attr->code[pc+2]; printf("invokevirtual #%u ", cp_index); PrintCPoolItem(cpool, cp_index); printf("\n"); pc+=3; break;
-            case 0xB7: cp_index = (code_attr->code[pc+1]<<8)|code_attr->code[pc+2]; printf("invokespecial #%u ", cp_index); PrintCPoolItem(cpool, cp_index); printf("\n"); pc+=3; break;
-            case 0xB8: cp_index = (code_attr->code[pc+1]<<8)|code_attr->code[pc+2]; printf("invokestatic #%u ", cp_index); PrintCPoolItem(cpool, cp_index); printf("\n"); pc+=3; break;
-            // criação objetos
-            case 0xBB: cp_index = (code_attr->code[pc+1]<<8)|code_attr->code[pc+2]; printf("new #%u ", cp_index); PrintCPoolItem(cpool, cp_index); printf("\n"); pc+=3; break;
-            case 0xBD: cp_index = (code_attr->code[pc+1]<<8)|code_attr->code[pc+2]; printf("anewarray #%u ", cp_index); PrintCPoolItem(cpool, cp_index); printf("\n"); pc+=3; break;
-            case 0xC0: cp_index = (code_attr->code[pc+1]<<8)|code_attr->code[pc+2]; printf("checkcast #%u ", cp_index); PrintCPoolItem(cpool, cp_index); printf("\n"); pc+=3; break;
-            // jumps
+            case 0x8F: printf("d2l\n"); pc += 1; break;
+            
+            // 0x90 - 0x9F
+            case 0x90: printf("d2f\n"); pc += 1; break;
+            case 0x97: printf("dcmpl\n"); pc += 1; break;
+            case 0x98: printf("dcmpg\n"); pc += 1; break;
             case 0x99: offset = (int16_t)((code_attr->code[pc+1]<<8)|code_attr->code[pc+2]); printf("ifeq %d (+%d)\n", pc+offset, offset); pc+=3; break;
             case 0x9A: offset = (int16_t)((code_attr->code[pc+1]<<8)|code_attr->code[pc+2]); printf("ifne %d (+%d)\n", pc+offset, offset); pc+=3; break;
             case 0x9B: offset = (int16_t)((code_attr->code[pc+1]<<8)|code_attr->code[pc+2]); printf("iflt %d (+%d)\n", pc+offset, offset); pc+=3; break;
@@ -239,19 +240,14 @@ void ReadCode(Cp_info *cpool, Code_attribute *code_attr) {
             case 0x9D: offset = (int16_t)((code_attr->code[pc+1]<<8)|code_attr->code[pc+2]); printf("ifgt %d (+%d)\n", pc+offset, offset); pc+=3; break;
             case 0x9E: offset = (int16_t)((code_attr->code[pc+1]<<8)|code_attr->code[pc+2]); printf("ifle %d (+%d)\n", pc+offset, offset); pc+=3; break;
             case 0x9F: offset = (int16_t)((code_attr->code[pc+1]<<8)|code_attr->code[pc+2]); printf("if_icmpeq %d (+%d)\n", pc+offset, offset); pc+=3; break;
+            
+            // 0xA0 - 0xAF
             case 0xA0: offset = (int16_t)((code_attr->code[pc+1]<<8)|code_attr->code[pc+2]); printf("if_icmpne %d (+%d)\n", pc+offset, offset); pc+=3; break;
             case 0xA1: offset = (int16_t)((code_attr->code[pc+1]<<8)|code_attr->code[pc+2]); printf("if_icmplt %d (+%d)\n", pc+offset, offset); pc+=3; break;
             case 0xA2: offset = (int16_t)((code_attr->code[pc+1]<<8)|code_attr->code[pc+2]); printf("if_icmpge %d (+%d)\n", pc+offset, offset); pc+=3; break;
             case 0xA3: offset = (int16_t)((code_attr->code[pc+1]<<8)|code_attr->code[pc+2]); printf("if_icmpgt %d (+%d)\n", pc+offset, offset); pc+=3; break;
             case 0xA4: offset = (int16_t)((code_attr->code[pc+1]<<8)|code_attr->code[pc+2]); printf("if_icmple %d (+%d)\n", pc+offset, offset); pc+=3; break;
             case 0xA7: offset = (int16_t)((code_attr->code[pc+1]<<8)|code_attr->code[pc+2]); printf("goto %d (+%d)\n", pc+offset, offset); pc+=3; break;
-            case 0xC6: offset = (int16_t)((code_attr->code[pc+1]<<8)|code_attr->code[pc+2]); printf("ifnull %d (+%d)\n", pc+offset, offset); pc+=3; break;
-            case 0xC7: offset = (int16_t)((code_attr->code[pc+1]<<8)|code_attr->code[pc+2]); printf("ifnonnull %d (+%d)\n", pc+offset, offset); pc+=3; break;
-            // iinc
-            case 0x84: printf("iinc %u by %d\n", code_attr->code[pc+1], (int8_t)code_attr->code[pc+2]); pc+=3; break;
-
-            // tableswitch: opcode, padding(0-3), default(4), low(4), high(4), jump_offsets(4 * (high-low+1))
-            // offset com sinal relativo ao endereço do opcode (pc), mas nao cuida do branching de vdd
             case 0xAA: {
                 u4 start_pc = pc;
                 u4 pad = (4 - ((start_pc + 1) % 4)) % 4;
@@ -294,8 +290,6 @@ void ReadCode(Cp_info *cpool, Code_attribute *code_attr) {
                 pc = idx + 4 * n;
                 break;
             }
-
-            // lookupswitch
             case 0xAB: {
                 u4 start_pc = pc;
                 u4 pad = (4 - ((start_pc + 1) % 4)) % 4;
@@ -330,15 +324,36 @@ void ReadCode(Cp_info *cpool, Code_attribute *code_attr) {
                 pc = idx + 8 * npairs;
                 break;
             }
+            case 0xAC: printf("ireturn\n"); pc += 1; break;
+            case 0xAD: printf("lreturn\n"); pc += 1; break;
+            case 0xAF: printf("dreturn\n"); pc += 1; break;
+            
+            // 0xB0 - 0xBF
+            case 0xB0: printf("areturn\n"); pc += 1; break;
+            case 0xB1: printf("return\n"); pc += 1; break;
+            case 0xB2: cp_index = (code_attr->code[pc+1]<<8)|code_attr->code[pc+2]; printf("getstatic #%u ", cp_index); PrintCPoolItem(cpool, cp_index); printf("\n"); pc+=3; break;
+            case 0xB3: cp_index = (code_attr->code[pc+1]<<8)|code_attr->code[pc+2]; printf("putstatic #%u ", cp_index); PrintCPoolItem(cpool, cp_index); printf("\n"); pc+=3; break;
+            case 0xB4: cp_index = (code_attr->code[pc+1]<<8)|code_attr->code[pc+2]; printf("getfield #%u ", cp_index); PrintCPoolItem(cpool, cp_index); printf("\n"); pc+=3; break;
+            case 0xB5: cp_index = (code_attr->code[pc+1]<<8)|code_attr->code[pc+2]; printf("putfield #%u ", cp_index); PrintCPoolItem(cpool, cp_index); printf("\n"); pc+=3; break;
+            case 0xB6: cp_index = (code_attr->code[pc+1]<<8)|code_attr->code[pc+2]; printf("invokevirtual #%u ", cp_index); PrintCPoolItem(cpool, cp_index); printf("\n"); pc+=3; break;
+            case 0xB7: cp_index = (code_attr->code[pc+1]<<8)|code_attr->code[pc+2]; printf("invokespecial #%u ", cp_index); PrintCPoolItem(cpool, cp_index); printf("\n"); pc+=3; break;
+            case 0xB8: cp_index = (code_attr->code[pc+1]<<8)|code_attr->code[pc+2]; printf("invokestatic #%u ", cp_index); PrintCPoolItem(cpool, cp_index); printf("\n"); pc+=3; break;
+            case 0xB9: { cp_index = (code_attr->code[pc + 1] << 8) | code_attr->code[pc + 2]; u1 count = code_attr->code[pc + 3]; printf("invokeinterface #%u count %u ", cp_index, count); PrintCPoolItem(cpool, cp_index); printf("\n"); pc += 5; break; }
+            case 0xBB: cp_index = (code_attr->code[pc+1]<<8)|code_attr->code[pc+2]; printf("new #%u ", cp_index); PrintCPoolItem(cpool, cp_index); printf("\n"); pc+=3; break;
+            case 0xBC: PrintNewArray(code_attr->code[pc + 1]); pc += 2; break;
+            case 0xBD: cp_index = (code_attr->code[pc+1]<<8)|code_attr->code[pc+2]; printf("anewarray #%u ", cp_index); PrintCPoolItem(cpool, cp_index); printf("\n"); pc+=3; break;
+            case 0xBE: printf("arraylength\n"); pc += 1; break;
+            
+            // 0xC0 - 0xCF
+            case 0xC0: cp_index = (code_attr->code[pc+1]<<8)|code_attr->code[pc+2]; printf("checkcast #%u ", cp_index); PrintCPoolItem(cpool, cp_index); printf("\n"); pc+=3; break;
+            case 0xC5: { cp_index = (code_attr->code[pc + 1] << 8) | code_attr->code[pc + 2]; u1 dimensions = code_attr->code[pc + 3]; printf("multianewarray #%u dim %u ", cp_index, dimensions); PrintCPoolItem(cpool, cp_index); printf("\n"); pc += 4; break; }
+            case 0xC6: offset = (int16_t)((code_attr->code[pc+1]<<8)|code_attr->code[pc+2]); printf("ifnull %d (+%d)\n", pc+offset, offset); pc+=3; break;
+            case 0xC7: offset = (int16_t)((code_attr->code[pc+1]<<8)|code_attr->code[pc+2]); printf("ifnonnull %d (+%d)\n", pc+offset, offset); pc+=3; break;
+            
             // erro
             default: printf("UNKNOWN_OPCODE (0x%02X)\n", opcode); pc+=1; break;
         }
     }
-    // for(u4 i = 0; i < code_attr->code_length; i++){
-    //     u1 opcode = code_attr->code[i];
-    //     printf("%02X ", opcode);
-    // }
-    // printf("\n");
 
     // exception table
     if(code_attr->exception_table_length > 0) {
