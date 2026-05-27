@@ -9,18 +9,6 @@ Compile the project with:
 gcc src/main.c src/class_loader/loading/classparser.c src/viewer/classviewer.c src/viewer/attribute_decoder.c src/viewer/printer.c -I src/class_loader/loading -I src/viewer -std=c99 -o test
 ```
 
-Alternatively, use the makefile or build.bat on Windows:
-```
-mingw32-make -f Makefile.win all
-mingw32-make -f Makefile.win clean
-mingw32-make -f Makefile.win debug
-```
-```
-build.bat all
-build.bat clean
-build.bat debug
-```
-
 ## Run
 
 Execute the program by passing a `.class` file:
