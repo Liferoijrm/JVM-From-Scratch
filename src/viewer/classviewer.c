@@ -104,9 +104,9 @@ CP: printf("constant_pool_count: %u\n======\n", cf->constant_pool_count);
 
     printf("access_flags: %s\n======\n", DecodeAccessFlags(cf->access_flags));
     c_index = cf->constant_pool[cf->this_class].info.Class.name_index;
-    printf("this_class: %s\n======\n", cf->constant_pool[c_index ].info.Utf8.bytes);
+    printf("this_class: #%d %s\n======\n", c_index ,cf->constant_pool[c_index ].info.Utf8.bytes);
     c_index = cf->constant_pool[cf->super_class].info.Class.name_index;
-    printf("super_class: %s\n======\n", cf->constant_pool[c_index].info.Utf8.bytes);
+    printf("super_class: #%d %s\n======\n", c_index ,cf->constant_pool[c_index].info.Utf8.bytes);
 
     printf("interfaces_count: %u\n======\n", cf->interfaces_count);
 
