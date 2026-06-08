@@ -1,13 +1,8 @@
-#ifndef CLASSPARSE_H
-#define CLASSPARSE_H
+#ifndef CLASSPARSER_H
+#define CLASSPARSER_H
 
-#include <stdint.h>
 #include <stdio.h>
-
-// Tamanhos fixos
-#define u1 uint8_t
-#define u2 uint16_t
-#define u4 uint32_t
+#include "../utils/utils.h"
 
 // Tags para cp_info
 #define CONSTANT_Invalid 0
@@ -25,25 +20,6 @@
 #define CONSTANT_MethodHandle 15
 #define CONSTANT_MethodType 16
 #define CONSTANT_InvokeDynamic 18
-
-// Flags de acesso (lembrete)
-/*
-#define ACC_PUBLIC 0x0001
-#define ACC_PRIVATE 0x0002
-#define ACC_PROTECTED 0x0004
-#define ACC_STATIC 0x0008
-#define ACC_FINAL 0x0010
-#define ACC_SUPER 0x0020
-#define ACC_BRIDGE 0x0040
-#define ACC_VARARGS 0x0080
-#define ACC_NATIVE 0x0100
-#define ACC_INTERFACE 0x0200
-#define ACC_ABSTRACT 0x0400
-#define ACC_STRICT 0x0800
-#define ACC_SYNTHETIC 0x1000
-#define ACC_ANNOTATION 0x2000
-#define ACC_ENUM 0x4000
-*/
 
 // forward declarations para ClassFile
 typedef struct Cp_info Cp_info;
