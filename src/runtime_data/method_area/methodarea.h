@@ -6,6 +6,12 @@
 #include <string.h>
 #include "../../class_loader/loading/classparser.h"
 
+#define METHOD_AREA_OK 0
+#define METHOD_AREA_NULL_POINTER 1
+#define METHOD_AREA_ALLOC_ERROR 2 
+#define METHOD_AREA_INVALID_CLASS 3
+#define METHOD_AREA_DUPLICATE_CLASS 4
+
 typedef struct MethodAreaEntry {
 	char *class_name;
 	ClassFile *class_file;
@@ -21,6 +27,7 @@ MethodArea *CreateMethodArea(void);
 
 void DestroyMethodArea(MethodArea *method_area);
 
+//checkar códigos de erro quando utilizar
 u1 MethodAreaAddClass(MethodArea *method_area, ClassFile *class_file);
 
 ClassFile *MethodAreaFindClass(const MethodArea *method_area, const char *class_name);
