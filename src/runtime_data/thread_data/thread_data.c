@@ -23,7 +23,7 @@ void freeFrame(void* frame_ptr){
     Frame* frame = (Frame*) frame_ptr;
     if(frame != NULL){
         free(frame->local_variables);
-        free(frame->operand_stack);
+        freeStack(frame->operand_stack);
         free(frame);
     }
 }
