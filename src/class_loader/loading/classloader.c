@@ -45,7 +45,7 @@ ClassFile* LoadClass(MethodArea *ma, char *class_name) {
     // Carregamento Recursivo da Superclasse
     // O índice 0 indica que não tem superclasse (java.lang.Object)
     if (cf->super_class != 0) {
-        char *super_name = GetClassNameFromIndex(cf, cf->super_class);
+        char *super_name = GetClassName(cf, cf->super_class);
         if (super_name != NULL) {
             ClassFile *super_cf = LoadClass(ma, super_name);
             if (super_cf == NULL) {
@@ -58,7 +58,7 @@ ClassFile* LoadClass(MethodArea *ma, char *class_name) {
     // Carregamento Recursivo das Interfaces
     for (u2 i = 0; i < cf->interfaces_count; i++) {
         u2 interface_cp_index = cf->interfaces[i];
-        char *interface_name = GetClassNameFromIndex(cf, interface_cp_index);
+        char *interface_name = GetClassName(cf, cf->interfaces[i]);
         
         if (interface_name != NULL) {
             ClassFile *interface_cf = LoadClass(ma, interface_name);

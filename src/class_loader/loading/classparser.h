@@ -248,4 +248,7 @@ void Log_error(u1 error_flag, char *class_name);
 // interpretação dos access_flags
 char *Read_flags(u2 access_flag);
 
+// extrai o nome de uma classe em formato string a partir do CP
+char* GetClassName(ClassFile *cf, u2 class_index);
+
 #endif

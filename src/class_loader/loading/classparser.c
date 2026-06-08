@@ -425,3 +425,16 @@ void Log_error(u1 error_flag, char *class_name){
 
     fprintf(stderr, "Aborting execution.\n\n");
 }
+
+char* GetClassName(ClassFile *cf, u2 class_index) {
+    // Validação de segurança básica (ausência de superclasse)
+    if (!cf || class_index == 0) {
+        return NULL; 
+    }
+
+    u2 name_index = cf->constant_pool[class_index].info.Class.name_index;
+
+    char *class_name = (char*) cf->constant_pool[name_index].info.Utf8.bytes;
+
+    return class_name;
+}
