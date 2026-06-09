@@ -1,5 +1,5 @@
 CC            ?= gcc
-CFLAGS        ?= -Wall -Wextra -std=c99 -I $(SRC_DIR)/class_loader/loading
+CFLAGS        ?= -Wall -Wextra -std=c99 -I src -I src/class_loader/loading -I src/viewer -I src/utils -I src/runtime_data/method_area
 DEBUG_FLAGS   ?= -g -fsanitize=address,undefined
 SRC_DIR       := src
 OBJ_DIR       := build
@@ -26,37 +26,34 @@ OBJS := $(patsubst $(SRC_DIR)/%.c,$(OBJ_DIR)/%.o,$(SRCS))
 
 # Definir RM de forma compatível
 ifeq ($(OS),Windows_NT)
-
 RM = del /Q /F
 FIX_PATH = $(subst /,\\,$1)
 MKDIR = if not exist $(subst /,\\,$1) mkdir $(subst /,\\,$1)
 else
-
 RM = rm -rf
 FIX_PATH = $1
 MKDIR = mkdir -p $1
 endif
 
-# Compila recursivamente todos os arquivos .c dentro de `src`
-
-.PHONY: all clean
+.PHONY: all clean debug
 
 all: $(TARGET)
+
 $(TARGET): $(OBJS) | $(BIN_DIR)
 	$(CC) $(CFLAGS) $^ -o $@
+
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c | $(OBJ_DIR)
 	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -c $< -o $@
+
 $(OBJ_DIR):
 	$(call MKDIR,$(OBJ_DIR))
+
 $(BIN_DIR):
 	$(call MKDIR,$(BIN_DIR))
+
 clean:
 	$(RM) $(OBJ_DIR) $(BIN_DIR) $(TARGET)
+
 debug: CFLAGS += $(DEBUG_FLAGS)
 debug: clean all
-
-# Para compilar usando o Makfile:
-# make: compila o projeto e gera o executável
-# make clean: remove os arquivos objeto e o executável gerados
-# make debug: compila o projeto com as flags de depuração e sanitização
