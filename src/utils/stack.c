@@ -1,4 +1,7 @@
 #include "stack.h"
+#include <stdlib.h>
+#include <string.h>
+#include "utils.h"
 
 Stack* createStack(u4 max_size, size_t type_size, void (*freeContent)(void*)){
     Stack* stack = (Stack*) malloc(sizeof(Stack));

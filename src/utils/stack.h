@@ -4,6 +4,11 @@
 #include <stdlib.h>
 #include "../utils/utils.h"
 
+typedef struct StackNode{
+    void* content;
+    struct StackNode* previous_node;
+} StackNode;
+
 typedef struct Stack{
     size_t type_size;
     u4 max_size;
@@ -12,10 +17,6 @@ typedef struct Stack{
     void (*freeContent)(void*); // ponteiro para funcao que da free no conteudo
 } Stack;
 
-typedef struct StackNode{
-    void* content;
-    struct StackNode* previous_node;
-} StackNode;
 
 Stack* createStack(u4 max_size, size_t type_size, void (*freeContent)(void*));
 
