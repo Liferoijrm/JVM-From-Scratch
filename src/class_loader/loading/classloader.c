@@ -3,15 +3,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-// Função auxiliar para extrair nomes do Constant Pool a partir de um índice de classe
-static char* GetClassNameFromIndex(ClassFile *cf, u2 class_index) {
-    if (class_index == 0) return NULL;
-    
-    u2 name_index = cf->constant_pool[class_index].info.Class.name_index;
-    
-    return (char*) cf->constant_pool[name_index].info.Utf8.bytes;
-}
-
 ClassFile* LoadClass(MethodArea *ma, char *class_name) {
     if (ma == NULL || class_name == NULL) {
         return NULL;
