@@ -8,15 +8,50 @@ JVMThread* createThread(u4 stack_max_size){
     return thread;
 }
 
-// esses TODO podem ficar no interpreter tb
+// cria e empilha um frame na thread atual
+void pushFrame(JVMThread* thread, ClassFile* cf, Method_info* method, u4 return_pc){
+    if(!thread || !cf || !method) return;
 
-// TODO: funcao de criar frames (quando definir a method area e as instrucoes do interpreter que vao criar frames)
-//      - Ver maxlocals, maxstack
-//      - Parametros e valores na stack de 64 bits em 2 slots devem ser gerenciados
+    Frame frame;
+    frame.method = method;
+    frame.class_file = cf;
+    frame.return_pc = return_pc;
 
-// TODO: funcao de dar pop/push no frame
-//      - salvar return pc ao mudar de frame
-//      - fazer as alteracoes corretas
+    u2 max_stack = 0;
+    u2 max_locals = 0;
+
+    // busca no atributo code os tamanhos de max_stack e max_locals
+    for(u2 i = 0; i < method->attributes_count; i++){
+        u2 name_index = method->attributes[i].attribute_name_index;
+        char* attr_name = (char*) cf->constant_pool[name_index].info.Utf8.bytes;
+        if(!strcmp(attr_name, "Code")){
+            u1* info = method->attributes[i].info;
+            max_stack  = (info[0] << 8) | info[1];
+            max_locals = (info[2] << 8) | info[3];
+            break;
+        }
+    }
+
+    //TODO: juntar 2 slots p/ 64bits futuramente no interpretador creio eu
+    // aloca variaveis locais e pilha de operandos
+    (max_locals>0)? frame.local_variables = (u4*) calloc(max_locals, sizeof(u4)) : frame.local_variables = NULL;
+    frame.operand_stack = createStack(max_stack, sizeof(u4), free);
+
+    push(thread->frame_stack, &frame);
+
+    // reseta o pc da thread para ler um novo metodo
+    thread->pc = 0;
+}
+
+// desempilha um frame da thread atual e retorna o pc para ela
+void popFrame(JVMThread* thread){
+    if(!thread || isEmpty(thread->frame_stack)) return;
+
+    // resgata o topo para devolver o pc da thread
+    Frame* current_frame = (Frame*) getTop(thread->frame_stack);
+    thread->pc = current_frame->return_pc;
+    pop(thread->frame_stack);
+}
 
 // funcao de free do frame
 void freeFrame(void* frame_ptr){
