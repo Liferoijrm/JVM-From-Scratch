@@ -55,6 +55,22 @@ static u2 CountDeclaredInstanceFields(ClassFile *class_file) {
 	return count;
 }
 
+static u2 CountDeclaredStaticFields(ClassFile *class_file) {
+	u2 count = 0;
+
+	if(!class_file || !class_file->fields) {
+		return 0;
+	}
+
+	for(u2 i = 0; i < class_file->fields_count; i++) {
+		if(class_file->fields[i].access_flags & 0x0008) {
+			count++;
+		}
+	}
+
+	return count;
+}
+
 static u1 EnsureCapacity(MethodArea* method_area, u2 minimum_capacity) {
 	MethodAreaEntry* new_entries;
 	u2 new_capacity;
@@ -80,6 +96,8 @@ static u1 EnsureCapacity(MethodArea* method_area, u2 minimum_capacity) {
 	for(u2 i = method_area->capacity; i < new_capacity; i++) {
 		new_entries[i].class_name = NULL;
 		new_entries[i].class_file = NULL;
+		new_entries[i].static_fields = NULL;
+		new_entries[i].static_field_count = 0;
 	}
 
 	method_area->entries = new_entries;
@@ -108,6 +126,8 @@ void DestroyMethodArea(MethodArea* method_area) {
 			if (method_area->entries[i].class_name) {
 				free(method_area->entries[i].class_name);
 			}
+
+			free(method_area->entries[i].static_fields);
 
 			if (method_area->entries[i].class_file) {
 				FreeClass(method_area->entries[i].class_file);
@@ -150,9 +170,43 @@ u1 MethodAreaAddClass(MethodArea* method_area, ClassFile* class_file) {
 
 	method_area->entries[method_area->count].class_name = class_name_copy;
 	method_area->entries[method_area->count].class_file = class_file;
+	method_area->entries[method_area->count].static_fields = NULL;
+	method_area->entries[method_area->count].static_field_count = 0;
 	method_area->count++;
 
-	return METHOD_AREA_OK;
+	status = MethodAreaPrepareClass(method_area, class_file);
+	return status;
+}
+
+u1 MethodAreaPrepareClass(MethodArea *method_area, ClassFile *class_file) {
+	const char *class_name;
+	u2 static_count;
+
+	if(!method_area || !class_file) {
+		return METHOD_AREA_NULL_POINTER;
+	}
+
+	class_name = GetClassNameFromClassFile(class_file);
+	if(!class_name) {
+		return METHOD_AREA_INVALID_CLASS;
+	}
+
+	static_count = MethodAreaCountStaticFields(method_area, class_file);
+
+	for(u2 i = 0; i < method_area->count; i++) {
+		if(method_area->entries[i].class_file == class_file) {
+			method_area->entries[i].static_field_count = static_count;
+			if(static_count > 0) {
+				method_area->entries[i].static_fields = (u4 *)calloc(static_count, sizeof(u4));
+				if(!method_area->entries[i].static_fields) {
+					return METHOD_AREA_ALLOC_ERROR;
+				}
+			}
+			return METHOD_AREA_OK;
+		}
+	}
+
+	return METHOD_AREA_INVALID_CLASS;
 }
 
 ClassFile *MethodAreaFindClass(const MethodArea* method_area, const char* class_name) {
@@ -197,4 +251,26 @@ u2 MethodAreaCountInstanceFields(const MethodArea *method_area, ClassFile *class
 	}
 
 	return (u2)(count + MethodAreaCountInstanceFields(method_area, super_class_file));
+}
+
+u2 MethodAreaCountStaticFields(const MethodArea *method_area, ClassFile *class_file) {
+	u2 count = CountDeclaredStaticFields(class_file);
+	char *super_name;
+	ClassFile *super_class_file;
+
+	if(!method_area || !class_file || class_file->super_class == 0) {
+		return count;
+	}
+
+	super_name = GetClassName(class_file, class_file->super_class);
+	if(!super_name) {
+		return count;
+	}
+
+	super_class_file = MethodAreaFindClass(method_area, super_name);
+	if(!super_class_file || super_class_file == class_file) {
+		return count;
+	}
+
+	return (u2)(count + MethodAreaCountStaticFields(method_area, super_class_file));
 }

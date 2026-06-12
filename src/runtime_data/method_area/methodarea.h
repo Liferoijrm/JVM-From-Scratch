@@ -15,6 +15,8 @@
 typedef struct MethodAreaEntry {
 	char *class_name;
 	ClassFile *class_file;
+	u4 *static_fields;
+	u2 static_field_count;
 } MethodAreaEntry;
 
 typedef struct MethodArea {
@@ -27,13 +29,16 @@ MethodArea *CreateMethodArea(void);
 
 void DestroyMethodArea(MethodArea *method_area);
 
-//checkar códigos de erro quando utilizar
 u1 MethodAreaAddClass(MethodArea *method_area, ClassFile *class_file);
+
+u1 MethodAreaPrepareClass(MethodArea *method_area, ClassFile *class_file);
 
 ClassFile *MethodAreaFindClass(const MethodArea *method_area, const char *class_name);
 
 u2 MethodAreaCount(const MethodArea *method_area);
 
 u2 MethodAreaCountInstanceFields(const MethodArea *method_area, ClassFile *class_file);
+
+u2 MethodAreaCountStaticFields(const MethodArea *method_area, ClassFile *class_file);
 
 #endif
