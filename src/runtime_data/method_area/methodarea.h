@@ -34,4 +34,6 @@ ClassFile *MethodAreaFindClass(const MethodArea *method_area, const char *class_
 
 u2 MethodAreaCount(const MethodArea *method_area);
 
+u2 MethodAreaCountInstanceFields(const MethodArea *method_area, ClassFile *class_file);
+
 #endif

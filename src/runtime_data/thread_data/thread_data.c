@@ -1,4 +1,5 @@
 #include "thread_data.h"
+#include <string.h>
 
 // funcao de inicializar a thread (com PC e stack ja criados)
 JVMThread* createThread(u4 stack_max_size){
@@ -34,7 +35,11 @@ void pushFrame(JVMThread* thread, ClassFile* cf, Method_info* method, u4 return_
 
     //TODO: juntar 2 slots p/ 64bits futuramente no interpretador creio eu
     // aloca variaveis locais e pilha de operandos
-    (max_locals>0)? frame.local_variables = (u4*) calloc(max_locals, sizeof(u4)) : frame.local_variables = NULL;
+    if(max_locals > 0){
+        frame.local_variables = (u4*) calloc(max_locals, sizeof(u4));
+    } else {
+        frame.local_variables = NULL;
+    }
     frame.operand_stack = createStack(max_stack, sizeof(u4), free);
 
     push(thread->frame_stack, &frame);

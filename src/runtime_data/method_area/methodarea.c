@@ -39,6 +39,22 @@ static const char* GetClassNameFromClassFile(const ClassFile* class_file) {
 	return (const char*)class_file->constant_pool[class_name_index].info.Utf8.bytes;
 }
 
+static u2 CountDeclaredInstanceFields(ClassFile *class_file) {
+	u2 count = 0;
+
+	if(!class_file || !class_file->fields) {
+		return 0;
+	}
+
+	for(u2 i = 0; i < class_file->fields_count; i++) {
+		if((class_file->fields[i].access_flags & 0x0008) == 0) {
+			count++;
+		}
+	}
+
+	return count;
+}
+
 static u1 EnsureCapacity(MethodArea* method_area, u2 minimum_capacity) {
 	MethodAreaEntry* new_entries;
 	u2 new_capacity;
@@ -159,4 +175,26 @@ u2 MethodAreaCount(const MethodArea* method_area) {
 	}
 
 	return method_area->count;
+}
+
+u2 MethodAreaCountInstanceFields(const MethodArea *method_area, ClassFile *class_file) {
+	u2 count = CountDeclaredInstanceFields(class_file);
+	char *super_name;
+	ClassFile *super_class_file;
+
+	if(!method_area || !class_file || class_file->super_class == 0) {
+		return count;
+	}
+
+	super_name = GetClassName(class_file, class_file->super_class);
+	if(!super_name) {
+		return count;
+	}
+
+	super_class_file = MethodAreaFindClass(method_area, super_name);
+	if(!super_class_file || super_class_file == class_file) {
+		return count;
+	}
+
+	return (u2)(count + MethodAreaCountInstanceFields(method_area, super_class_file));
 }
