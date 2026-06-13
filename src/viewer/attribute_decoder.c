@@ -133,6 +133,10 @@ void ReadCode(Cp_info *cpool, Code_attribute *code_attr) {
             case 0x06: printf("iconst_3\n"); pc += 1; break;
             case 0x07: printf("iconst_4\n"); pc += 1; break;
             case 0x08: printf("iconst_5\n"); pc += 1; break;
+            case 0x09: printf("lconst_0\n"); pc += 1; break;
+            case 0x0A: printf("lconst_1\n"); pc += 1; break;
+            case 0x0B: printf("fconst_0\n"); pc += 1; break;
+            case 0x0C: printf("fconst_1\n"); pc += 1; break;
             case 0x0D: printf("fconst_2\n"); pc += 1; break;
             case 0x0E: printf("dconst_0\n"); pc += 1; break;
             case 0x0F: printf("dconst_1\n"); pc += 1; break;
@@ -153,9 +157,15 @@ void ReadCode(Cp_info *cpool, Code_attribute *code_attr) {
             case 0x1C: printf("iload_2\n"); pc += 1; break;
             case 0x1D: printf("iload_3\n"); pc += 1; break;
             case 0x1E: printf("lload_0\n"); pc += 1; break;
+            case 0x1F: printf("lload_1\n"); pc += 1; break;
             
             // 0x20 - 0x2F
             case 0x20: printf("lload_2\n"); pc += 1; break;
+            case 0x21: printf("lload_3\n"); pc += 1; break;
+            case 0x22: printf("fload_0\n"); pc += 1; break;
+            case 0x23: printf("fload_1\n"); pc += 1; break;
+            case 0x24: printf("fload_2\n"); pc += 1; break;
+            case 0x25: printf("fload_3\n"); pc += 1; break;
             case 0x26: printf("dload_0\n"); pc += 1; break;
             case 0x27: printf("dload_1\n"); pc += 1; break;
             case 0x28: printf("dload_2\n"); pc += 1; break;
@@ -165,6 +175,7 @@ void ReadCode(Cp_info *cpool, Code_attribute *code_attr) {
             case 0x2C: printf("aload_2\n"); pc += 1; break;
             case 0x2D: printf("aload_3\n"); pc += 1; break;
             case 0x2E: printf("iaload\n"); pc += 1; break;
+            case 0x2F: printf("laload\n"); pc += 1; break;
             
             // 0x30 - 0x3F
             case 0x30: printf("faload\n"); pc += 1; break;
@@ -182,8 +193,16 @@ void ReadCode(Cp_info *cpool, Code_attribute *code_attr) {
             case 0x3C: printf("istore_1\n"); pc += 1; break;
             case 0x3D: printf("istore_2\n"); pc += 1; break;
             case 0x3E: printf("istore_3\n"); pc += 1; break;
+            case 0x3F: printf("lstore_0\n"); pc += 1; break;
             
             // 0x40 - 0x4F
+            case 0x40: printf("lstore_1\n"); pc += 1; break;
+            case 0x41: printf("lstore_2\n"); pc += 1; break;
+            case 0x42: printf("lstore_3\n"); pc += 1; break;
+            case 0x43: printf("fstore_0\n"); pc += 1; break;
+            case 0x44: printf("fstore_1\n"); pc += 1; break;
+            case 0x45: printf("fstore_2\n"); pc += 1; break;
+            case 0x46: printf("fstore_3\n"); pc += 1; break;
             case 0x47: printf("dstore_0\n"); pc += 1; break;
             case 0x48: printf("dstore_1\n"); pc += 1; break;
             case 0x49: printf("dstore_2\n"); pc += 1; break;
@@ -195,6 +214,7 @@ void ReadCode(Cp_info *cpool, Code_attribute *code_attr) {
             case 0x4F: printf("iastore\n"); pc += 1; break;
             
             // 0x50 - 0x5F
+            case 0x50: printf("lastore\n"); pc += 1; break;
             case 0x51: printf("fastore\n"); pc += 1; break;
             case 0x52: printf("dastore\n"); pc += 1; break;
             case 0x53: printf("aastore\n"); pc += 1; break;
@@ -202,35 +222,77 @@ void ReadCode(Cp_info *cpool, Code_attribute *code_attr) {
             case 0x55: printf("castore\n"); pc += 1; break;
             case 0x56: printf("sastore\n"); pc += 1; break;
             case 0x57: printf("pop\n"); pc += 1; break;
+            case 0x58: printf("pop2\n"); pc += 1; break;
             case 0x59: printf("dup\n"); pc += 1; break;
+            case 0x5A: printf("dup_x1\n"); pc += 1; break;
+            case 0x5B: printf("dup_x2\n"); pc += 1; break;
             case 0x5C: printf("dup2\n"); pc += 1; break;
+            case 0x5D: printf("dup2_x1\n"); pc += 1; break;
+            case 0x5E: printf("dup2_x2\n"); pc += 1; break;
+            case 0x5F: printf("swap\n"); pc += 1; break;
             
             // 0x60 - 0x6F
             case 0x60: printf("iadd\n"); pc += 1; break;
+            case 0x61: printf("ladd\n"); pc += 1; break;
+            case 0x62: printf("fadd\n"); pc += 1; break;
             case 0x63: printf("dadd\n"); pc += 1; break;
             case 0x64: printf("isub\n"); pc += 1; break;
             case 0x65: printf("lsub\n"); pc += 1; break;
+            case 0x66: printf("fsub\n"); pc += 1; break;
             case 0x67: printf("dsub\n"); pc += 1; break;
             case 0x68: printf("imul\n"); pc += 1; break;
+            case 0x69: printf("lmul\n"); pc += 1; break;
+            case 0x6A: printf("fmul\n"); pc += 1; break;
             case 0x6B: printf("dmul\n"); pc += 1; break;
             case 0x6C: printf("idiv\n"); pc += 1; break;
+            case 0x6D: printf("ldiv\n"); pc += 1; break;
+            case 0x6E: printf("fdiv\n"); pc += 1; break;
             case 0x6F: printf("ddiv\n"); pc += 1; break;
             
             // 0x70 - 0x7F
             case 0x70: printf("irem\n"); pc += 1; break;
+            case 0x71: printf("lrem\n"); pc += 1; break;
+            case 0x72: printf("frem\n"); pc += 1; break;
             case 0x73: printf("drem\n"); pc += 1; break;
+            case 0x74: printf("ineg\n"); pc += 1; break;
+            case 0x75: printf("lneg\n"); pc += 1; break;
+            case 0x76: printf("fneg\n"); pc += 1; break;
             case 0x77: printf("dneg\n"); pc += 1; break;
+            case 0x78: printf("ishl\n"); pc += 1; break;
+            case 0x79: printf("lshl\n"); pc += 1; break;
+            case 0x7A: printf("ishr\n"); pc += 1; break;
+            case 0x7B: printf("lshr\n"); pc += 1; break;
+            case 0x7C: printf("iushr\n"); pc += 1; break;
+            case 0x7D: printf("lushr\n"); pc += 1; break;
+            case 0x7E: printf("iand\n"); pc += 1; break;
+            case 0x7F: printf("land\n"); pc += 1; break;
             
             // 0x80 - 0x8F
+            case 0x80: printf("ior\n"); pc += 1; break;
+            case 0x81: printf("lor\n"); pc += 1; break;
+            case 0x82: printf("ixor\n"); pc += 1; break;
+            case 0x83: printf("lxor\n"); pc += 1; break;
             case 0x84: printf("iinc %u by %d\n", code_attr->code[pc+1], (int8_t)code_attr->code[pc+2]); pc+=3; break;
+            case 0x85: printf("i2l\n"); pc += 1; break;
             case 0x86: printf("i2f\n"); pc += 1; break;
             case 0x87: printf("i2d\n"); pc += 1; break;
+            case 0x88: printf("l2i\n"); pc += 1; break;
+            case 0x89: printf("l2f\n"); pc += 1; break;
+            case 0x8A: printf("l2d\n"); pc += 1; break;
+            case 0x8B: printf("f2i\n"); pc += 1; break;
+            case 0x8C: printf("f2l\n"); pc += 1; break;
             case 0x8D: printf("f2d\n"); pc += 1; break;
             case 0x8E: printf("d2i\n"); pc += 1; break;
             case 0x8F: printf("d2l\n"); pc += 1; break;
             
             // 0x90 - 0x9F
             case 0x90: printf("d2f\n"); pc += 1; break;
+            case 0x91: printf("i2b\n"); pc += 1; break;
+            case 0x92: printf("i2c\n"); pc += 1; break;
+            case 0x93: printf("i2s\n"); pc += 1; break;
+            case 0x94: printf("lcmp\n"); pc += 1; break;
+            case 0x95: printf("fcmpl\n"); pc += 1; break;
+            case 0x96: printf("fcmpg\n"); pc += 1; break;
             case 0x97: printf("dcmpl\n"); pc += 1; break;
             case 0x98: printf("dcmpg\n"); pc += 1; break;
             case 0x99: offset = (int16_t)((code_attr->code[pc+1]<<8)|code_attr->code[pc+2]); printf("ifeq %d (+%d)\n", pc+offset, offset); pc+=3; break;
@@ -247,7 +309,11 @@ void ReadCode(Cp_info *cpool, Code_attribute *code_attr) {
             case 0xA2: offset = (int16_t)((code_attr->code[pc+1]<<8)|code_attr->code[pc+2]); printf("if_icmpge %d (+%d)\n", pc+offset, offset); pc+=3; break;
             case 0xA3: offset = (int16_t)((code_attr->code[pc+1]<<8)|code_attr->code[pc+2]); printf("if_icmpgt %d (+%d)\n", pc+offset, offset); pc+=3; break;
             case 0xA4: offset = (int16_t)((code_attr->code[pc+1]<<8)|code_attr->code[pc+2]); printf("if_icmple %d (+%d)\n", pc+offset, offset); pc+=3; break;
+            case 0xA5: offset = (int16_t)((code_attr->code[pc+1]<<8)|code_attr->code[pc+2]); printf("if_acmpeq %d (+%d)\n", pc+offset, offset); pc+=3; break;
+            case 0xA6: offset = (int16_t)((code_attr->code[pc+1]<<8)|code_attr->code[pc+2]); printf("if_acmpne %d (+%d)\n", pc+offset, offset); pc+=3; break;
             case 0xA7: offset = (int16_t)((code_attr->code[pc+1]<<8)|code_attr->code[pc+2]); printf("goto %d (+%d)\n", pc+offset, offset); pc+=3; break;
+            case 0xA8: offset = (int16_t)((code_attr->code[pc+1]<<8)|code_attr->code[pc+2]); printf("jsr %d (+%d)\n", pc+offset, offset); pc+=3; break;
+            case 0xA9: printf("ret %u\n", code_attr->code[pc+1]); pc+=2; break;
             case 0xAA: {
                 u4 start_pc = pc;
                 u4 pad = (4 - ((start_pc + 1) % 4)) % 4;
@@ -326,6 +392,7 @@ void ReadCode(Cp_info *cpool, Code_attribute *code_attr) {
             }
             case 0xAC: printf("ireturn\n"); pc += 1; break;
             case 0xAD: printf("lreturn\n"); pc += 1; break;
+            case 0xAE: printf("freturn\n"); pc += 1; break;
             case 0xAF: printf("dreturn\n"); pc += 1; break;
             
             // 0xB0 - 0xBF
@@ -343,12 +410,18 @@ void ReadCode(Cp_info *cpool, Code_attribute *code_attr) {
             case 0xBC: PrintNewArray(code_attr->code[pc + 1]); pc += 2; break;
             case 0xBD: cp_index = (code_attr->code[pc+1]<<8)|code_attr->code[pc+2]; printf("anewarray #%u ", cp_index); PrintCPoolItem(cpool, cp_index); printf("\n"); pc+=3; break;
             case 0xBE: printf("arraylength\n"); pc += 1; break;
+            case 0xBF: printf("athrow\n"); pc += 1; break;
             
             // 0xC0 - 0xCF
             case 0xC0: cp_index = (code_attr->code[pc+1]<<8)|code_attr->code[pc+2]; printf("checkcast #%u ", cp_index); PrintCPoolItem(cpool, cp_index); printf("\n"); pc+=3; break;
+            case 0xC1: cp_index = (code_attr->code[pc+1]<<8)|code_attr->code[pc+2]; printf("instanceof #%u ", cp_index); PrintCPoolItem(cpool, cp_index); printf("\n"); pc+=3; break;
+            case 0xC2: printf("monitorenter\n"); pc += 1; break;
+            case 0xC3: printf("monitorexit\n"); pc += 1; break;
             case 0xC5: { cp_index = (code_attr->code[pc + 1] << 8) | code_attr->code[pc + 2]; u1 dimensions = code_attr->code[pc + 3]; printf("multianewarray #%u dim %u ", cp_index, dimensions); PrintCPoolItem(cpool, cp_index); printf("\n"); pc += 4; break; }
             case 0xC6: offset = (int16_t)((code_attr->code[pc+1]<<8)|code_attr->code[pc+2]); printf("ifnull %d (+%d)\n", pc+offset, offset); pc+=3; break;
             case 0xC7: offset = (int16_t)((code_attr->code[pc+1]<<8)|code_attr->code[pc+2]); printf("ifnonnull %d (+%d)\n", pc+offset, offset); pc+=3; break;
+            case 0xC8: { int32_t offset_w = ReadS4BE(code_attr->code, pc + 1); printf("goto_w %d (+%d)\n", pc + offset_w, offset_w); pc += 5; break; }
+            case 0xC9: { int32_t offset_w = ReadS4BE(code_attr->code, pc + 1); printf("jsr_w %d (+%d)\n", pc + offset_w, offset_w); pc += 5; break; }
             
             // erro
             default: printf("UNKNOWN_OPCODE (0x%02X)\n", opcode); pc+=1; break;
