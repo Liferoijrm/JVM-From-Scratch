@@ -120,7 +120,6 @@ void DestroyMethodArea(MethodArea* method_area) {
 	if(!method_area) {
 		return;
 	}
-
 	if(method_area->entries) {
 		for (u2 i = 0; i < method_area->count; i++) {
 			if (method_area->entries[i].class_name) {
@@ -133,8 +132,7 @@ void DestroyMethodArea(MethodArea* method_area) {
 				FreeClass(method_area->entries[i].class_file);
 			}
 		}
-
-		free(method_area->entries);
+		if(method_area->entries != NULL) free(method_area->entries);
 	}
 
 	free(method_area);
@@ -273,4 +271,17 @@ u2 MethodAreaCountStaticFields(const MethodArea *method_area, ClassFile *class_f
 	}
 
 	return (u2)(count + MethodAreaCountStaticFields(method_area, super_class_file));
+}
+
+MethodAreaEntry* MethodAreaGetEntry(MethodArea* ma, const char* class_name){
+	if(ma == NULL || class_name == NULL){ 
+		return NULL;
+	}
+
+	// Busca a classe pelo nome linearmente na MethodArea
+	for(u2 i = 0 ; i < ma-> count ; i++){
+		if(strcmp(ma->entries[i].class_name, class_name) == 0) return &ma->entries[i];
+	}
+
+	return NULL; // Classe não encontrada
 }

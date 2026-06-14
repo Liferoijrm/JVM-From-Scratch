@@ -33,6 +33,9 @@ ClassFile* LoadClass(MethodArea *ma, char *class_name) {
         return NULL;
     }
 
+    MethodAreaEntry *added_entry = MethodAreaGetEntry(ma, class_name);
+    PrepareClass(added_entry);
+
     // Carregamento Recursivo da Superclasse
     // O índice 0 indica que não tem superclasse (java.lang.Object)
     if (cf->super_class != 0) {

@@ -12,10 +12,15 @@
 #define METHOD_AREA_INVALID_CLASS 3
 #define METHOD_AREA_DUPLICATE_CLASS 4
 
+typedef struct StaticField {
+	u2 field_index;
+	u4 value[2];
+} StaticField;
+
 typedef struct MethodAreaEntry {
 	char *class_name;
 	ClassFile *class_file;
-	u4 *static_fields;
+	StaticField *static_fields;
 	u2 static_field_count;
 } MethodAreaEntry;
 
@@ -40,5 +45,7 @@ u2 MethodAreaCount(const MethodArea *method_area);
 u2 MethodAreaCountInstanceFields(const MethodArea *method_area, ClassFile *class_file);
 
 u2 MethodAreaCountStaticFields(const MethodArea *method_area, ClassFile *class_file);
+
+MethodAreaEntry* MethodAreaGetEntry(MethodArea* ma, const char* class_name);
 
 #endif

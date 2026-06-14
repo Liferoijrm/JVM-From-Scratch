@@ -2,6 +2,7 @@
 #define CLASSLOADER_H
 
 #include "classparser.h"
+#include "../linking/preparation.h"
 #include "../../runtime_data/method_area/methodarea.h"
 
 ClassFile* LoadClass(MethodArea* ma, char* class_name);
