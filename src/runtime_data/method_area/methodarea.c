@@ -195,7 +195,7 @@ u1 MethodAreaPrepareClass(MethodArea *method_area, ClassFile *class_file) {
 		if(method_area->entries[i].class_file == class_file) {
 			method_area->entries[i].static_field_count = static_count;
 			if(static_count > 0) {
-				method_area->entries[i].static_fields = (u4 *)calloc(static_count, sizeof(u4));
+				method_area->entries[i].static_fields = (StaticField *)calloc(static_count, sizeof(StaticField));
 				if(!method_area->entries[i].static_fields) {
 					return METHOD_AREA_ALLOC_ERROR;
 				}

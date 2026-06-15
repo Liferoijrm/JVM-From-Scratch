@@ -18,6 +18,13 @@ int main(int argc, char **argv){
         return 1;
     }
 
+    ClassFile *objClass = ParseClass("java/lang/Object.class");
+    if (!objClass) {
+        fprintf(stderr, "Erro ao carregar java/lang/Object.class\n");
+        DestroyMethodArea(method_area);
+        return 1;
+    }
+
     ClassFile *cf = ParseClass(argv[1]);
 
     if (!cf) {
