@@ -12,6 +12,13 @@
 #define METHOD_AREA_INVALID_CLASS 3
 #define METHOD_AREA_DUPLICATE_CLASS 4
 
+typedef enum {
+    CLASS_LOADED,       // Arquivo lido e parseado
+    CLASS_LINKED,       // Verificada e Preparada (campos estáticos alocados)
+    CLASS_INITIALIZING, // O <clinit> está rodando (evita dependência circular)
+    CLASS_INITIALIZED,  // O <clinit> terminou com sucesso
+} ClassState;
+
 typedef struct StaticField {
 	u2 field_index;
 	u4 value[2];
@@ -22,6 +29,8 @@ typedef struct MethodAreaEntry {
 	ClassFile *class_file;
 	StaticField *static_fields;
 	u2 static_field_count;
+	ClassState state;
+	u1 *resolved_flags;
 } MethodAreaEntry;
 
 typedef struct MethodArea {

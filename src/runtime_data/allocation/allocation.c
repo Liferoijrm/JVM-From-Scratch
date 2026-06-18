@@ -22,61 +22,66 @@ size_t ArrayTypeSize(u1 atype) {
 }
 
 JVMObject *CreateObject(const MethodArea *method_area, ClassFile *class_file) {
-	JVMObject *object;
-	u2 field_count;
+    JVMObject *object;
+    u2 slot_count;
 
-	if(!class_file) {
-		return NULL;
-	}
+    if(!class_file) {
+        return NULL;
+    }
 
-	field_count = MethodAreaCountInstanceFields(method_area, class_file);
-	object = (JVMObject *) calloc(1, sizeof(JVMObject));
-	if(!object) {
-		return NULL;
-	}
+    slot_count = MethodAreaCountInstanceFields(method_area, class_file);
+    
+    object = (JVMObject *) calloc(1, sizeof(JVMObject));
+    if(!object) {
+        return NULL;
+    }
 
-	object->class_ref = class_file;
+    object->class_ref = class_file;
 
-	if(field_count > 0) {
-		object->fields = (u4 *) calloc(field_count, sizeof(u4));
-		if(!object->fields) {
-			free(object);
-			return NULL;
-		}
-	}
+    if(slot_count > 0) {
+        object->fields = (u4 *) calloc(slot_count, sizeof(u4));
+        if(!object->fields) {
+            free(object);
+            return NULL;
+        }
+    } else {
+        object->fields = NULL;
+    }
 
-	return object;
+    return object;
 }
 
 JVMArray *CreatePrimitiveArray(u1 atype, int32_t length) {
-	JVMArray *array;
-	size_t element_size;
+    JVMArray *array;
+    size_t element_size;
 
-	if(length < 0) {
-		return NULL;
-	}
+    if(length < 0) {
+        return NULL;
+    }
 
-	element_size = ArrayTypeSize(atype);
-	if(element_size == 0) {
-		return NULL;
-	}
+    element_size = ArrayTypeSize(atype);
+    if(element_size == 0) {
+        return NULL;
+    }
 
-	array = (JVMArray *) calloc(1, sizeof(JVMArray));
-	if(!array) {
-		return NULL;
-	}
+    array = (JVMArray *) calloc(1, sizeof(JVMArray));
+    if(!array) {
+        return NULL;
+    }
 
-	array->length = (u4) length;
-	array->atype = atype;
-	
-	if(length > 0) {
-		array->data = calloc((size_t) length, element_size);
-		if(!array->data) {
-			free(array);
-			return NULL;
-		}
-	}
+    array->length = (u4) length;
+    array->atype = atype;
+    
+    if(length > 0) {
+        array->data = calloc((size_t) length, element_size);
+        if(!array->data) {
+            free(array);
+            return NULL;
+        }
+    } else {
+        array->data = NULL;
+    }
 
-	return array;
+    return array;
 }
 

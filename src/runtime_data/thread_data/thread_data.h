@@ -2,9 +2,9 @@
 #define THREAD_DATA_H
 
 #include <stdlib.h>
-#include "../utils/utils.h"
-#include "../utils/stack.h" 
-#include "../class_loader/loading/classparser.h"
+#include "../../utils/utils.h"
+#include "../../utils/stack.h"
+#include "../../class_loader/loading/classparser.h"
 // nao eh necessario fazer a struct da stack porque stack.h ja implementa
 
 typedef struct JVMThread{
@@ -18,8 +18,7 @@ typedef struct Frame{
     u4 return_pc;
 
     Method_info* method; // TODO: ter estrutura MethodInfo nas estruturas da Method Area
-    ClassFile* class_file; // acesso ao cpool temporario 
-    //RuntimeConstantPool* cpool; // TODO: RuntimeConstantPool nas estruturas da Method Area
+    ClassFile* class_file; // acesso ao cpool temporario
 } Frame;
 
 JVMThread* createThread(u4 stack_max_size);

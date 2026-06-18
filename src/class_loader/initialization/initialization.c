@@ -4,161 +4,86 @@
 #include <string.h>
 
 /*
- * Lista interna das classes inicializadas
+ * TODO: mover essa funcao para o methodarea.c futuramente (aperfeicoar se necessario)
  */
-typedef struct InitializedNode {
-
-    ClassFile *class_file;
-    struct InitializedNode *next;
-
-} InitializedNode;
-
-static InitializedNode *initialized_classes = NULL;
-
-
-/*
- * Verifica se a classe já foi inicializada
- */
-static u1 IsInitialized(ClassFile *class_file) {
-
-    InitializedNode *current = initialized_classes;
-
-    while (current != NULL) {
-
-        if (current->class_file == class_file) {
-            return 1;
-        }
-
-        current = current->next;
-    }
-
-    return 0;
-}
-
-
-/*
- * Marca a classe como inicializada
- */
-static u1 MarkInitialized(ClassFile *class_file) {
-
-    InitializedNode *node =
-        (InitializedNode *) malloc(sizeof(InitializedNode));
-
-    if (node == NULL) {
-        return 0;
-    }
-
-    node->class_file = class_file;
-    node->next = initialized_classes;
-
-    initialized_classes = node;
-
-    return 1;
-}
-
-
-/*
- * Procura o <clinit>
- */
-static Method_info *FindClinit(ClassFile *class_file) {
-
-    if (class_file == NULL) {
+static Method_info *FindMethod(ClassFile *class_file, const char *name, const char *descriptor) {
+    if (class_file == NULL || name == NULL) {
         return NULL;
     }
 
     for (u2 i = 0; i < class_file->methods_count; i++) {
+        Method_info *method = &class_file->methods[i];
 
-        Method_info *method =
-            &class_file->methods[i];
+        char *method_name = (char *)class_file->constant_pool[method->name_index].info.Utf8.bytes;
+        char *method_desc = (char *)class_file->constant_pool[method->descriptor_index].info.Utf8.bytes;
 
-        char *method_name =
-            (char *)
-            class_file->constant_pool[
-                method->name_index
-            ].info.Utf8.bytes;
-
-        if (strcmp(method_name, "<clinit>") == 0) {
-            return method;
+        if (strcmp(method_name, name) == 0) {
+            // Se o descritor foi passado, valida ele também (essencial para sobrecarga)
+            if (descriptor == NULL || strcmp(method_desc, descriptor) == 0) {
+                return method;
+            }
         }
     }
 
     return NULL;
 }
 
-
 /*
  * Inicializa a classe
  */
-u1 InitializeClass(MethodArea *method_area,
-                   ClassFile *class_file) {
-
+u1 InitializeClass(MethodArea *method_area, MethodAreaEntry *entry, JVMThread *thread) {
     Method_info *clinit;
 
-    if (method_area == NULL ||
-        class_file == NULL) {
-
+    if (method_area == NULL || entry == NULL || entry->class_file == NULL) {
         return 0;
     }
 
-    if (IsInitialized(class_file)) {
+    if (entry->state < CLASS_LINKED) return 0;
+
+    // Se já estiver inicializada ou inicializando, não faz nada
+    if (entry->state == CLASS_INITIALIZED || entry->state == CLASS_INITIALIZING) {
         return 1;
     }
 
-    /*
-     * Inicializa a superclasse primeiro
-     */
-    if (class_file->super_class != 0) {
+    // Altera o estado para impedimento de loops infinitos no <clinit>
+    entry->state = CLASS_INITIALIZING;
 
-        char *super_name =
-            GetClassName(class_file,
-                         class_file->super_class);
+    /*
+     * Inicializa a superclasse primeiro (se houver)
+     */
+    if (entry->class_file->super_class != 0) {
+        char *super_name = GetClassName(entry->class_file, entry->class_file->super_class);
 
         if (super_name != NULL) {
+            MethodAreaEntry *super_entry = MethodAreaGetEntry(method_area, super_name);
 
-            ClassFile *super_class_file =
-                MethodAreaFindClass(method_area,
-                                    super_name);
-
-            if (super_class_file != NULL &&
-                super_class_file != class_file) {
-
-                if (!InitializeClass(method_area,
-                                     super_class_file)) {
-
-                    return 0;
+            // A superclasse precisa já estar carregada/alocada na Method Area
+            if (super_entry != NULL) {
+                if (!InitializeClass(method_area, super_entry, thread)) {
+                    return 0; // Falha na inicialização da superclasse aborta a atual
                 }
             }
         }
     }
 
-    clinit = FindClinit(class_file);
+    /*
+     * 5. Busca e executa o <clinit> da própria classe
+     * O descritor de um <clinit> é sempre "()V"
+     */
+    clinit = FindMethod(entry->class_file, "<clinit>", "()V");
 
     if (clinit != NULL) {
-
-        printf(
-            "[INITIALIZATION] "
-            "<clinit> encontrado na classe %s\n",
-
-            GetClassName(class_file,
-                         class_file->this_class)
-        );
+        printf("[INITIALIZATION] <clinit> encontrado na classe %s\n", entry->class_name);
 
         /*
-         * Futuramente(eu acho): ExecuteMethod(clinit);
+         * Futuramente: 
+         * o frame vai ser executado pelo interpretador primeiro, pois foi o último a ser alocado (LIFO)
          */
+        pushFrame(thread, entry->class_file, clinit, thread->pc);
+        // interpreter deve setar como inicializada apos executar <clinit>
     }
 
-    if (!MarkInitialized(class_file)) {
-        return 0;
-    }
-
-    printf(
-        "[INITIALIZATION] "
-        "Classe %s inicializada.\n",
-
-        GetClassName(class_file,
-                     class_file->this_class)
-    );
+    printf("[INITIALIZATION] Classe %s inicializada com sucesso.\n", entry->class_name);
 
     return 1;
 }

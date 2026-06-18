@@ -20,11 +20,16 @@ void PrepareClass(MethodAreaEntry *entry) {
 
     if (static_count == 0) {
         entry->static_fields = NULL;
+        entry->state = CLASS_LINKED;
         return; 
     }
 
     // Calloc para inicializar os campos com valor padrão 0
     entry->static_fields = (StaticField*) calloc(static_count, sizeof(StaticField));
+    
+    if (entry->static_fields == NULL) {
+        return; 
+    }
 
     // Mapeia o índice do campo estático com a sua memória alocada
     u2 current_static_index = 0;
@@ -34,4 +39,6 @@ void PrepareClass(MethodAreaEntry *entry) {
             current_static_index++;
         }
     }
+    
+    entry->state = CLASS_LINKED;
 }

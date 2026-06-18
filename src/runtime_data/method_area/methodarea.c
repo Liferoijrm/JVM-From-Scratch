@@ -40,35 +40,34 @@ static const char* GetClassNameFromClassFile(const ClassFile* class_file) {
 }
 
 static u2 CountDeclaredInstanceFields(ClassFile *class_file) {
-	u2 count = 0;
+    u2 slots_count = 0;
 
-	if(!class_file || !class_file->fields) {
-		return 0;
-	}
+    if(!class_file || !class_file->fields) {
+        return 0;
+    }
 
-	for(u2 i = 0; i < class_file->fields_count; i++) {
-		if((class_file->fields[i].access_flags & 0x0008) == 0) {
-			count++;
-		}
-	}
+    for(u2 i = 0; i < class_file->fields_count; i++) {
+        // Se NÃO for estático (0x0008)
+        if((class_file->fields[i].access_flags & 0x0008) == 0) {
+            u2 desc_index = class_file->fields[i].descriptor_index;
+            
+            // Proteção básica contra índices fora dos limites da Constant Pool
+            if(desc_index > 0 && desc_index < class_file->constant_pool_count) {
+                char *descriptor = (char *)class_file->constant_pool[desc_index].info.Utf8.bytes;
 
-	return count;
-}
+                // Na JVMS, os tipos 'J' (long) e 'D' (double) ocupam 2 slots de 32 bits
+                if (descriptor && (descriptor[0] == 'J' || descriptor[0] == 'D')) {
+                    slots_count += 2;
+                } else {
+                    slots_count += 1;
+                }
+            } else {
+                slots_count += 1; // Fallback seguro
+            }
+        }
+    }
 
-static u2 CountDeclaredStaticFields(ClassFile *class_file) {
-	u2 count = 0;
-
-	if(!class_file || !class_file->fields) {
-		return 0;
-	}
-
-	for(u2 i = 0; i < class_file->fields_count; i++) {
-		if(class_file->fields[i].access_flags & 0x0008) {
-			count++;
-		}
-	}
-
-	return count;
+    return slots_count;
 }
 
 static u1 EnsureCapacity(MethodArea* method_area, u2 minimum_capacity) {
@@ -98,6 +97,8 @@ static u1 EnsureCapacity(MethodArea* method_area, u2 minimum_capacity) {
 		new_entries[i].class_file = NULL;
 		new_entries[i].static_fields = NULL;
 		new_entries[i].static_field_count = 0;
+		new_entries[i].state = CLASS_LOADED;
+		new_entries[i].resolved_flags = NULL;
 	}
 
 	method_area->entries = new_entries;
@@ -131,6 +132,8 @@ void DestroyMethodArea(MethodArea* method_area) {
 			if (method_area->entries[i].class_file) {
 				FreeClass(method_area->entries[i].class_file);
 			}
+
+			free(method_area->entries[i].resolved_flags);
 		}
 		if(method_area->entries != NULL) free(method_area->entries);
 	}
@@ -170,12 +173,15 @@ u1 MethodAreaAddClass(MethodArea* method_area, ClassFile* class_file) {
 	method_area->entries[method_area->count].class_file = class_file;
 	method_area->entries[method_area->count].static_fields = NULL;
 	method_area->entries[method_area->count].static_field_count = 0;
+	method_area->entries[method_area->count].state = CLASS_LOADED;
 	method_area->count++;
 
-	status = MethodAreaPrepareClass(method_area, class_file);
+	// OBS: nem essa funcao nem MethodAreaCountStaticFields estao sendo usadas de fato para preparation da classe
+	//status = MethodAreaPrepareClass(method_area, class_file);
 	return status;
 }
 
+// OBS: nem essa funcao nem MethodAreaCountStaticFields estao sendo usadas de fato para preparation da classe 
 u1 MethodAreaPrepareClass(MethodArea *method_area, ClassFile *class_file) {
 	const char *class_name;
 	u2 static_count;
@@ -251,6 +257,7 @@ u2 MethodAreaCountInstanceFields(const MethodArea *method_area, ClassFile *class
 	return (u2)(count + MethodAreaCountInstanceFields(method_area, super_class_file));
 }
 
+// OBS: nem essa funcao nem MethodAreaPrepareClass estao sendo usadas de fato para preparation da classe
 u2 MethodAreaCountStaticFields(const MethodArea *method_area, ClassFile *class_file) {
 	u2 count = CountDeclaredStaticFields(class_file);
 	char *super_name;

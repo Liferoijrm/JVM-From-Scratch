@@ -2,7 +2,7 @@
 #define STACK_H
 
 #include <stdlib.h>
-#include "../utils/utils.h"
+#include "utils.h"
 
 typedef struct StackNode{
     void* content;
