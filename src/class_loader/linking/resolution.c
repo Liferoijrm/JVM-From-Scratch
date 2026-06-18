@@ -37,7 +37,7 @@ u1 ResolveClass(MethodAreaEntry *entry){
         }
         // Referências simbólicas (Class, Fieldref etc) ficam 0 (resolvidas sob demanda no interpreter)
     }
-
+    
     return 1;
 }
 

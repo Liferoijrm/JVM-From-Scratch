@@ -182,7 +182,7 @@ u1 MethodAreaAddClass(MethodArea* method_area, ClassFile* class_file) {
 }
 
 // OBS: nem essa funcao nem MethodAreaCountStaticFields estao sendo usadas de fato para preparation da classe 
-u1 MethodAreaPrepareClass(MethodArea *method_area, ClassFile *class_file) {
+/*u1 MethodAreaPrepareClass(MethodArea *method_area, ClassFile *class_file) {
 	const char *class_name;
 	u2 static_count;
 
@@ -211,7 +211,7 @@ u1 MethodAreaPrepareClass(MethodArea *method_area, ClassFile *class_file) {
 	}
 
 	return METHOD_AREA_INVALID_CLASS;
-}
+}*/
 
 ClassFile *MethodAreaFindClass(const MethodArea* method_area, const char* class_name) {
 	if(!method_area || !class_name) {
@@ -258,7 +258,7 @@ u2 MethodAreaCountInstanceFields(const MethodArea *method_area, ClassFile *class
 }
 
 // OBS: nem essa funcao nem MethodAreaPrepareClass estao sendo usadas de fato para preparation da classe
-u2 MethodAreaCountStaticFields(const MethodArea *method_area, ClassFile *class_file) {
+/*u2 MethodAreaCountStaticFields(const MethodArea *method_area, ClassFile *class_file) {
 	u2 count = CountDeclaredStaticFields(class_file);
 	char *super_name;
 	ClassFile *super_class_file;
@@ -278,7 +278,7 @@ u2 MethodAreaCountStaticFields(const MethodArea *method_area, ClassFile *class_f
 	}
 
 	return (u2)(count + MethodAreaCountStaticFields(method_area, super_class_file));
-}
+}*/
 
 MethodAreaEntry* MethodAreaGetEntry(MethodArea* ma, const char* class_name){
 	if(ma == NULL || class_name == NULL){ 

@@ -3,6 +3,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+// forward declaration para LoadClass
+char* BuildClassPath(const char* base_dir, const char* class_name);
+
 ClassFile* LoadClass(MethodArea *ma, char *class_name) {
     if (ma == NULL || class_name == NULL) {
         return NULL;
@@ -15,7 +18,7 @@ ClassFile* LoadClass(MethodArea *ma, char *class_name) {
     }
 
     char file_path[256];
-    snprintf(file_path, sizeof(file_path), "%s.class", class_name);
+    snprintf(file_path, sizeof(file_path), "Examples/%s.class", class_name);
 
     ClassFile *cf = ParseClass(file_path);
 
@@ -26,11 +29,29 @@ ClassFile* LoadClass(MethodArea *ma, char *class_name) {
     }
 
     // Injeta a classe validada na Method Area global
-    u1 success = MethodAreaAddClass(ma, cf);
-    if (!success) {
-        fprintf(stderr, "OutOfMemoryError: Nao foi possivel adicionar a classe %s a Method Area\n", class_name);
-        FreeClass(cf);
-        return NULL;
+    u1 status = MethodAreaAddClass(ma, cf);
+    if (status != METHOD_AREA_OK) {
+        switch (status) {
+            case METHOD_AREA_NULL_POINTER:
+                fprintf(stderr, "InternalError: Ponteiro nulo (Method Area ou ClassFile) ao tentar adicionar a classe %s.\n", class_name);
+                break;
+                
+            case METHOD_AREA_INVALID_CLASS:
+                fprintf(stderr, "ClassFormatError: Nao foi possivel extrair o nome da classe %s (Arquivo invalido).\n", class_name);
+                break;
+                
+            case METHOD_AREA_DUPLICATE_CLASS:
+                fprintf(stderr, "LinkageError: A classe %s ja foi carregada na Method Area (Duplicata).\n", class_name);
+                break;
+                
+            case METHOD_AREA_ALLOC_ERROR:
+                fprintf(stderr, "OutOfMemoryError: Sem memoria para alocar a classe %s na Method Area.\n", class_name);
+                break;
+                
+            default:
+                fprintf(stderr, "UnknownError: Falha inesperada ao adicionar a classe %s (Codigo de erro: %d).\n", class_name, status);
+                break;
+        }
     }
 
     MethodAreaEntry *added_entry = MethodAreaGetEntry(ma, class_name);
@@ -40,7 +61,7 @@ ClassFile* LoadClass(MethodArea *ma, char *class_name) {
     // O índice 0 indica que não tem superclasse (java.lang.Object)
     if (cf->super_class != 0) {
         char *super_name = GetClassName(cf, cf->super_class);
-        if (super_name != NULL) {
+        if (super_name != NULL){
             ClassFile *super_cf = LoadClass(ma, super_name);
             if (super_cf == NULL) {
                 fprintf(stderr, "NoClassDefFoundError: Falha ao carregar a superclasse %s da classe %s\n", super_name, class_name);

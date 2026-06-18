@@ -20,7 +20,6 @@ void PrepareClass(MethodAreaEntry *entry) {
 
     if (static_count == 0) {
         entry->static_fields = NULL;
-        entry->state = CLASS_LINKED;
         return; 
     }
 
@@ -39,6 +38,4 @@ void PrepareClass(MethodAreaEntry *entry) {
             current_static_index++;
         }
     }
-    
-    entry->state = CLASS_LINKED;
 }

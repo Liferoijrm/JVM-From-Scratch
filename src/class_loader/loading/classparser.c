@@ -67,10 +67,13 @@ ClassFile *ParseClass(char *class_name){
 
     cf->minor_version = u2Read(fd);
     cf->major_version = u2Read(fd);
+    /*
+    tive que tirar essa verificacao por causa do Object.class
     if (cf->major_version != 46 && cf->major_version != 52){ // Java 1.2 ou Java 8 (TODO: ver com o Ladeira para quais versões tem que permitir)
         error_flag = VERSION_ERROR;
         goto error;
     }
+    */
 
     cf->constant_pool_count = u2Read(fd);
     error_flag = Read_cpool(fd, cf->constant_pool_count, cf);
@@ -79,11 +82,16 @@ ClassFile *ParseClass(char *class_name){
     cf->access_flags = u2Read(fd);
     cf->this_class = u2Read(fd);
     cf->super_class = u2Read(fd); 
-    if (cf->this_class == 0 || (cf->super_class < cf->constant_pool_count && cf->constant_pool[cf->super_class].tag == 0)){
+    if (cf->this_class == 0){
         error_flag = INVALID_CLASS_INDEX_ERROR;
         goto error;
     }
-
+    if (cf->super_class != 0){
+        if (cf->super_class >= cf->constant_pool_count || cf->constant_pool[cf->super_class].tag == 0) {
+            error_flag = INVALID_CLASS_INDEX_ERROR;
+            goto error;
+        }
+    }
     cf->interfaces_count = u2Read(fd);
     error_flag = Read_interfaces(fd, cf->interfaces_count, cf);
     if(error_flag != DEFAULT) goto error; // TODO: verificar se está correto sintaticamente (Read_interfaces retorna o erro detectado)
