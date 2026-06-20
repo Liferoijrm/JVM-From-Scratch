@@ -7,6 +7,7 @@
 #include "class_loader/initialization/initialization.h"
 #include "runtime_data/method_area/methodarea.h"
 #include "runtime_data/thread_data/thread_data.h"
+#include "interpreter/interpreter.h"
 
 #define FRAME_STACK_MAX 512
 
@@ -60,6 +61,8 @@ int main(int argc, char **argv){
 
     printf("[LINKING] %u classe(s) linkada(s) com sucesso\n", MethodAreaCount(method_area));
 
+    // TODO: DAR PUSH NO METODO MAIN DA CLASSE PRINCIPAL
+
     printf("[INITIALIZATION] Inicializando '%s'...\n", class_name);
 
     MethodAreaEntry *main_entry = MethodAreaGetEntry(method_area, class_name);
@@ -78,6 +81,19 @@ int main(int argc, char **argv){
         DestroyMethodArea(method_area);
         return 1;
     }
+
+    /*
+        Quando for interpretar:
+        RuntimeContext ctx = {
+            .thread = thread,
+            .method_area = method_area
+            // talvez o contexto dos objetos e arrays instanciados
+        };
+
+        interpret(&ctx);
+
+        // OU CRIA UM PONTEIRO DE CTX EM VEZ DE PASSAR POR REFERENCIA COM &
+    */
 
     printf("Interpretador nao implementado ainda\n");
 

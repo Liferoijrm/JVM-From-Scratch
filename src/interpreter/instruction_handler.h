@@ -1,19 +1,16 @@
-#ifndef ESTRUTURA_H
-#define ESTRUTURA_H
+#ifndef INSTRUCTION_HANDLER_H
+#define INSTRUCTION_HANDLER_H
 
 #include "../utils/utils.h"
+#include "interpreter.h"
 
 // ============================================================
 // Public API for the bytecode decoder
 // ============================================================
 
 // Signature for every bytecode instruction handler.
-// Parameters:
-//   frame   - current execution frame (operand stack + locals)
-//   code    - bytecode array
-//   pc      - program counter (index into code)
 // Returns: next pc value
-typedef u4 (*InstructionHandler)(void *frame, u1 *code, u4 pc);
+typedef u4 (*InstructionHandler)(RuntimeContext *ctx, Code_attribute *code_attr);
 
 // Dispatch: given a bytecode opcode, returns the corresponding handler.
 // Returns NULL if opcode is not implemented.

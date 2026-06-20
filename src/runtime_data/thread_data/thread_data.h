@@ -25,5 +25,6 @@ JVMThread* createThread(u4 stack_max_size);
 void pushFrame(JVMThread* thread, ClassFile* cf, Method_info* method, u4 return_pc);
 void popFrame(JVMThread* thread);
 void freeFrame(void* frame_ptr);
+Code_attribute* getCodeAttributeFromTopFrame(Stack* frame_stack);
 
 #endif
