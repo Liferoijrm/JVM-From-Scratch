@@ -98,7 +98,7 @@ static u4 handle_sipush(RuntimeContext *ctx, Code_attribute *code_attr) {
     Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
     u1* code = code_attr->code;
     u1 parameter_1 = code[pc+1];
-    u1 parameter_2 = code[pc+1];
+    u1 parameter_2 = code[pc+2];
     u2 parameter = ((parameter_1 << 8) | parameter_2);
     u4 content = sign_extend_short(parameter);
     push(frame->operand_stack, (void*)&content);
@@ -679,7 +679,7 @@ static u4 handle_iand(RuntimeContext *ctx, Code_attribute *code_attr) {
     u4 val1 = *((u4*)getTop(frame->operand_stack)); pop(frame->operand_stack);
     u4 val2 = *((u4*)getTop(frame->operand_stack)); pop(frame->operand_stack);
     u4 res = val2 & val1;
-    push_u4(frame->operand_stack, res);
+    push(frame->operand_stack, res);
     return pc + 1;
 }
 
@@ -689,7 +689,7 @@ static u4 handle_ior(RuntimeContext *ctx, Code_attribute *code_attr) {
     u4 val1 = *((u4*)getTop(frame->operand_stack)); pop(frame->operand_stack);
     u4 val2 = *((u4*)getTop(frame->operand_stack)); pop(frame->operand_stack);
     u4 res = val2 | val1;
-    push_u4(frame->operand_stack, res);
+    push(frame->operand_stack, res);
     return pc + 1;
 }
 
@@ -699,7 +699,7 @@ static u4 handle_ixor(RuntimeContext *ctx, Code_attribute *code_attr) {
     u4 val1 = *((u4*)getTop(frame->operand_stack)); pop(frame->operand_stack);
     u4 val2 = *((u4*)getTop(frame->operand_stack)); pop(frame->operand_stack);
     u4 res = val2 ^ val1;
-    push_u4(frame->operand_stack, res);
+    push(frame->operand_stack, res);
     return pc + 1;
 }
 
@@ -810,8 +810,11 @@ static u4 handle_land(RuntimeContext *ctx, Code_attribute *code_attr) {
     uint64_t v2 = ((uint64_t)h2 << 32) | l2;
     uint64_t res = v2 & v1;
 
-    push(frame->operand_stack, (void*)(u4)(res >> 32));
-    push(frame->operand_stack, (void*)(u4)(res & 0xFFFFFFFF));
+    u4 res_high = (u4)(res >> 32);
+    u4 res_low = (u4)(res & 0xFFFFFFFF);
+
+    push(frame->operand_stack, (void*)&res_high);
+    push(frame->operand_stack, (void*)&res_low);
     return pc + 1;
 }
 
