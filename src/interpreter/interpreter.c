@@ -1,5 +1,6 @@
 #include "interpreter.h"
 #include "instruction_handler.h"
+#include <math.h>
 
 //TODO: verificar se o tamanho da stack de frames ou de operandos é excedido e tratar
 
@@ -1013,49 +1014,190 @@ static u4 handle_daload(RuntimeContext *ctx, Code_attribute *code_attr) {}
 static u4 handle_dastore(RuntimeContext *ctx, Code_attribute *code_attr) {}
 static u4 handle_dconst_0(RuntimeContext *ctx, Code_attribute *code_attr) {}
 static u4 handle_dconst_1(RuntimeContext *ctx, Code_attribute *code_attr) {}
-static u4 handle_ddiv(RuntimeContext *ctx, Code_attribute *code_attr) {}
+static u4 handle_ddiv(RuntimeContext *ctx, Code_attribute *code_attr) {
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+    u4 low1  = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    u4 high1 = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    u4 low2  = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    u4 high2 = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    uint64_t bits1 = ((uint64_t)high1 << 32) | low1;
+    uint64_t bits2 = ((uint64_t)high2 << 32) | low2;
+    union { uint64_t u; double d; } val1 = { bits1 }, val2 = { bits2 };
+    double result = val2.d / val1.d;
+    union { double d; uint64_t u; } res = { result };
+    u4 res_high = (u4)(res.u >> 32);
+    u4 res_low  = (u4)(res.u & 0xFFFFFFFF);
+    push(frame->operand_stack, (void*)&res_high);
+    push(frame->operand_stack, (void*)&res_low);
+    return pc + 1;
+}
 static u4 handle_dload(RuntimeContext *ctx, Code_attribute *code_attr) {}
 static u4 handle_dload_0(RuntimeContext *ctx, Code_attribute *code_attr) {}
 static u4 handle_dload_1(RuntimeContext *ctx, Code_attribute *code_attr) {}
 static u4 handle_dload_2(RuntimeContext *ctx, Code_attribute *code_attr) {}
 static u4 handle_dload_3(RuntimeContext *ctx, Code_attribute *code_attr) {}
-static u4 handle_dmul(RuntimeContext *ctx, Code_attribute *code_attr) {}
-static u4 handle_dneg(RuntimeContext *ctx, Code_attribute *code_attr) {}
-static u4 handle_drem(RuntimeContext *ctx, Code_attribute *code_attr) {}
+static u4 handle_dmul(RuntimeContext *ctx, Code_attribute *code_attr) {
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+    u4 low1  = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    u4 high1 = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    u4 low2  = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    u4 high2 = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    uint64_t bits1 = ((uint64_t)high1 << 32) | low1;
+    uint64_t bits2 = ((uint64_t)high2 << 32) | low2;
+    union { uint64_t u; double d; } val1 = { bits1 }, val2 = { bits2 };
+    double result = val2.d * val1.d;
+    union { double d; uint64_t u; } res = { result };
+    u4 res_high = (u4)(res.u >> 32);
+    u4 res_low  = (u4)(res.u & 0xFFFFFFFF);
+    push(frame->operand_stack, (void*)&res_high);
+    push(frame->operand_stack, (void*)&res_low);
+    return pc + 1;
+}
+static u4 handle_dneg(RuntimeContext *ctx, Code_attribute *code_attr) {
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+    u4 low  = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    u4 high = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    uint64_t bits = ((uint64_t)high << 32) | low;
+    union { uint64_t u; double d; } val = { bits };
+    double result = -val.d;
+    union { double d; uint64_t u; } res = { result };
+    u4 res_high = (u4)(res.u >> 32);
+    u4 res_low  = (u4)(res.u & 0xFFFFFFFF);
+    push(frame->operand_stack, (void*)&res_high);
+    push(frame->operand_stack, (void*)&res_low);
+    return pc + 1;
+}
+static u4 handle_drem(RuntimeContext *ctx, Code_attribute *code_attr) {
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+    u4 low1  = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    u4 high1 = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    u4 low2  = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    u4 high2 = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    uint64_t bits1 = ((uint64_t)high1 << 32) | low1;
+    uint64_t bits2 = ((uint64_t)high2 << 32) | low2;
+    union { uint64_t u; double d; } val1 = { bits1 }, val2 = { bits2 };
+    double result = fmod(val2.d, val1.d);
+    union { double d; uint64_t u; } res = { result };
+    u4 res_high = (u4)(res.u >> 32);
+    u4 res_low  = (u4)(res.u & 0xFFFFFFFF);
+    push(frame->operand_stack, (void*)&res_high);
+    push(frame->operand_stack, (void*)&res_low);
+    return pc + 1;
+}
 static u4 handle_dreturn(RuntimeContext *ctx, Code_attribute *code_attr) {}
 static u4 handle_dstore(RuntimeContext *ctx, Code_attribute *code_attr) {}
 static u4 handle_dstore_0(RuntimeContext *ctx, Code_attribute *code_attr) {}
 static u4 handle_dstore_1(RuntimeContext *ctx, Code_attribute *code_attr) {}
 static u4 handle_dstore_2(RuntimeContext *ctx, Code_attribute *code_attr) {}
 static u4 handle_dstore_3(RuntimeContext *ctx, Code_attribute *code_attr) {}
-static u4 handle_dsub(RuntimeContext *ctx, Code_attribute *code_attr) {}
+static u4 handle_dsub(RuntimeContext *ctx, Code_attribute *code_attr) {
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+    u4 low1  = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    u4 high1 = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    u4 low2  = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    u4 high2 = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    uint64_t bits1 = ((uint64_t)high1 << 32) | low1;
+    uint64_t bits2 = ((uint64_t)high2 << 32) | low2;
+    union { uint64_t u; double d; } val1 = { bits1 }, val2 = { bits2 };
+    double result = val2.d - val1.d;
+    union { double d; uint64_t u; } res = { result };
+    u4 res_high = (u4)(res.u >> 32);
+    u4 res_low  = (u4)(res.u & 0xFFFFFFFF);
+    push(frame->operand_stack, (void*)&res_high);
+    push(frame->operand_stack, (void*)&res_low);
+    return pc + 1;
+}
 static u4 handle_dup_x1(RuntimeContext *ctx, Code_attribute *code_attr) {}
 static u4 handle_dup_x2(RuntimeContext *ctx, Code_attribute *code_attr) {}
 static u4 handle_dup2(RuntimeContext *ctx, Code_attribute *code_attr) {}
 static u4 handle_dup2_x1(RuntimeContext *ctx, Code_attribute *code_attr) {}
 static u4 handle_dup2_x2(RuntimeContext *ctx, Code_attribute *code_attr) {}
-static u4 handle_fadd(RuntimeContext *ctx, Code_attribute *code_attr) {}
+static u4 handle_fadd(RuntimeContext *ctx, Code_attribute *code_attr) {
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+    u4 raw1 = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    u4 raw2 = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    union { u4 u; float f; } val1 = { raw1 }, val2 = { raw2 };
+    float result = val2.f + val1.f;
+    union { float f; u4 u; } res = { result };
+    push(frame->operand_stack, (void*)&res.u);
+    return pc + 1;
+}
 static u4 handle_faload(RuntimeContext *ctx, Code_attribute *code_attr) {}
 static u4 handle_fastore(RuntimeContext *ctx, Code_attribute *code_attr) {}
 static u4 handle_fconst_0(RuntimeContext *ctx, Code_attribute *code_attr) {}
 static u4 handle_fconst_1(RuntimeContext *ctx, Code_attribute *code_attr) {}
 static u4 handle_fconst_2(RuntimeContext *ctx, Code_attribute *code_attr) {}
-static u4 handle_fdiv(RuntimeContext *ctx, Code_attribute *code_attr) {}
+static u4 handle_fdiv(RuntimeContext *ctx, Code_attribute *code_attr) {
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+    u4 raw1 = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    u4 raw2 = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    union { u4 u; float f; } val1 = { raw1 }, val2 = { raw2 };
+    float result = val2.f / val1.f;
+    union { float f; u4 u; } res = { result };
+    push(frame->operand_stack, (void*)&res.u);
+    return pc + 1;
+}
 static u4 handle_fload(RuntimeContext *ctx, Code_attribute *code_attr) {}
 static u4 handle_fload_0(RuntimeContext *ctx, Code_attribute *code_attr) {}
 static u4 handle_fload_1(RuntimeContext *ctx, Code_attribute *code_attr) {}
 static u4 handle_fload_2(RuntimeContext *ctx, Code_attribute *code_attr) {}
 static u4 handle_fload_3(RuntimeContext *ctx, Code_attribute *code_attr) {}
-static u4 handle_fmul(RuntimeContext *ctx, Code_attribute *code_attr) {}
-static u4 handle_fneg(RuntimeContext *ctx, Code_attribute *code_attr) {}
-static u4 handle_frem(RuntimeContext *ctx, Code_attribute *code_attr) {}
+static u4 handle_fmul(RuntimeContext *ctx, Code_attribute *code_attr) {
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+    u4 raw1 = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    u4 raw2 = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    union { u4 u; float f; } val1 = { raw1 }, val2 = { raw2 };
+    float result = val2.f * val1.f;
+    union { float f; u4 u; } res = { result };
+    push(frame->operand_stack, (void*)&res.u);
+    return pc + 1;
+}
+static u4 handle_fneg(RuntimeContext *ctx, Code_attribute *code_attr) {
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+    u4 raw = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    union { u4 u; float f; } val = { raw };
+    float result = -val.f;
+    union { float f; u4 u; } res = { result };
+    push(frame->operand_stack, (void*)&res.u);
+    return pc + 1;
+}
+static u4 handle_frem(RuntimeContext *ctx, Code_attribute *code_attr) {
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+    u4 raw1 = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    u4 raw2 = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    union { u4 u; float f; } val1 = { raw1 }, val2 = { raw2 };
+    float result = fmodf(val2.f, val1.f);
+    union { float f; u4 u; } res = { result };
+    push(frame->operand_stack, (void*)&res.u);
+    return pc + 1;
+}
 static u4 handle_freturn(RuntimeContext *ctx, Code_attribute *code_attr) {}
 static u4 handle_fstore(RuntimeContext *ctx, Code_attribute *code_attr) {}
 static u4 handle_fstore_0(RuntimeContext *ctx, Code_attribute *code_attr) {}
 static u4 handle_fstore_1(RuntimeContext *ctx, Code_attribute *code_attr) {}
 static u4 handle_fstore_2(RuntimeContext *ctx, Code_attribute *code_attr) {}
 static u4 handle_fstore_3(RuntimeContext *ctx, Code_attribute *code_attr) {}
-static u4 handle_fsub(RuntimeContext *ctx, Code_attribute *code_attr) {}
+static u4 handle_fsub(RuntimeContext *ctx, Code_attribute *code_attr) {
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+    u4 raw1 = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    u4 raw2 = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    union { u4 u; float f; } val1 = { raw1 }, val2 = { raw2 };
+    float result = val2.f - val1.f;
+    union { float f; u4 u; } res = { result };
+    push(frame->operand_stack, (void*)&res.u);
+    return pc + 1;
+}
 static u4 handle_iaload(RuntimeContext *ctx, Code_attribute *code_attr) {}
 static u4 handle_iastore(RuntimeContext *ctx, Code_attribute *code_attr) {}
 static u4 handle_instanceof(RuntimeContext *ctx, Code_attribute *code_attr) {}
