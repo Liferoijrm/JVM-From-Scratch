@@ -720,13 +720,26 @@ static u4 handle_i2l(RuntimeContext *ctx, Code_attribute *code_attr) {
 }
 
 static u4 handle_i2f(RuntimeContext *ctx, Code_attribute *code_attr) {
-    //(void)frame; (void)code;
-    //return pc + 1;
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+    int32_t val = *((int32_t*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    float result = (float)val;
+    union { float f; u4 u; } res = { result };
+    push(frame->operand_stack, (void*)&res.u);
+    return pc + 1;
 }
 
 static u4 handle_i2d(RuntimeContext *ctx, Code_attribute *code_attr) {
-    //(void)frame; (void)code;
-    //return pc + 1;
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+    int32_t val = *((int32_t*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    double result = (double)val;
+    union { double d; uint64_t u; } res = { result };
+    u4 high = (u4)(res.u >> 32);
+    u4 low  = (u4)(res.u & 0xFFFFFFFF);
+    push(frame->operand_stack, (void*)&high);
+    push(frame->operand_stack, (void*)&low);
+    return pc + 1;
 }
 
 // converte long para int (descarta high)
@@ -744,43 +757,123 @@ static u4 handle_l2i(RuntimeContext *ctx, Code_attribute *code_attr) {
 }
 
 static u4 handle_l2f(RuntimeContext *ctx, Code_attribute *code_attr) {
-    //(void)frame; (void)code;
-    //return pc + 1;
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+    u4 low  = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    u4 high = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    int64_t val = (int64_t)(((uint64_t)high << 32) | low);
+    float result = (float)val;
+    union { float f; u4 u; } res = { result };
+    push(frame->operand_stack, (void*)&res.u);
+    return pc + 1;
 }
 
 static u4 handle_l2d(RuntimeContext *ctx, Code_attribute *code_attr) {
-    //(void)frame; (void)code;
-    //return pc + 1;
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+    u4 low  = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    u4 high = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    int64_t val = (int64_t)(((uint64_t)high << 32) | low);
+    double result = (double)val;
+    union { double d; uint64_t u; } res = { result };
+    u4 res_high = (u4)(res.u >> 32);
+    u4 res_low  = (u4)(res.u & 0xFFFFFFFF);
+    push(frame->operand_stack, (void*)&res_high);
+    push(frame->operand_stack, (void*)&res_low);
+    return pc + 1;
 }
 
 static u4 handle_f2i(RuntimeContext *ctx, Code_attribute *code_attr) {
-    //(void)frame; (void)code;
-    //return pc + 1;
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+    u4 raw = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    union { u4 u; float f; } val = { raw };
+    int32_t result;
+    if (isnan(val.f))                 result = 0;
+    else if (val.f >= 2147483648.0f)  result = INT32_MAX;  // >= 2^31
+    else if (val.f < -2147483648.0f)  result = INT32_MIN;  // < -2^31
+    else                              result = (int32_t)val.f;
+    push(frame->operand_stack, (void*)&result);
+    return pc + 1;
 }
 
 static u4 handle_f2l(RuntimeContext *ctx, Code_attribute *code_attr) {
-    //(void)frame; (void)code;
-    //return pc + 1;
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+    u4 raw = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    union { u4 u; float f; } val = { raw };
+    int64_t result;
+    if (isnan(val.f))                              result = 0LL;
+    else if (val.f >= 9223372036854775808.0f)      result = INT64_MAX;  // >= 2^63
+    else if (val.f < -9223372036854775808.0f)      result = INT64_MIN;  // < -2^63
+    else                                           result = (int64_t)val.f;
+    u4 high = (u4)((uint64_t)result >> 32);
+    u4 low  = (u4)((uint64_t)result & 0xFFFFFFFF);
+    push(frame->operand_stack, (void*)&high);
+    push(frame->operand_stack, (void*)&low);
+    return pc + 1;
 }
 
 static u4 handle_f2d(RuntimeContext *ctx, Code_attribute *code_attr) {
-    //(void)frame; (void)code;
-    //return pc + 1;
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+    u4 raw = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    union { u4 u; float f; } val = { raw };
+    double result = (double)val.f;
+    union { double d; uint64_t u; } res = { result };
+    u4 high = (u4)(res.u >> 32);
+    u4 low  = (u4)(res.u & 0xFFFFFFFF);
+    push(frame->operand_stack, (void*)&high);
+    push(frame->operand_stack, (void*)&low);
+    return pc + 1;
 }
 
 static u4 handle_d2i(RuntimeContext *ctx, Code_attribute *code_attr) {
-    //(void)frame; (void)code;
-    //return pc + 1;
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+    u4 low  = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    u4 high = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    uint64_t bits = ((uint64_t)high << 32) | low;
+    union { uint64_t u; double d; } val = { bits };
+    int32_t result;
+    if (isnan(val.d))                result = 0;
+    else if (val.d >= 2147483648.0)  result = INT32_MAX;  // >= 2^31
+    else if (val.d < -2147483648.0)  result = INT32_MIN;  // < -2^31
+    else                             result = (int32_t)val.d;
+    push(frame->operand_stack, (void*)&result);
+    return pc + 1;
 }
 
 static u4 handle_d2l(RuntimeContext *ctx, Code_attribute *code_attr) {
-    //(void)frame; (void)code;
-    //return pc + 1;
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+    u4 low  = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    u4 high = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    uint64_t bits = ((uint64_t)high << 32) | low;
+    union { uint64_t u; double d; } val = { bits };
+    int64_t result;
+    if (isnan(val.d))                             result = 0LL;
+    else if (val.d >= 9223372036854775808.0)      result = INT64_MAX;  // >= 2^63
+    else if (val.d < -9223372036854775808.0)      result = INT64_MIN;  // < -2^63
+    else                                          result = (int64_t)val.d;
+    u4 res_high = (u4)((uint64_t)result >> 32);
+    u4 res_low  = (u4)((uint64_t)result & 0xFFFFFFFF);
+    push(frame->operand_stack, (void*)&res_high);
+    push(frame->operand_stack, (void*)&res_low);
+    return pc + 1;
 }
 
 static u4 handle_d2f(RuntimeContext *ctx, Code_attribute *code_attr) {
-    //(void)frame; (void)code;
-    //return pc + 1;
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+    u4 low  = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    u4 high = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    uint64_t bits = ((uint64_t)high << 32) | low;
+    union { uint64_t u; double d; } val = { bits };
+    float result = (float)val.d;
+    union { float f; u4 u; } res = { result };
+    push(frame->operand_stack, (void*)&res.u);
+    return pc + 1;
 }
 
 static u4 handle_lshl(RuntimeContext *ctx, Code_attribute *code_attr) {
