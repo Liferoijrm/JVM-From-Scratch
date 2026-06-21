@@ -160,9 +160,13 @@ static u4 handle_iload_3(RuntimeContext *ctx, Code_attribute *code_attr) {
     return pc + 1;
 }
 
+// da push de uma variavel local de referencia no indice 0 na operand stack
 static u4 handle_aload_0(RuntimeContext *ctx, Code_attribute *code_attr) {
-    //(void)frame; (void)code;
-    //return pc + 1;
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+    u4 content = frame->local_variables[0];
+    push(frame->operand_stack, (void*)&content);
+    return pc + 1;
 }
 
 // da pop na operand stack e armazena em variaveis locais no indice idx
@@ -532,18 +536,27 @@ static u4 handle_arraylength(RuntimeContext *ctx, Code_attribute *code_attr) {
     //return pc + 1;
 }
 
+// da push de uma variavel local de referencia no indice idx na operand stack
 static u4 handle_aload(RuntimeContext *ctx, Code_attribute *code_attr) {
-    //(void)frame;
-    //u1 index = code[pc + 1];
-    // TODO: push array reference at local index onto operand stack
-    //return pc + 2;
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+    u1* code = code_attr->code;
+    u1 parameter = code[pc+1];
+    u4 content = frame->local_variables[parameter];
+    push(frame->operand_stack, (void*)&content);
+    return pc + 2;
 }
 
+// da pop na operand stack e armazena referencia em variaveis locais no indice idx
 static u4 handle_astore(RuntimeContext *ctx, Code_attribute *code_attr) {
-    //(void)frame;
-    //u1 index = code[pc + 1];
-    // TODO: pop reference into local variable at index
-    //return pc + 2;
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+    u1* code = code_attr->code;
+    u1 parameter = code[pc+1];
+    u4 content = *((u4*) getTop(frame->operand_stack));
+    pop(frame->operand_stack);
+    frame->local_variables[parameter] = content;
+    return pc + 2;
 }
 
 // pop na stack de operandos
@@ -1066,14 +1079,67 @@ static u4 handle_jsr_w(RuntimeContext *ctx, Code_attribute *code_attr) {
 
 static u4 handle_aaload(RuntimeContext *ctx, Code_attribute *code_attr) {}
 static u4 handle_aastore(RuntimeContext *ctx, Code_attribute *code_attr) {}
-static u4 handle_aload_1(RuntimeContext *ctx, Code_attribute *code_attr) {}
-static u4 handle_aload_2(RuntimeContext *ctx, Code_attribute *code_attr) {}
-static u4 handle_aload_3(RuntimeContext *ctx, Code_attribute *code_attr) {}
+// da push de uma variavel local de referencia no indice 1 na operand stack
+static u4 handle_aload_1(RuntimeContext *ctx, Code_attribute *code_attr) {
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+    u4 content = frame->local_variables[1];
+    push(frame->operand_stack, (void*)&content);
+    return pc + 1;
+}
+// da push de uma variavel local de referencia no indice 2 na operand stack
+static u4 handle_aload_2(RuntimeContext *ctx, Code_attribute *code_attr) {
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+    u4 content = frame->local_variables[2];
+    push(frame->operand_stack, (void*)&content);
+    return pc + 1;
+}
+// da push de uma variavel local de referencia no indice 3 na operand stack
+static u4 handle_aload_3(RuntimeContext *ctx, Code_attribute *code_attr) {
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+    u4 content = frame->local_variables[3];
+    push(frame->operand_stack, (void*)&content);
+    return pc + 1;
+}
 static u4 handle_areturn(RuntimeContext *ctx, Code_attribute *code_attr) {}
-static u4 handle_astore_0(RuntimeContext *ctx, Code_attribute *code_attr) {}
-static u4 handle_astore_1(RuntimeContext *ctx, Code_attribute *code_attr) {}
-static u4 handle_astore_2(RuntimeContext *ctx, Code_attribute *code_attr) {}
-static u4 handle_astore_3(RuntimeContext *ctx, Code_attribute *code_attr) {}
+// da pop na operand stack e armazena referencia em variaveis locais no indice 0
+static u4 handle_astore_0(RuntimeContext *ctx, Code_attribute *code_attr) {
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+    u4 content = *((u4*) getTop(frame->operand_stack));
+    pop(frame->operand_stack);
+    frame->local_variables[0] = content;
+    return pc + 1;
+}
+// da pop na operand stack e armazena referencia em variaveis locais no indice 1
+static u4 handle_astore_1(RuntimeContext *ctx, Code_attribute *code_attr) {
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+    u4 content = *((u4*) getTop(frame->operand_stack));
+    pop(frame->operand_stack);
+    frame->local_variables[1] = content;
+    return pc + 1;
+}
+// da pop na operand stack e armazena referencia em variaveis locais no indice 2
+static u4 handle_astore_2(RuntimeContext *ctx, Code_attribute *code_attr) {
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+    u4 content = *((u4*) getTop(frame->operand_stack));
+    pop(frame->operand_stack);
+    frame->local_variables[2] = content;
+    return pc + 1;
+}
+// da pop na operand stack e armazena referencia em variaveis locais no indice 3
+static u4 handle_astore_3(RuntimeContext *ctx, Code_attribute *code_attr) {
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+    u4 content = *((u4*) getTop(frame->operand_stack));
+    pop(frame->operand_stack);
+    frame->local_variables[3] = content;
+    return pc + 1;
+}
 static u4 handle_baload(RuntimeContext *ctx, Code_attribute *code_attr) {}
 static u4 handle_bastore(RuntimeContext *ctx, Code_attribute *code_attr) {}
 static u4 handle_caload(RuntimeContext *ctx, Code_attribute *code_attr) {}
