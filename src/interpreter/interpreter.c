@@ -1370,9 +1370,30 @@ static u4 handle_fadd(RuntimeContext *ctx, Code_attribute *code_attr) {
 }
 static u4 handle_faload(RuntimeContext *ctx, Code_attribute *code_attr) {}
 static u4 handle_fastore(RuntimeContext *ctx, Code_attribute *code_attr) {}
-static u4 handle_fconst_0(RuntimeContext *ctx, Code_attribute *code_attr) {}
-static u4 handle_fconst_1(RuntimeContext *ctx, Code_attribute *code_attr) {}
-static u4 handle_fconst_2(RuntimeContext *ctx, Code_attribute *code_attr) {}
+// da push de 0.0f na operand stack
+static u4 handle_fconst_0(RuntimeContext *ctx, Code_attribute *code_attr) {
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+    union { float f; u4 u; } val = { 0.0f };
+    push(frame->operand_stack, (void*)&val.u);
+    return pc + 1;
+}
+// da push de 1.0f na operand stack
+static u4 handle_fconst_1(RuntimeContext *ctx, Code_attribute *code_attr) {
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+    union { float f; u4 u; } val = { 1.0f };
+    push(frame->operand_stack, (void*)&val.u);
+    return pc + 1;
+}
+// da push de 2.0f na operand stack
+static u4 handle_fconst_2(RuntimeContext *ctx, Code_attribute *code_attr) {
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+    union { float f; u4 u; } val = { 2.0f };
+    push(frame->operand_stack, (void*)&val.u);
+    return pc + 1;
+}
 static u4 handle_fdiv(RuntimeContext *ctx, Code_attribute *code_attr) {
     u4 pc = ctx->thread->pc;
     Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
@@ -1384,11 +1405,48 @@ static u4 handle_fdiv(RuntimeContext *ctx, Code_attribute *code_attr) {
     push(frame->operand_stack, (void*)&res.u);
     return pc + 1;
 }
-static u4 handle_fload(RuntimeContext *ctx, Code_attribute *code_attr) {}
-static u4 handle_fload_0(RuntimeContext *ctx, Code_attribute *code_attr) {}
-static u4 handle_fload_1(RuntimeContext *ctx, Code_attribute *code_attr) {}
-static u4 handle_fload_2(RuntimeContext *ctx, Code_attribute *code_attr) {}
-static u4 handle_fload_3(RuntimeContext *ctx, Code_attribute *code_attr) {}
+// da push de uma variavel local float no indice idx na operand stack
+static u4 handle_fload(RuntimeContext *ctx, Code_attribute *code_attr) {
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+    u1* code = code_attr->code;
+    u1 parameter = code[pc+1];
+    u4 content = frame->local_variables[parameter];
+    push(frame->operand_stack, (void*)&content);
+    return pc + 2;
+}
+// da push de uma variavel local float no indice 0 na operand stack
+static u4 handle_fload_0(RuntimeContext *ctx, Code_attribute *code_attr) {
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+    u4 content = frame->local_variables[0];
+    push(frame->operand_stack, (void*)&content);
+    return pc + 1;
+}
+// da push de uma variavel local float no indice 1 na operand stack
+static u4 handle_fload_1(RuntimeContext *ctx, Code_attribute *code_attr) {
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+    u4 content = frame->local_variables[1];
+    push(frame->operand_stack, (void*)&content);
+    return pc + 1;
+}
+// da push de uma variavel local float no indice 2 na operand stack
+static u4 handle_fload_2(RuntimeContext *ctx, Code_attribute *code_attr) {
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+    u4 content = frame->local_variables[2];
+    push(frame->operand_stack, (void*)&content);
+    return pc + 1;
+}
+// da push de uma variavel local float no indice 3 na operand stack
+static u4 handle_fload_3(RuntimeContext *ctx, Code_attribute *code_attr) {
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+    u4 content = frame->local_variables[3];
+    push(frame->operand_stack, (void*)&content);
+    return pc + 1;
+}
 static u4 handle_fmul(RuntimeContext *ctx, Code_attribute *code_attr) {
     u4 pc = ctx->thread->pc;
     Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
@@ -1422,11 +1480,53 @@ static u4 handle_frem(RuntimeContext *ctx, Code_attribute *code_attr) {
     return pc + 1;
 }
 static u4 handle_freturn(RuntimeContext *ctx, Code_attribute *code_attr) {}
-static u4 handle_fstore(RuntimeContext *ctx, Code_attribute *code_attr) {}
-static u4 handle_fstore_0(RuntimeContext *ctx, Code_attribute *code_attr) {}
-static u4 handle_fstore_1(RuntimeContext *ctx, Code_attribute *code_attr) {}
-static u4 handle_fstore_2(RuntimeContext *ctx, Code_attribute *code_attr) {}
-static u4 handle_fstore_3(RuntimeContext *ctx, Code_attribute *code_attr) {}
+// da pop na operand stack e armazena float em variaveis locais no indice idx
+static u4 handle_fstore(RuntimeContext *ctx, Code_attribute *code_attr) {
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+    u1* code = code_attr->code;
+    u1 parameter = code[pc+1];
+    u4 content = *((u4*) getTop(frame->operand_stack));
+    pop(frame->operand_stack);
+    frame->local_variables[parameter] = content;
+    return pc + 2;
+}
+// da pop na operand stack e armazena float em variaveis locais no indice 0
+static u4 handle_fstore_0(RuntimeContext *ctx, Code_attribute *code_attr) {
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+    u4 content = *((u4*) getTop(frame->operand_stack));
+    pop(frame->operand_stack);
+    frame->local_variables[0] = content;
+    return pc + 1;
+}
+// da pop na operand stack e armazena float em variaveis locais no indice 1
+static u4 handle_fstore_1(RuntimeContext *ctx, Code_attribute *code_attr) {
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+    u4 content = *((u4*) getTop(frame->operand_stack));
+    pop(frame->operand_stack);
+    frame->local_variables[1] = content;
+    return pc + 1;
+}
+// da pop na operand stack e armazena float em variaveis locais no indice 2
+static u4 handle_fstore_2(RuntimeContext *ctx, Code_attribute *code_attr) {
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+    u4 content = *((u4*) getTop(frame->operand_stack));
+    pop(frame->operand_stack);
+    frame->local_variables[2] = content;
+    return pc + 1;
+}
+// da pop na operand stack e armazena float em variaveis locais no indice 3
+static u4 handle_fstore_3(RuntimeContext *ctx, Code_attribute *code_attr) {
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+    u4 content = *((u4*) getTop(frame->operand_stack));
+    pop(frame->operand_stack);
+    frame->local_variables[3] = content;
+    return pc + 1;
+}
 static u4 handle_fsub(RuntimeContext *ctx, Code_attribute *code_attr) {
     u4 pc = ctx->thread->pc;
     Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
