@@ -350,87 +350,117 @@ static u4 handle_iinc(RuntimeContext *ctx, Code_attribute *code_attr) {
 }
 
 static u4 handle_ifeq(RuntimeContext *ctx, Code_attribute *code_attr) {
-    //(void)frame;
-    //u2 branch_bytes = ((u2)code[pc + 1] << 8) | code[pc + 2];
-    // TODO: pop int; if == 0, jump to pc + compute_branch(branch_bytes)
-    //return pc + 3;
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+    u1* code = code_attr->code;
+    int32_t val = *((int32_t*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    u2 branch_bytes = ((u2)code[pc + 1] << 8) | code[pc + 2];
+    return (val == 0) ? (u4)(pc + compute_branch(branch_bytes)) : pc + 3;
 }
 
 static u4 handle_ifne(RuntimeContext *ctx, Code_attribute *code_attr) {
-    //(void)frame;
-    //u2 branch_bytes = ((u2)code[pc + 1] << 8) | code[pc + 2];
-    // TODO: pop int; if != 0, jump to pc + compute_branch(branch_bytes)
-    //return pc + 3;
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+    u1* code = code_attr->code;
+    int32_t val = *((int32_t*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    u2 branch_bytes = ((u2)code[pc + 1] << 8) | code[pc + 2];
+    return (val != 0) ? (u4)(pc + compute_branch(branch_bytes)) : pc + 3;
 }
 
 static u4 handle_iflt(RuntimeContext *ctx, Code_attribute *code_attr) {
-    //(void)frame;
-    //u2 branch_bytes = ((u2)code[pc + 1] << 8) | code[pc + 2];
-    // TODO: pop int; if < 0, jump
-    //return pc + 3;
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+    u1* code = code_attr->code;
+    int32_t val = *((int32_t*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    u2 branch_bytes = ((u2)code[pc + 1] << 8) | code[pc + 2];
+    return (val < 0) ? (u4)(pc + compute_branch(branch_bytes)) : pc + 3;
 }
 
 static u4 handle_ifge(RuntimeContext *ctx, Code_attribute *code_attr) {
-    //(void)frame;
-    //u2 branch_bytes = ((u2)code[pc + 1] << 8) | code[pc + 2];
-    // TODO: pop int; if >= 0, jump
-    //return pc + 3;
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+    u1* code = code_attr->code;
+    int32_t val = *((int32_t*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    u2 branch_bytes = ((u2)code[pc + 1] << 8) | code[pc + 2];
+    return (val >= 0) ? (u4)(pc + compute_branch(branch_bytes)) : pc + 3;
 }
 
 static u4 handle_ifgt(RuntimeContext *ctx, Code_attribute *code_attr) {
-    //(void)frame;
-    //u2 branch_bytes = ((u2)code[pc + 1] << 8) | code[pc + 2];
-    // TODO: pop int; if > 0, jump
-    //return pc + 3;
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+    u1* code = code_attr->code;
+    int32_t val = *((int32_t*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    u2 branch_bytes = ((u2)code[pc + 1] << 8) | code[pc + 2];
+    return (val > 0) ? (u4)(pc + compute_branch(branch_bytes)) : pc + 3;
 }
 
 static u4 handle_ifle(RuntimeContext *ctx, Code_attribute *code_attr) {
-    //(void)frame;
-    //u2 branch_bytes = ((u2)code[pc + 1] << 8) | code[pc + 2];
-    // TODO: pop int; if <= 0, jump
-    //return pc + 3;
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+    u1* code = code_attr->code;
+    int32_t val = *((int32_t*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    u2 branch_bytes = ((u2)code[pc + 1] << 8) | code[pc + 2];
+    return (val <= 0) ? (u4)(pc + compute_branch(branch_bytes)) : pc + 3;
 }
 
 static u4 handle_if_icmpeq(RuntimeContext *ctx, Code_attribute *code_attr) {
-    //(void)frame;
-    //u2 branch_bytes = ((u2)code[pc + 1] << 8) | code[pc + 2];
-    // TODO: pop two ints; if equal, jump
-    //return pc + 3;
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+    u1* code = code_attr->code;
+    int32_t v2 = *((int32_t*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    int32_t v1 = *((int32_t*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    u2 branch_bytes = ((u2)code[pc + 1] << 8) | code[pc + 2];
+    return (v1 == v2) ? (u4)(pc + compute_branch(branch_bytes)) : pc + 3;
 }
 
 static u4 handle_if_icmpne(RuntimeContext *ctx, Code_attribute *code_attr) {
-    //(void)frame;
-    //u2 branch_bytes = ((u2)code[pc + 1] << 8) | code[pc + 2];
-    // TODO: pop two ints; if not equal, jump
-    //return pc + 3;
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+    u1* code = code_attr->code;
+    int32_t v2 = *((int32_t*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    int32_t v1 = *((int32_t*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    u2 branch_bytes = ((u2)code[pc + 1] << 8) | code[pc + 2];
+    return (v1 != v2) ? (u4)(pc + compute_branch(branch_bytes)) : pc + 3;
 }
 
 static u4 handle_if_icmplt(RuntimeContext *ctx, Code_attribute *code_attr) {
-    //(void)frame;
-    //u2 branch_bytes = ((u2)code[pc + 1] << 8) | code[pc + 2];
-    // TODO: pop two ints; if value1 < value2, jump
-    //return pc + 3;
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+    u1* code = code_attr->code;
+    int32_t v2 = *((int32_t*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    int32_t v1 = *((int32_t*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    u2 branch_bytes = ((u2)code[pc + 1] << 8) | code[pc + 2];
+    return (v1 < v2) ? (u4)(pc + compute_branch(branch_bytes)) : pc + 3;
 }
 
 static u4 handle_if_icmpge(RuntimeContext *ctx, Code_attribute *code_attr) {
-    //(void)frame;
-    //u2 branch_bytes = ((u2)code[pc + 1] << 8) | code[pc + 2];
-    // TODO: pop two ints; if value1 >= value2, jump
-    //return pc + 3;
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+    u1* code = code_attr->code;
+    int32_t v2 = *((int32_t*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    int32_t v1 = *((int32_t*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    u2 branch_bytes = ((u2)code[pc + 1] << 8) | code[pc + 2];
+    return (v1 >= v2) ? (u4)(pc + compute_branch(branch_bytes)) : pc + 3;
 }
 
 static u4 handle_if_icmpgt(RuntimeContext *ctx, Code_attribute *code_attr) {
-    //(void)frame;
-    //u2 branch_bytes = ((u2)code[pc + 1] << 8) | code[pc + 2];
-    // TODO: pop two ints; if value1 > value2, jump
-    //return pc + 3;
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+    u1* code = code_attr->code;
+    int32_t v2 = *((int32_t*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    int32_t v1 = *((int32_t*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    u2 branch_bytes = ((u2)code[pc + 1] << 8) | code[pc + 2];
+    return (v1 > v2) ? (u4)(pc + compute_branch(branch_bytes)) : pc + 3;
 }
 
 static u4 handle_if_icmple(RuntimeContext *ctx, Code_attribute *code_attr) {
-    //(void)frame;
-    //u2 branch_bytes = ((u2)code[pc + 1] << 8) | code[pc + 2];
-    // TODO: pop two ints; if value1 <= value2, jump
-    //return pc + 3;
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+    u1* code = code_attr->code;
+    int32_t v2 = *((int32_t*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    int32_t v1 = *((int32_t*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    u2 branch_bytes = ((u2)code[pc + 1] << 8) | code[pc + 2];
+    return (v1 <= v2) ? (u4)(pc + compute_branch(branch_bytes)) : pc + 3;
 }
 
 // altera o pc de acordo com o short dado como parametro
@@ -596,47 +626,93 @@ static u4 handle_athrow(RuntimeContext *ctx, Code_attribute *code_attr) {
 }
 
 static u4 handle_ifnull(RuntimeContext *ctx, Code_attribute *code_attr) {
-    //(void)frame;
-    //u2 branch_bytes = ((u2)code[pc + 1] << 8) | code[pc + 2];
-    // TODO: pop reference; if null, jump
-    //return pc + 3;
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+    u1* code = code_attr->code;
+    u4 ref = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    u2 branch_bytes = ((u2)code[pc + 1] << 8) | code[pc + 2];
+    return (ref == 0) ? (u4)(pc + compute_branch(branch_bytes)) : pc + 3;
 }
 
 static u4 handle_ifnonnull(RuntimeContext *ctx, Code_attribute *code_attr) {
-    //(void)frame;
-    //u2 branch_bytes = ((u2)code[pc + 1] << 8) | code[pc + 2];
-    // TODO: pop reference; if not null, jump
-    //return pc + 3;
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+    u1* code = code_attr->code;
+    u4 ref = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    u2 branch_bytes = ((u2)code[pc + 1] << 8) | code[pc + 2];
+    return (ref != 0) ? (u4)(pc + compute_branch(branch_bytes)) : pc + 3;
 }
 
 static u4 handle_lcmp(RuntimeContext *ctx, Code_attribute *code_attr) {
-    //(void)frame; (void)code;
-    // TODO: pop two longs, push -1/0/1
-    //return pc + 1;
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+    u4 low2  = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    u4 high2 = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    u4 low1  = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    u4 high1 = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    int64_t v1 = (int64_t)(((uint64_t)high1 << 32) | low1);
+    int64_t v2 = (int64_t)(((uint64_t)high2 << 32) | low2);
+    int32_t result = (v1 > v2) ? 1 : (v1 == v2) ? 0 : -1;
+    push(frame->operand_stack, (void*)&result);
+    return pc + 1;
 }
 
 static u4 handle_fcmpl(RuntimeContext *ctx, Code_attribute *code_attr) {
-    //(void)frame; (void)code;
-    // TODO: pop two floats, push comparison (-1 if NaN)
-    //return pc + 1;
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+    u4 raw2 = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    u4 raw1 = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    union { u4 u; float f; } v1 = { raw1 }, v2 = { raw2 };
+    int32_t result;
+    if (isnan(v1.f) || isnan(v2.f)) result = -1;
+    else result = (v1.f > v2.f) ? 1 : (v1.f == v2.f) ? 0 : -1;
+    push(frame->operand_stack, (void*)&result);
+    return pc + 1;
 }
 
 static u4 handle_fcmpg(RuntimeContext *ctx, Code_attribute *code_attr) {
-    //(void)frame; (void)code;
-    // TODO: pop two floats, push comparison (1 if NaN)
-    //return pc + 1;
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+    u4 raw2 = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    u4 raw1 = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    union { u4 u; float f; } v1 = { raw1 }, v2 = { raw2 };
+    int32_t result;
+    if (isnan(v1.f) || isnan(v2.f)) result = 1;
+    else result = (v1.f > v2.f) ? 1 : (v1.f == v2.f) ? 0 : -1;
+    push(frame->operand_stack, (void*)&result);
+    return pc + 1;
 }
 
 static u4 handle_dcmpl(RuntimeContext *ctx, Code_attribute *code_attr) {
-    //(void)frame; (void)code;
-    // TODO: pop two doubles, push comparison (-1 if NaN)
-    //return pc + 1;
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+    u4 low2  = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    u4 high2 = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    u4 low1  = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    u4 high1 = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    union { uint64_t u; double d; } v1 = { ((uint64_t)high1 << 32) | low1 };
+    union { uint64_t u; double d; } v2 = { ((uint64_t)high2 << 32) | low2 };
+    int32_t result;
+    if (isnan(v1.d) || isnan(v2.d)) result = -1;
+    else result = (v1.d > v2.d) ? 1 : (v1.d == v2.d) ? 0 : -1;
+    push(frame->operand_stack, (void*)&result);
+    return pc + 1;
 }
 
 static u4 handle_dcmpg(RuntimeContext *ctx, Code_attribute *code_attr) {
-    //(void)frame; (void)code;
-    // TODO: pop two doubles, push comparison (1 if NaN)
-    //return pc + 1;
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+    u4 low2  = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    u4 high2 = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    u4 low1  = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    u4 high1 = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    union { uint64_t u; double d; } v1 = { ((uint64_t)high1 << 32) | low1 };
+    union { uint64_t u; double d; } v2 = { ((uint64_t)high2 << 32) | low2 };
+    int32_t result;
+    if (isnan(v1.d) || isnan(v2.d)) result = 1;
+    else result = (v1.d > v2.d) ? 1 : (v1.d == v2.d) ? 0 : -1;
+    push(frame->operand_stack, (void*)&result);
+    return pc + 1;
 }
 
 // da pop na operand stack 2x (4x para dois longs) e da push da soma dos operandos
@@ -1036,26 +1112,31 @@ static u4 handle_multianewarray(RuntimeContext *ctx, Code_attribute *code_attr) 
 }
 
 static u4 handle_if_acmpeq(RuntimeContext *ctx, Code_attribute *code_attr) {
-    //(void)frame;
-    //u2 branch_bytes = ((u2)code[pc + 1] << 8) | code[pc + 2];
-    // TODO: pop two references; if equal, jump
-    //return pc + 3;
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+    u1* code = code_attr->code;
+    u4 ref2 = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    u4 ref1 = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    u2 branch_bytes = ((u2)code[pc + 1] << 8) | code[pc + 2];
+    return (ref1 == ref2) ? (u4)(pc + compute_branch(branch_bytes)) : pc + 3;
 }
 
 static u4 handle_if_acmpne(RuntimeContext *ctx, Code_attribute *code_attr) {
-    //(void)frame;
-    //u2 branch_bytes = ((u2)code[pc + 1] << 8) | code[pc + 2];
-    // TODO: pop two references; if not equal, jump
-    //return pc + 3;
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+    u1* code = code_attr->code;
+    u4 ref2 = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    u4 ref1 = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    u2 branch_bytes = ((u2)code[pc + 1] << 8) | code[pc + 2];
+    return (ref1 != ref2) ? (u4)(pc + compute_branch(branch_bytes)) : pc + 3;
 }
 
 static u4 handle_goto_w(RuntimeContext *ctx, Code_attribute *code_attr) {
-    //(void)frame;
-    //u4 branch_bytes = ((u4)code[pc + 1] << 24) |
-    //                  ((u4)code[pc + 2] << 16) |
-    //                  ((u4)code[pc + 3] << 8)  |
-    //                  ((u4)code[pc + 4]);
-    //return (u4)(pc + compute_branch_wide(branch_bytes));
+    u4 pc = ctx->thread->pc;
+    u1* code = code_attr->code;
+    u4 branch_bytes = ((u4)code[pc + 1] << 24) | ((u4)code[pc + 2] << 16)
+                    | ((u4)code[pc + 3] << 8)  |  (u4)code[pc + 4];
+    return (u4)(pc + compute_branch_wide(branch_bytes));
 }
 
 static u4 handle_jsr(RuntimeContext *ctx, Code_attribute *code_attr) {
