@@ -647,6 +647,105 @@ static u4 handle_jsr_w(RuntimeContext *ctx, Code_attribute *code_attr) {
     //return (u4)(pc + compute_branch_wide(branch_bytes));
 }
 
+// implementar essas tambem!
+
+static u4 handle_aaload(RuntimeContext *ctx, Code_attribute *code_attr) {}
+static u4 handle_aastore(RuntimeContext *ctx, Code_attribute *code_attr) {}
+static u4 handle_aload_1(RuntimeContext *ctx, Code_attribute *code_attr) {}
+static u4 handle_aload_2(RuntimeContext *ctx, Code_attribute *code_attr) {}
+static u4 handle_aload_3(RuntimeContext *ctx, Code_attribute *code_attr) {}
+static u4 handle_areturn(RuntimeContext *ctx, Code_attribute *code_attr) {}
+static u4 handle_astore_0(RuntimeContext *ctx, Code_attribute *code_attr) {}
+static u4 handle_astore_1(RuntimeContext *ctx, Code_attribute *code_attr) {}
+static u4 handle_astore_2(RuntimeContext *ctx, Code_attribute *code_attr) {}
+static u4 handle_astore_3(RuntimeContext *ctx, Code_attribute *code_attr) {}
+static u4 handle_baload(RuntimeContext *ctx, Code_attribute *code_attr) {}
+static u4 handle_bastore(RuntimeContext *ctx, Code_attribute *code_attr) {}
+static u4 handle_caload(RuntimeContext *ctx, Code_attribute *code_attr) {}
+static u4 handle_castore(RuntimeContext *ctx, Code_attribute *code_attr) {}
+static u4 handle_checkcast(RuntimeContext *ctx, Code_attribute *code_attr) {}
+static u4 handle_dadd(RuntimeContext *ctx, Code_attribute *code_attr) {}
+static u4 handle_daload(RuntimeContext *ctx, Code_attribute *code_attr) {}
+static u4 handle_dastore(RuntimeContext *ctx, Code_attribute *code_attr) {}
+static u4 handle_dconst_0(RuntimeContext *ctx, Code_attribute *code_attr) {}
+static u4 handle_dconst_1(RuntimeContext *ctx, Code_attribute *code_attr) {}
+static u4 handle_ddiv(RuntimeContext *ctx, Code_attribute *code_attr) {}
+static u4 handle_dload(RuntimeContext *ctx, Code_attribute *code_attr) {}
+static u4 handle_dload_0(RuntimeContext *ctx, Code_attribute *code_attr) {}
+static u4 handle_dload_1(RuntimeContext *ctx, Code_attribute *code_attr) {}
+static u4 handle_dload_2(RuntimeContext *ctx, Code_attribute *code_attr) {}
+static u4 handle_dload_3(RuntimeContext *ctx, Code_attribute *code_attr) {}
+static u4 handle_dmul(RuntimeContext *ctx, Code_attribute *code_attr) {}
+static u4 handle_dneg(RuntimeContext *ctx, Code_attribute *code_attr) {}
+static u4 handle_drem(RuntimeContext *ctx, Code_attribute *code_attr) {}
+static u4 handle_dreturn(RuntimeContext *ctx, Code_attribute *code_attr) {}
+static u4 handle_dstore(RuntimeContext *ctx, Code_attribute *code_attr) {}
+static u4 handle_dstore_0(RuntimeContext *ctx, Code_attribute *code_attr) {}
+static u4 handle_dstore_1(RuntimeContext *ctx, Code_attribute *code_attr) {}
+static u4 handle_dstore_2(RuntimeContext *ctx, Code_attribute *code_attr) {}
+static u4 handle_dstore_3(RuntimeContext *ctx, Code_attribute *code_attr) {}
+static u4 handle_dsub(RuntimeContext *ctx, Code_attribute *code_attr) {}
+static u4 handle_dup_x1(RuntimeContext *ctx, Code_attribute *code_attr) {}
+static u4 handle_dup_x2(RuntimeContext *ctx, Code_attribute *code_attr) {}
+static u4 handle_dup2(RuntimeContext *ctx, Code_attribute *code_attr) {}
+static u4 handle_dup2_x1(RuntimeContext *ctx, Code_attribute *code_attr) {}
+static u4 handle_dup2_x2(RuntimeContext *ctx, Code_attribute *code_attr) {}
+static u4 handle_fadd(RuntimeContext *ctx, Code_attribute *code_attr) {}
+static u4 handle_faload(RuntimeContext *ctx, Code_attribute *code_attr) {}
+static u4 handle_fastore(RuntimeContext *ctx, Code_attribute *code_attr) {}
+static u4 handle_fconst_0(RuntimeContext *ctx, Code_attribute *code_attr) {}
+static u4 handle_fconst_1(RuntimeContext *ctx, Code_attribute *code_attr) {}
+static u4 handle_fconst_2(RuntimeContext *ctx, Code_attribute *code_attr) {}
+static u4 handle_fdiv(RuntimeContext *ctx, Code_attribute *code_attr) {}
+static u4 handle_fload(RuntimeContext *ctx, Code_attribute *code_attr) {}
+static u4 handle_fload_0(RuntimeContext *ctx, Code_attribute *code_attr) {}
+static u4 handle_fload_1(RuntimeContext *ctx, Code_attribute *code_attr) {}
+static u4 handle_fload_2(RuntimeContext *ctx, Code_attribute *code_attr) {}
+static u4 handle_fload_3(RuntimeContext *ctx, Code_attribute *code_attr) {}
+static u4 handle_fmul(RuntimeContext *ctx, Code_attribute *code_attr) {}
+static u4 handle_fneg(RuntimeContext *ctx, Code_attribute *code_attr) {}
+static u4 handle_frem(RuntimeContext *ctx, Code_attribute *code_attr) {}
+static u4 handle_freturn(RuntimeContext *ctx, Code_attribute *code_attr) {}
+static u4 handle_fstore(RuntimeContext *ctx, Code_attribute *code_attr) {}
+static u4 handle_fstore_0(RuntimeContext *ctx, Code_attribute *code_attr) {}
+static u4 handle_fstore_1(RuntimeContext *ctx, Code_attribute *code_attr) {}
+static u4 handle_fstore_2(RuntimeContext *ctx, Code_attribute *code_attr) {}
+static u4 handle_fstore_3(RuntimeContext *ctx, Code_attribute *code_attr) {}
+static u4 handle_fsub(RuntimeContext *ctx, Code_attribute *code_attr) {}
+static u4 handle_iaload(RuntimeContext *ctx, Code_attribute *code_attr) {}
+static u4 handle_iastore(RuntimeContext *ctx, Code_attribute *code_attr) {}
+static u4 handle_instanceof(RuntimeContext *ctx, Code_attribute *code_attr) {}
+static u4 handle_invokedynamic(RuntimeContext *ctx, Code_attribute *code_attr) {}
+static u4 handle_ishl(RuntimeContext *ctx, Code_attribute *code_attr) {}
+static u4 handle_ishr(RuntimeContext *ctx, Code_attribute *code_attr) {}
+static u4 handle_iushr(RuntimeContext *ctx, Code_attribute *code_attr) {}
+static u4 handle_laload(RuntimeContext *ctx, Code_attribute *code_attr) {}
+static u4 handle_lastore(RuntimeContext *ctx, Code_attribute *code_attr) {}
+static u4 handle_lconst_0(RuntimeContext *ctx, Code_attribute *code_attr) {}
+static u4 handle_lconst_1(RuntimeContext *ctx, Code_attribute *code_attr) {}
+static u4 handle_ldc_w(RuntimeContext *ctx, Code_attribute *code_attr) {}
+static u4 handle_ldc2_w(RuntimeContext *ctx, Code_attribute *code_attr) {}
+static u4 handle_ldiv(RuntimeContext *ctx, Code_attribute *code_attr) {}
+static u4 handle_lload(RuntimeContext *ctx, Code_attribute *code_attr) {}
+static u4 handle_lload_0(RuntimeContext *ctx, Code_attribute *code_attr) {}
+static u4 handle_lload_1(RuntimeContext *ctx, Code_attribute *code_attr) {}
+static u4 handle_lload_2(RuntimeContext *ctx, Code_attribute *code_attr) {}
+static u4 handle_lload_3(RuntimeContext *ctx, Code_attribute *code_attr) {}
+static u4 handle_lmul(RuntimeContext *ctx, Code_attribute *code_attr) {}
+static u4 handle_lneg(RuntimeContext *ctx, Code_attribute *code_attr) {}
+static u4 handle_lrem(RuntimeContext *ctx, Code_attribute *code_attr) {}
+static u4 handle_lreturn(RuntimeContext *ctx, Code_attribute *code_attr) {}
+static u4 handle_lstore(RuntimeContext *ctx, Code_attribute *code_attr) {}
+static u4 handle_lstore_0(RuntimeContext *ctx, Code_attribute *code_attr) {}
+static u4 handle_lstore_1(RuntimeContext *ctx, Code_attribute *code_attr) {}
+static u4 handle_lstore_2(RuntimeContext *ctx, Code_attribute *code_attr) {}
+static u4 handle_lstore_3(RuntimeContext *ctx, Code_attribute *code_attr) {}
+static u4 handle_monitorenter(RuntimeContext *ctx, Code_attribute *code_attr) {}
+static u4 handle_monitorexit(RuntimeContext *ctx, Code_attribute *code_attr) {}
+static u4 handle_pop2(RuntimeContext *ctx, Code_attribute *code_attr) {}
+static u4 handle_saload(RuntimeContext *ctx, Code_attribute *code_attr) {}
+static u4 handle_sastore(RuntimeContext *ctx, Code_attribute *code_attr) {}
+
 // ============================================================
 // Execution loop
 // ============================================================
