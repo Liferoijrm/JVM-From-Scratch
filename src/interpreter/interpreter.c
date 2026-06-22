@@ -1744,8 +1744,6 @@ static u4 handle_lstore_0(RuntimeContext *ctx, Code_attribute *code_attr) {}
 static u4 handle_lstore_1(RuntimeContext *ctx, Code_attribute *code_attr) {}
 static u4 handle_lstore_2(RuntimeContext *ctx, Code_attribute *code_attr) {}
 static u4 handle_lstore_3(RuntimeContext *ctx, Code_attribute *code_attr) {}
-static u4 handle_monitorenter(RuntimeContext *ctx, Code_attribute *code_attr) {}
-static u4 handle_monitorexit(RuntimeContext *ctx, Code_attribute *code_attr) {}
 static u4 handle_saload(RuntimeContext *ctx, Code_attribute *code_attr) {}
 static u4 handle_sastore(RuntimeContext *ctx, Code_attribute *code_attr) {}
 
