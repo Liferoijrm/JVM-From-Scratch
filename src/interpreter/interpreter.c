@@ -2378,7 +2378,6 @@ static u4 handle_iushr(RuntimeContext *ctx, Code_attribute *code_attr) {
 static u4 handle_iaload(RuntimeContext *ctx, Code_attribute *code_attr) {}
 static u4 handle_iastore(RuntimeContext *ctx, Code_attribute *code_attr) {}
 static u4 handle_instanceof(RuntimeContext *ctx, Code_attribute *code_attr) {}
-static u4 handle_invokedynamic(RuntimeContext *ctx, Code_attribute *code_attr) {}
 static u4 handle_laload(RuntimeContext *ctx, Code_attribute *code_attr) {}
 static u4 handle_lastore(RuntimeContext *ctx, Code_attribute *code_attr) {}
 static u4 handle_ldc_w(RuntimeContext *ctx, Code_attribute *code_attr) {}
