@@ -82,6 +82,72 @@ static u4 handle_iconst_5(RuntimeContext *ctx, Code_attribute *code_attr) {
     return pc + 1;
 }
 
+// da push do long 0 na operand stack
+static u4 handle_lconst_0(RuntimeContext *ctx, Code_attribute *code_attr) {
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+
+    u4 high = 0;
+    u4 low  = 0;
+
+    push(frame->operand_stack, (void*)&high);
+    push(frame->operand_stack, (void*)&low);
+
+    return pc + 1;
+}
+
+// da push do long 1 na operand stack
+static u4 handle_lconst_1(RuntimeContext *ctx, Code_attribute *code_attr) {
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+
+    u4 high = 0;
+    u4 low  = 1;
+
+    push(frame->operand_stack, (void*)&high);
+    push(frame->operand_stack, (void*)&low);
+
+    return pc + 1;
+}
+
+// da push do double 0.0 na operand stack
+static u4 handle_dconst_0(RuntimeContext *ctx, Code_attribute *code_attr) {
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+
+    union {
+        double d;
+        uint64_t u;
+    } value = { 0.0 };
+
+    u4 high = (u4)(value.u >> 32);
+    u4 low  = (u4)(value.u & 0xFFFFFFFF);
+
+    push(frame->operand_stack, (void*)&high);
+    push(frame->operand_stack, (void*)&low);
+
+    return pc + 1;
+}
+
+// da push do double 1.0 na operand stack
+static u4 handle_dconst_1(RuntimeContext *ctx, Code_attribute *code_attr) {
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+
+    union {
+        double d;
+        uint64_t u;
+    } value = { 1.0 };
+
+    u4 high = (u4)(value.u >> 32);
+    u4 low  = (u4)(value.u & 0xFFFFFFFF);
+
+    push(frame->operand_stack, (void*)&high);
+    push(frame->operand_stack, (void*)&low);
+
+    return pc + 1;
+}
+
 // da push em um byte sign extended na operand stack
 static u4 handle_bipush(RuntimeContext *ctx, Code_attribute *code_attr) {
     u4 pc = ctx->thread->pc;
@@ -160,6 +226,152 @@ static u4 handle_iload_3(RuntimeContext *ctx, Code_attribute *code_attr) {
     return pc + 1;
 }
 
+// da push de um long da variavel local no indice idx na operand stack
+static u4 handle_lload(RuntimeContext *ctx, Code_attribute *code_attr) {
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+    u1* code = code_attr->code;
+
+    u1 parameter = code[pc + 1];
+
+    u4 high = frame->local_variables[parameter];
+    u4 low  = frame->local_variables[parameter + 1];
+
+    push(frame->operand_stack, (void*)&high);
+    push(frame->operand_stack, (void*)&low);
+
+    return pc + 2;
+}
+
+// da push de um long da variavel local no indice 0 na operand stack
+static u4 handle_lload_0(RuntimeContext *ctx, Code_attribute *code_attr) {
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+
+    u4 high = frame->local_variables[0];
+    u4 low  = frame->local_variables[1];
+
+    push(frame->operand_stack, (void*)&high);
+    push(frame->operand_stack, (void*)&low);
+
+    return pc + 1;
+}
+
+// da push de um long da variavel local no indice 1 na operand stack
+static u4 handle_lload_1(RuntimeContext *ctx, Code_attribute *code_attr) {
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+
+    u4 high = frame->local_variables[1];
+    u4 low  = frame->local_variables[2];
+
+    push(frame->operand_stack, (void*)&high);
+    push(frame->operand_stack, (void*)&low);
+
+    return pc + 1;
+}
+
+// da push de um long da variavel local no indice 2 na operand stack
+static u4 handle_lload_2(RuntimeContext *ctx, Code_attribute *code_attr) {
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+
+    u4 high = frame->local_variables[2];
+    u4 low  = frame->local_variables[3];
+
+    push(frame->operand_stack, (void*)&high);
+    push(frame->operand_stack, (void*)&low);
+
+    return pc + 1;
+}
+
+// da push de um long da variavel local no indice 3 na operand stack
+static u4 handle_lload_3(RuntimeContext *ctx, Code_attribute *code_attr) {
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+
+    u4 high = frame->local_variables[3];
+    u4 low  = frame->local_variables[4];
+
+    push(frame->operand_stack, (void*)&high);
+    push(frame->operand_stack, (void*)&low);
+
+    return pc + 1;
+}
+
+// da push de um double da variavel local no indice idx na operand stack
+static u4 handle_dload(RuntimeContext *ctx, Code_attribute *code_attr) {
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+    u1* code = code_attr->code;
+
+    u1 parameter = code[pc + 1];
+
+    u4 high = frame->local_variables[parameter];
+    u4 low  = frame->local_variables[parameter + 1];
+
+    push(frame->operand_stack, (void*)&high);
+    push(frame->operand_stack, (void*)&low);
+
+    return pc + 2;
+}
+
+// da push de um double da variavel local no indice 0 na operand stack
+static u4 handle_dload_0(RuntimeContext *ctx, Code_attribute *code_attr) {
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+
+    u4 high = frame->local_variables[0];
+    u4 low  = frame->local_variables[1];
+
+    push(frame->operand_stack, (void*)&high);
+    push(frame->operand_stack, (void*)&low);
+
+    return pc + 1;
+}
+
+// da push de um double da variavel local no indice 1 na operand stack
+static u4 handle_dload_1(RuntimeContext *ctx, Code_attribute *code_attr) {
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+
+    u4 high = frame->local_variables[1];
+    u4 low  = frame->local_variables[2];
+
+    push(frame->operand_stack, (void*)&high);
+    push(frame->operand_stack, (void*)&low);
+
+    return pc + 1;
+}
+
+// da push de um double da variavel local no indice 2 na operand stack
+static u4 handle_dload_2(RuntimeContext *ctx, Code_attribute *code_attr) {
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+
+    u4 high = frame->local_variables[2];
+    u4 low  = frame->local_variables[3];
+
+    push(frame->operand_stack, (void*)&high);
+    push(frame->operand_stack, (void*)&low);
+
+    return pc + 1;
+}
+
+// da push de um double da variavel local no indice 3 na operand stack
+static u4 handle_dload_3(RuntimeContext *ctx, Code_attribute *code_attr) {
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+
+    u4 high = frame->local_variables[3];
+    u4 low  = frame->local_variables[4];
+
+    push(frame->operand_stack, (void*)&high);
+    push(frame->operand_stack, (void*)&low);
+
+    return pc + 1;
+}
+
 // da push de uma variavel local de referencia no indice 0 na operand stack
 static u4 handle_aload_0(RuntimeContext *ctx, Code_attribute *code_attr) {
     u4 pc = ctx->thread->pc;
@@ -218,6 +430,182 @@ static u4 handle_istore_3(RuntimeContext *ctx, Code_attribute *code_attr) {
     u4 content = *((u4*) getTop(frame->operand_stack));
     pop(frame->operand_stack);
     frame->local_variables[3] = content;
+    return pc + 1;
+}
+
+// da pop na operand stack e armazena um long em variaveis locais no indice idx
+static u4 handle_lstore(RuntimeContext *ctx, Code_attribute *code_attr) {
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+    u1* code = code_attr->code;
+
+    u1 parameter = code[pc + 1];
+
+    u4 low = *((u4*) getTop(frame->operand_stack));
+    pop(frame->operand_stack);
+
+    u4 high = *((u4*) getTop(frame->operand_stack));
+    pop(frame->operand_stack);
+
+    frame->local_variables[parameter]     = high;
+    frame->local_variables[parameter + 1] = low;
+
+    return pc + 2;
+}
+
+// da pop na operand stack e armazena um long em variaveis locais no indice 0
+static u4 handle_lstore_0(RuntimeContext *ctx, Code_attribute *code_attr) {
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+
+    u4 low = *((u4*) getTop(frame->operand_stack));
+    pop(frame->operand_stack);
+
+    u4 high = *((u4*) getTop(frame->operand_stack));
+    pop(frame->operand_stack);
+
+    frame->local_variables[0] = high;
+    frame->local_variables[1] = low;
+
+    return pc + 1;
+}
+
+// da pop na operand stack e armazena um long em variaveis locais no indice 1
+static u4 handle_lstore_1(RuntimeContext *ctx, Code_attribute *code_attr) {
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+
+    u4 low = *((u4*) getTop(frame->operand_stack));
+    pop(frame->operand_stack);
+
+    u4 high = *((u4*) getTop(frame->operand_stack));
+    pop(frame->operand_stack);
+
+    frame->local_variables[1] = high;
+    frame->local_variables[2] = low;
+
+    return pc + 1;
+}
+
+// da pop na operand stack e armazena um long em variaveis locais no indice 2
+static u4 handle_lstore_2(RuntimeContext *ctx, Code_attribute *code_attr) {
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+
+    u4 low = *((u4*) getTop(frame->operand_stack));
+    pop(frame->operand_stack);
+
+    u4 high = *((u4*) getTop(frame->operand_stack));
+    pop(frame->operand_stack);
+
+    frame->local_variables[2] = high;
+    frame->local_variables[3] = low;
+
+    return pc + 1;
+}
+
+// da pop na operand stack e armazena um long em variaveis locais no indice 3
+static u4 handle_lstore_3(RuntimeContext *ctx, Code_attribute *code_attr) {
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+
+    u4 low = *((u4*) getTop(frame->operand_stack));
+    pop(frame->operand_stack);
+
+    u4 high = *((u4*) getTop(frame->operand_stack));
+    pop(frame->operand_stack);
+
+    frame->local_variables[3] = high;
+    frame->local_variables[4] = low;
+
+    return pc + 1;
+}
+
+// da pop na operand stack e armazena um double em variaveis locais no indice idx
+static u4 handle_dstore(RuntimeContext *ctx, Code_attribute *code_attr) {
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+    u1* code = code_attr->code;
+
+    u1 parameter = code[pc + 1];
+
+    u4 low = *((u4*) getTop(frame->operand_stack));
+    pop(frame->operand_stack);
+
+    u4 high = *((u4*) getTop(frame->operand_stack));
+    pop(frame->operand_stack);
+
+    frame->local_variables[parameter]     = high;
+    frame->local_variables[parameter + 1] = low;
+
+    return pc + 2;
+}
+
+// da pop na operand stack e armazena um double em variaveis locais no indice 0
+static u4 handle_dstore_0(RuntimeContext *ctx, Code_attribute *code_attr) {
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+
+    u4 low = *((u4*) getTop(frame->operand_stack));
+    pop(frame->operand_stack);
+
+    u4 high = *((u4*) getTop(frame->operand_stack));
+    pop(frame->operand_stack);
+
+    frame->local_variables[0] = high;
+    frame->local_variables[1] = low;
+
+    return pc + 1;
+}
+
+// da pop na operand stack e armazena um double em variaveis locais no indice 1
+static u4 handle_dstore_1(RuntimeContext *ctx, Code_attribute *code_attr) {
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+
+    u4 low = *((u4*) getTop(frame->operand_stack));
+    pop(frame->operand_stack);
+
+    u4 high = *((u4*) getTop(frame->operand_stack));
+    pop(frame->operand_stack);
+
+    frame->local_variables[1] = high;
+    frame->local_variables[2] = low;
+
+    return pc + 1;
+}
+
+// da pop na operand stack e armazena um double em variaveis locais no indice 2
+static u4 handle_dstore_2(RuntimeContext *ctx, Code_attribute *code_attr) {
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+
+    u4 low = *((u4*) getTop(frame->operand_stack));
+    pop(frame->operand_stack);
+
+    u4 high = *((u4*) getTop(frame->operand_stack));
+    pop(frame->operand_stack);
+
+    frame->local_variables[2] = high;
+    frame->local_variables[3] = low;
+
+    return pc + 1;
+}
+
+// da pop na operand stack e armazena um double em variaveis locais no indice 3
+static u4 handle_dstore_3(RuntimeContext *ctx, Code_attribute *code_attr) {
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+
+    u4 low = *((u4*) getTop(frame->operand_stack));
+    pop(frame->operand_stack);
+
+    u4 high = *((u4*) getTop(frame->operand_stack));
+    pop(frame->operand_stack);
+
+    frame->local_variables[3] = high;
+    frame->local_variables[4] = low;
+
     return pc + 1;
 }
 
@@ -349,6 +737,177 @@ static u4 handle_iinc(RuntimeContext *ctx, Code_attribute *code_attr) {
     return pc + 3;
 }
 
+// da pop na operand stack 2x (longs) e da push da divisao inteira dos operandos
+// OBS: v2 eh o divisor (termo da direita) e v1 eh o dividendo (termo da esquerda)
+static u4 handle_ldiv(RuntimeContext *ctx, Code_attribute *code_attr) {
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+
+    u4 low2 = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    u4 high2 = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    int64_t v2 = (((int64_t)high2) << 32) | low2;
+
+    u4 low1 = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    u4 high1 = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    int64_t v1 = (((int64_t)high1) << 32) | low1;
+
+    if (v2 == 0) {
+        // TODO: lançar excecao para divisao por 0
+        printf("divisao por 0 fi\n");
+        exit(1);
+    }
+
+    int64_t div_result;
+
+    // intercepta o caso LONG_MIN / -1
+    if (v1 == (int64_t)0x8000000000000000LL && v2 == -1) {
+        div_result = (int64_t)0x8000000000000000LL; // a JVM exige que seja LONG_MIN
+    } else {
+        div_result = v1 / v2;
+    }
+
+    u4 high = (u4)(div_result >> 32);
+    u4 low  = (u4)(div_result & 0xFFFFFFFF);
+
+    push(frame->operand_stack, (void*)&high);
+    push(frame->operand_stack, (void*)&low);
+
+    return pc + 1;
+}
+
+// da pop na operand stack 2x (longs) e da push do produto dos operandos
+static u4 handle_lmul(RuntimeContext *ctx, Code_attribute *code_attr) {
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+
+    u4 low2 = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    u4 high2 = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    int64_t v2 = (((int64_t)high2) << 32) | low2;
+
+    u4 low1 = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    u4 high1 = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    int64_t v1 = (((int64_t)high1) << 32) | low1;
+
+    int64_t mul_result = v1 * v2;
+
+    u4 high = (u4)(mul_result >> 32);
+    u4 low  = (u4)(mul_result & 0xFFFFFFFF);
+
+    push(frame->operand_stack, (void*)&high);
+    push(frame->operand_stack, (void*)&low);
+
+    return pc + 1;
+}
+
+// da pop na operand stack 2x (longs) e da push do resto da divisao dos operandos
+static u4 handle_lrem(RuntimeContext *ctx, Code_attribute *code_attr) {
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+
+    u4 low2 = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    u4 high2 = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    int64_t v2 = (((int64_t)high2) << 32) | low2;
+
+    u4 low1 = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    u4 high1 = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    int64_t v1 = (((int64_t)high1) << 32) | low1;
+
+    if (v2 == 0) {
+        // TODO: lançar excecao para divisao por 0
+        printf("resto por 0 fi\n");
+        exit(1);
+    }
+
+    int64_t rem_result;
+
+    // intercepta o caso LONG_MIN % -1
+    if (v1 == (int64_t)0x8000000000000000LL && v2 == -1) {
+        rem_result = 0; // a JVM exige que seja 0
+    } else {
+        rem_result = v1 % v2;
+    }
+
+    u4 high = (u4)(rem_result >> 32);
+    u4 low  = (u4)(rem_result & 0xFFFFFFFF);
+
+    push(frame->operand_stack, (void*)&high);
+    push(frame->operand_stack, (void*)&low);
+
+    return pc + 1;
+}
+
+// da pop em um int (shift) e um long (v1) e da push do long deslocado para a esquerda
+static u4 handle_lshl(RuntimeContext *ctx, Code_attribute *code_attr) {
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+
+    // O valor de shift (int) ocupa apenas 1 palavra de 32 bits no topo da pilha
+    u4 s = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    int shift = s & 0x3F; // Apenas os 6 bits menos significativos importam para longs (0-63)
+
+    u4 low1 = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    u4 high1 = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    int64_t v1 = (((int64_t)high1) << 32) | low1;
+
+    int64_t res = v1 << shift;
+
+    u4 high = (u4)(res >> 32);
+    u4 low  = (u4)(res & 0xFFFFFFFF);
+
+    push(frame->operand_stack, (void*)&high);
+    push(frame->operand_stack, (void*)&low);
+
+    return pc + 1;
+}
+
+// da pop em um int (shift) e um long (v1) e da push do long com deslocamento aritmetico para a direita (mantem sinal)
+static u4 handle_lshr(RuntimeContext *ctx, Code_attribute *code_attr) {
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+
+    u4 s = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    int shift = s & 0x3F;
+
+    u4 low1 = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    u4 high1 = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    int64_t v1 = (((int64_t)high1) << 32) | low1;
+
+    int64_t res = v1 >> shift;
+
+    u4 high = (u4)(res >> 32);
+    u4 low  = (u4)(res & 0xFFFFFFFF);
+
+    push(frame->operand_stack, (void*)&high);
+    push(frame->operand_stack, (void*)&low);
+
+    return pc + 1;
+}
+
+// da pop em um int (shift) e um long (v1) e da push do long com deslocamento logico para a direita (preenche com zeros)
+static u4 handle_lushr(RuntimeContext *ctx, Code_attribute *code_attr) {
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+
+    u4 s = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    int shift = s & 0x3F;
+
+    u4 low1 = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    u4 high1 = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    
+    // Tratamos como unsigned para garantir o shift lógico (com preenchimento por 0 à esquerda)
+    uint64_t v1 = (((uint64_t)high1) << 32) | low1;
+
+    uint64_t res = v1 >> shift;
+
+    u4 high = (u4)(res >> 32);
+    u4 low  = (u4)(res & 0xFFFFFFFF);
+
+    push(frame->operand_stack, (void*)&high);
+    push(frame->operand_stack, (void*)&low);
+
+    return pc + 1;
+}
+
 static u4 handle_ifeq(RuntimeContext *ctx, Code_attribute *code_attr) {
     u4 pc = ctx->thread->pc;
     Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
@@ -473,15 +1032,123 @@ static u4 handle_goto(RuntimeContext *ctx, Code_attribute *code_attr) {
 }
 
 static u4 handle_i_return(RuntimeContext *ctx, Code_attribute *code_attr) {
-    //(void)code;
-    // TODO: pop int from operand stack, pop frame, push result to caller
-    //return 0;
+    (void)code_attr;
+
+    JVMThread *thread = ctx->thread;
+    Frame *frame = (Frame*)getTop(thread->frame_stack);
+
+    u4 value = *((u4*)getTop(frame->operand_stack));
+    u4 return_pc = frame->return_pc;
+
+    pop(thread->frame_stack);
+
+    if (!isEmpty(thread->frame_stack)) {
+        Frame *caller = (Frame*)getTop(thread->frame_stack);
+        push(caller->operand_stack, (void*)&value);
+    }
+
+    return return_pc;
+}
+
+static u4 handle_lreturn(RuntimeContext *ctx, Code_attribute *code_attr) {
+    (void)code_attr;
+
+    JVMThread *thread = ctx->thread;
+    Frame *frame = (Frame*)getTop(thread->frame_stack);
+
+    u4 low = *((u4*)getTop(frame->operand_stack));
+    pop(frame->operand_stack);
+
+    u4 high = *((u4*)getTop(frame->operand_stack));
+    pop(frame->operand_stack);
+
+    u4 return_pc = frame->return_pc;
+
+    pop(thread->frame_stack);
+
+    if (!isEmpty(thread->frame_stack)) {
+        Frame *caller = (Frame*)getTop(thread->frame_stack);
+        push(caller->operand_stack, (void*)&high);
+        push(caller->operand_stack, (void*)&low);
+    }
+
+    return return_pc;
+}
+
+static u4 handle_freturn(RuntimeContext *ctx, Code_attribute *code_attr) {
+    (void)code_attr;
+
+    JVMThread *thread = ctx->thread;
+    Frame *frame = (Frame*)getTop(thread->frame_stack);
+
+    u4 value = *((u4*)getTop(frame->operand_stack));
+    u4 return_pc = frame->return_pc;
+
+    pop(thread->frame_stack);
+
+    if (!isEmpty(thread->frame_stack)) {
+        Frame *caller = (Frame*)getTop(thread->frame_stack);
+        push(caller->operand_stack, (void*)&value);
+    }
+
+    return return_pc;
+}
+
+static u4 handle_dreturn(RuntimeContext *ctx, Code_attribute *code_attr) {
+    (void)code_attr;
+
+    JVMThread *thread = ctx->thread;
+    Frame *frame = (Frame*)getTop(thread->frame_stack);
+
+    u4 low = *((u4*)getTop(frame->operand_stack));
+    pop(frame->operand_stack);
+
+    u4 high = *((u4*)getTop(frame->operand_stack));
+    pop(frame->operand_stack);
+
+    u4 return_pc = frame->return_pc;
+
+    pop(thread->frame_stack);
+
+    if (!isEmpty(thread->frame_stack)) {
+        Frame *caller = (Frame*)getTop(thread->frame_stack);
+        push(caller->operand_stack, (void*)&high);
+        push(caller->operand_stack, (void*)&low);
+    }
+
+    return return_pc;
+}
+
+static u4 handle_areturn(RuntimeContext *ctx, Code_attribute *code_attr) {
+    (void)code_attr;
+
+    JVMThread *thread = ctx->thread;
+    Frame *frame = (Frame*)getTop(thread->frame_stack);
+
+    u4 value = *((u4*)getTop(frame->operand_stack));
+    u4 return_pc = frame->return_pc;
+
+    pop(thread->frame_stack);
+
+    if (!isEmpty(thread->frame_stack)) {
+        Frame *caller = (Frame*)getTop(thread->frame_stack);
+        push(caller->operand_stack, (void*)&value);
+    }
+
+    return return_pc;
 }
 
 static u4 handle_return(RuntimeContext *ctx, Code_attribute *code_attr) {
-    //(void)frame; (void)code;
-    // TODO: pop current frame, //return to caller
-    //return 0;
+    (void)code_attr;
+
+    JVMThread *thread = ctx->thread;
+
+    Frame *frame = (Frame*)getTop(thread->frame_stack);
+    u4 return_pc = frame->return_pc;
+
+    pop(thread->frame_stack);
+
+    return return_pc;
 }
 
 static u4 handle_invokestatic(RuntimeContext *ctx, Code_attribute *code_attr) {
@@ -977,21 +1644,6 @@ static u4 handle_d2f(RuntimeContext *ctx, Code_attribute *code_attr) {
     return pc + 1;
 }
 
-static u4 handle_lshl(RuntimeContext *ctx, Code_attribute *code_attr) {
-    //(void)frame; (void)code;
-    //return pc + 1;
-}
-
-static u4 handle_lshr(RuntimeContext *ctx, Code_attribute *code_attr) {
-    //(void)frame; (void)code;
-    //return pc + 1;
-}
-
-static u4 handle_lushr(RuntimeContext *ctx, Code_attribute *code_attr) {
-    //(void)frame; (void)code;
-    //return pc + 1;
-}
-
 static u4 handle_land(RuntimeContext *ctx, Code_attribute *code_attr) {
     u4 pc = ctx->thread->pc;
     Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
@@ -1196,7 +1848,7 @@ static u4 handle_aload_3(RuntimeContext *ctx, Code_attribute *code_attr) {
     push(frame->operand_stack, (void*)&content);
     return pc + 1;
 }
-static u4 handle_areturn(RuntimeContext *ctx, Code_attribute *code_attr) {}
+
 // da pop na operand stack e armazena referencia em variaveis locais no indice 0
 static u4 handle_astore_0(RuntimeContext *ctx, Code_attribute *code_attr) {
     u4 pc = ctx->thread->pc;
@@ -1264,8 +1916,7 @@ static u4 handle_dadd(RuntimeContext *ctx, Code_attribute *code_attr) {
 }
 static u4 handle_daload(RuntimeContext *ctx, Code_attribute *code_attr) {}
 static u4 handle_dastore(RuntimeContext *ctx, Code_attribute *code_attr) {}
-static u4 handle_dconst_0(RuntimeContext *ctx, Code_attribute *code_attr) {}
-static u4 handle_dconst_1(RuntimeContext *ctx, Code_attribute *code_attr) {}
+
 static u4 handle_ddiv(RuntimeContext *ctx, Code_attribute *code_attr) {
     u4 pc = ctx->thread->pc;
     Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
@@ -1284,11 +1935,7 @@ static u4 handle_ddiv(RuntimeContext *ctx, Code_attribute *code_attr) {
     push(frame->operand_stack, (void*)&res_low);
     return pc + 1;
 }
-static u4 handle_dload(RuntimeContext *ctx, Code_attribute *code_attr) {}
-static u4 handle_dload_0(RuntimeContext *ctx, Code_attribute *code_attr) {}
-static u4 handle_dload_1(RuntimeContext *ctx, Code_attribute *code_attr) {}
-static u4 handle_dload_2(RuntimeContext *ctx, Code_attribute *code_attr) {}
-static u4 handle_dload_3(RuntimeContext *ctx, Code_attribute *code_attr) {}
+
 static u4 handle_dmul(RuntimeContext *ctx, Code_attribute *code_attr) {
     u4 pc = ctx->thread->pc;
     Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
@@ -1340,12 +1987,7 @@ static u4 handle_drem(RuntimeContext *ctx, Code_attribute *code_attr) {
     push(frame->operand_stack, (void*)&res_low);
     return pc + 1;
 }
-static u4 handle_dreturn(RuntimeContext *ctx, Code_attribute *code_attr) {}
-static u4 handle_dstore(RuntimeContext *ctx, Code_attribute *code_attr) {}
-static u4 handle_dstore_0(RuntimeContext *ctx, Code_attribute *code_attr) {}
-static u4 handle_dstore_1(RuntimeContext *ctx, Code_attribute *code_attr) {}
-static u4 handle_dstore_2(RuntimeContext *ctx, Code_attribute *code_attr) {}
-static u4 handle_dstore_3(RuntimeContext *ctx, Code_attribute *code_attr) {}
+
 static u4 handle_dsub(RuntimeContext *ctx, Code_attribute *code_attr) {
     u4 pc = ctx->thread->pc;
     Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
@@ -1478,6 +2120,7 @@ static u4 handle_dup2_x2(RuntimeContext *ctx, Code_attribute *code_attr) {
 
     return pc + 1;
 }
+
 static u4 handle_fadd(RuntimeContext *ctx, Code_attribute *code_attr) {
     u4 pc = ctx->thread->pc;
     Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
@@ -1489,8 +2132,10 @@ static u4 handle_fadd(RuntimeContext *ctx, Code_attribute *code_attr) {
     push(frame->operand_stack, (void*)&res.u);
     return pc + 1;
 }
+
 static u4 handle_faload(RuntimeContext *ctx, Code_attribute *code_attr) {}
 static u4 handle_fastore(RuntimeContext *ctx, Code_attribute *code_attr) {}
+
 // da push de 0.0f na operand stack
 static u4 handle_fconst_0(RuntimeContext *ctx, Code_attribute *code_attr) {
     u4 pc = ctx->thread->pc;
@@ -1499,6 +2144,7 @@ static u4 handle_fconst_0(RuntimeContext *ctx, Code_attribute *code_attr) {
     push(frame->operand_stack, (void*)&val.u);
     return pc + 1;
 }
+
 // da push de 1.0f na operand stack
 static u4 handle_fconst_1(RuntimeContext *ctx, Code_attribute *code_attr) {
     u4 pc = ctx->thread->pc;
@@ -1507,6 +2153,7 @@ static u4 handle_fconst_1(RuntimeContext *ctx, Code_attribute *code_attr) {
     push(frame->operand_stack, (void*)&val.u);
     return pc + 1;
 }
+
 // da push de 2.0f na operand stack
 static u4 handle_fconst_2(RuntimeContext *ctx, Code_attribute *code_attr) {
     u4 pc = ctx->thread->pc;
@@ -1515,6 +2162,7 @@ static u4 handle_fconst_2(RuntimeContext *ctx, Code_attribute *code_attr) {
     push(frame->operand_stack, (void*)&val.u);
     return pc + 1;
 }
+
 static u4 handle_fdiv(RuntimeContext *ctx, Code_attribute *code_attr) {
     u4 pc = ctx->thread->pc;
     Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
@@ -1526,6 +2174,7 @@ static u4 handle_fdiv(RuntimeContext *ctx, Code_attribute *code_attr) {
     push(frame->operand_stack, (void*)&res.u);
     return pc + 1;
 }
+
 // da push de uma variavel local float no indice idx na operand stack
 static u4 handle_fload(RuntimeContext *ctx, Code_attribute *code_attr) {
     u4 pc = ctx->thread->pc;
@@ -1536,6 +2185,7 @@ static u4 handle_fload(RuntimeContext *ctx, Code_attribute *code_attr) {
     push(frame->operand_stack, (void*)&content);
     return pc + 2;
 }
+
 // da push de uma variavel local float no indice 0 na operand stack
 static u4 handle_fload_0(RuntimeContext *ctx, Code_attribute *code_attr) {
     u4 pc = ctx->thread->pc;
@@ -1544,6 +2194,7 @@ static u4 handle_fload_0(RuntimeContext *ctx, Code_attribute *code_attr) {
     push(frame->operand_stack, (void*)&content);
     return pc + 1;
 }
+
 // da push de uma variavel local float no indice 1 na operand stack
 static u4 handle_fload_1(RuntimeContext *ctx, Code_attribute *code_attr) {
     u4 pc = ctx->thread->pc;
@@ -1552,6 +2203,7 @@ static u4 handle_fload_1(RuntimeContext *ctx, Code_attribute *code_attr) {
     push(frame->operand_stack, (void*)&content);
     return pc + 1;
 }
+
 // da push de uma variavel local float no indice 2 na operand stack
 static u4 handle_fload_2(RuntimeContext *ctx, Code_attribute *code_attr) {
     u4 pc = ctx->thread->pc;
@@ -1560,6 +2212,7 @@ static u4 handle_fload_2(RuntimeContext *ctx, Code_attribute *code_attr) {
     push(frame->operand_stack, (void*)&content);
     return pc + 1;
 }
+
 // da push de uma variavel local float no indice 3 na operand stack
 static u4 handle_fload_3(RuntimeContext *ctx, Code_attribute *code_attr) {
     u4 pc = ctx->thread->pc;
@@ -1568,6 +2221,7 @@ static u4 handle_fload_3(RuntimeContext *ctx, Code_attribute *code_attr) {
     push(frame->operand_stack, (void*)&content);
     return pc + 1;
 }
+
 static u4 handle_fmul(RuntimeContext *ctx, Code_attribute *code_attr) {
     u4 pc = ctx->thread->pc;
     Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
@@ -1579,6 +2233,7 @@ static u4 handle_fmul(RuntimeContext *ctx, Code_attribute *code_attr) {
     push(frame->operand_stack, (void*)&res.u);
     return pc + 1;
 }
+
 static u4 handle_fneg(RuntimeContext *ctx, Code_attribute *code_attr) {
     u4 pc = ctx->thread->pc;
     Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
@@ -1589,6 +2244,7 @@ static u4 handle_fneg(RuntimeContext *ctx, Code_attribute *code_attr) {
     push(frame->operand_stack, (void*)&res.u);
     return pc + 1;
 }
+
 static u4 handle_frem(RuntimeContext *ctx, Code_attribute *code_attr) {
     u4 pc = ctx->thread->pc;
     Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
@@ -1600,7 +2256,7 @@ static u4 handle_frem(RuntimeContext *ctx, Code_attribute *code_attr) {
     push(frame->operand_stack, (void*)&res.u);
     return pc + 1;
 }
-static u4 handle_freturn(RuntimeContext *ctx, Code_attribute *code_attr) {}
+
 // da pop na operand stack e armazena float em variaveis locais no indice idx
 static u4 handle_fstore(RuntimeContext *ctx, Code_attribute *code_attr) {
     u4 pc = ctx->thread->pc;
@@ -1725,25 +2381,9 @@ static u4 handle_instanceof(RuntimeContext *ctx, Code_attribute *code_attr) {}
 static u4 handle_invokedynamic(RuntimeContext *ctx, Code_attribute *code_attr) {}
 static u4 handle_laload(RuntimeContext *ctx, Code_attribute *code_attr) {}
 static u4 handle_lastore(RuntimeContext *ctx, Code_attribute *code_attr) {}
-static u4 handle_lconst_0(RuntimeContext *ctx, Code_attribute *code_attr) {}
-static u4 handle_lconst_1(RuntimeContext *ctx, Code_attribute *code_attr) {}
 static u4 handle_ldc_w(RuntimeContext *ctx, Code_attribute *code_attr) {}
 static u4 handle_ldc2_w(RuntimeContext *ctx, Code_attribute *code_attr) {}
-static u4 handle_ldiv(RuntimeContext *ctx, Code_attribute *code_attr) {}
-static u4 handle_lload(RuntimeContext *ctx, Code_attribute *code_attr) {}
-static u4 handle_lload_0(RuntimeContext *ctx, Code_attribute *code_attr) {}
-static u4 handle_lload_1(RuntimeContext *ctx, Code_attribute *code_attr) {}
-static u4 handle_lload_2(RuntimeContext *ctx, Code_attribute *code_attr) {}
-static u4 handle_lload_3(RuntimeContext *ctx, Code_attribute *code_attr) {}
-static u4 handle_lmul(RuntimeContext *ctx, Code_attribute *code_attr) {}
 static u4 handle_lneg(RuntimeContext *ctx, Code_attribute *code_attr) {}
-static u4 handle_lrem(RuntimeContext *ctx, Code_attribute *code_attr) {}
-static u4 handle_lreturn(RuntimeContext *ctx, Code_attribute *code_attr) {}
-static u4 handle_lstore(RuntimeContext *ctx, Code_attribute *code_attr) {}
-static u4 handle_lstore_0(RuntimeContext *ctx, Code_attribute *code_attr) {}
-static u4 handle_lstore_1(RuntimeContext *ctx, Code_attribute *code_attr) {}
-static u4 handle_lstore_2(RuntimeContext *ctx, Code_attribute *code_attr) {}
-static u4 handle_lstore_3(RuntimeContext *ctx, Code_attribute *code_attr) {}
 static u4 handle_saload(RuntimeContext *ctx, Code_attribute *code_attr) {}
 static u4 handle_sastore(RuntimeContext *ctx, Code_attribute *code_attr) {}
 
