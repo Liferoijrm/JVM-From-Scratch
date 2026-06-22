@@ -597,6 +597,18 @@ static u4 handle_pop(RuntimeContext *ctx, Code_attribute *code_attr) {
     return pc + 1;
 }
 
+// Remove os dois valores do topo da stack de operandos
+static u4 handle_pop2(RuntimeContext *ctx, Code_attribute *code_attr) {
+
+    u4 pc = ctx->thread->pc;
+    Frame *frame = (Frame*)getTop(ctx->thread->frame_stack);
+
+    pop(frame->operand_stack);
+    pop(frame->operand_stack);
+
+    return pc + 1;
+}
+
 // duplica o topo da stack
 static u4 handle_dup(RuntimeContext *ctx, Code_attribute *code_attr) {
     u4 pc = ctx->thread->pc;
@@ -1352,11 +1364,120 @@ static u4 handle_dsub(RuntimeContext *ctx, Code_attribute *code_attr) {
     push(frame->operand_stack, (void*)&res_low);
     return pc + 1;
 }
-static u4 handle_dup_x1(RuntimeContext *ctx, Code_attribute *code_attr) {}
-static u4 handle_dup_x2(RuntimeContext *ctx, Code_attribute *code_attr) {}
-static u4 handle_dup2(RuntimeContext *ctx, Code_attribute *code_attr) {}
-static u4 handle_dup2_x1(RuntimeContext *ctx, Code_attribute *code_attr) {}
-static u4 handle_dup2_x2(RuntimeContext *ctx, Code_attribute *code_attr) {}
+
+// Duplica o valor do topo da pilha e insere ele uma posição abaixo
+static u4 handle_dup_x1(RuntimeContext *ctx, Code_attribute *code_attr) {
+
+    u4 pc = ctx->thread->pc;
+    Frame *frame = (Frame*)getTop(ctx->thread->frame_stack);
+
+    u4 value1 = *((u4*)getTop(frame->operand_stack));
+    pop(frame->operand_stack);
+
+    u4 value2 = *((u4*)getTop(frame->operand_stack));
+    pop(frame->operand_stack);
+
+    push(frame->operand_stack, &value1);
+    push(frame->operand_stack, &value2);
+    push(frame->operand_stack, &value1);
+
+    return pc + 1;
+}
+
+// Duplica o valor do topo da pilha e insere ele duas posições abaixo
+static u4 handle_dup_x2(RuntimeContext *ctx, Code_attribute *code_attr) {
+
+    u4 pc = ctx->thread->pc;
+    Frame *frame = (Frame*)getTop(ctx->thread->frame_stack);
+
+    u4 value1 = *((u4*)getTop(frame->operand_stack));
+    pop(frame->operand_stack);
+
+    u4 value2 = *((u4*)getTop(frame->operand_stack));
+    pop(frame->operand_stack);
+
+    u4 value3 = *((u4*)getTop(frame->operand_stack));
+    pop(frame->operand_stack);
+
+    push(frame->operand_stack, &value1);
+    push(frame->operand_stack, &value3);
+    push(frame->operand_stack, &value2);
+    push(frame->operand_stack, &value1);
+
+    return pc + 1;
+}
+
+// Duplica os dois valores do topo da pilha
+static u4 handle_dup2(RuntimeContext *ctx, Code_attribute *code_attr) {
+
+    u4 pc = ctx->thread->pc;
+    Frame *frame = (Frame*)getTop(ctx->thread->frame_stack);
+
+    u4 value1 = *((u4*)getTop(frame->operand_stack));
+    pop(frame->operand_stack);
+
+    u4 value2 = *((u4*)getTop(frame->operand_stack));
+    pop(frame->operand_stack);
+
+    push(frame->operand_stack, &value2);
+    push(frame->operand_stack, &value1);
+    push(frame->operand_stack, &value2);
+    push(frame->operand_stack, &value1);
+
+    return pc + 1;
+}
+
+// Duplica os dois valores do topo da pilha e insere eles uma posição abaixo
+static u4 handle_dup2_x1(RuntimeContext *ctx, Code_attribute *code_attr) {
+
+    u4 pc = ctx->thread->pc;
+    Frame *frame = (Frame*)getTop(ctx->thread->frame_stack);
+
+    u4 value1 = *((u4*)getTop(frame->operand_stack));
+    pop(frame->operand_stack);
+
+    u4 value2 = *((u4*)getTop(frame->operand_stack));
+    pop(frame->operand_stack);
+
+    u4 value3 = *((u4*)getTop(frame->operand_stack));
+    pop(frame->operand_stack);
+
+    push(frame->operand_stack, &value2);
+    push(frame->operand_stack, &value1);
+    push(frame->operand_stack, &value3);
+    push(frame->operand_stack, &value2);
+    push(frame->operand_stack, &value1);
+
+    return pc + 1;
+}
+
+// Duplica os dois valores do topo da pilha e insere eles duas posições abaixo
+static u4 handle_dup2_x2(RuntimeContext *ctx, Code_attribute *code_attr) {
+
+    u4 pc = ctx->thread->pc;
+    Frame *frame = (Frame*)getTop(ctx->thread->frame_stack);
+
+    u4 value1 = *((u4*)getTop(frame->operand_stack));
+    pop(frame->operand_stack);
+
+    u4 value2 = *((u4*)getTop(frame->operand_stack));
+    pop(frame->operand_stack);
+
+    u4 value3 = *((u4*)getTop(frame->operand_stack));
+    pop(frame->operand_stack);
+
+    u4 value4 = *((u4*)getTop(frame->operand_stack));
+    pop(frame->operand_stack);
+
+    push(frame->operand_stack, &value2);
+    push(frame->operand_stack, &value1);
+    push(frame->operand_stack, &value4);
+    push(frame->operand_stack, &value3);
+    push(frame->operand_stack, &value2);
+    push(frame->operand_stack, &value1);
+
+    return pc + 1;
+}
 static u4 handle_fadd(RuntimeContext *ctx, Code_attribute *code_attr) {
     u4 pc = ctx->thread->pc;
     Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
@@ -1538,13 +1659,70 @@ static u4 handle_fsub(RuntimeContext *ctx, Code_attribute *code_attr) {
     push(frame->operand_stack, (void*)&res.u);
     return pc + 1;
 }
+
+// Desloca um inteiro para a esquerda
+static u4 handle_ishl(RuntimeContext *ctx, Code_attribute *code_attr) {
+
+    u4 pc = ctx->thread->pc;
+    Frame *frame = (Frame*)getTop(ctx->thread->frame_stack);
+
+    u4 shift = *((u4*)getTop(frame->operand_stack));
+    pop(frame->operand_stack);
+
+    u4 value = *((u4*)getTop(frame->operand_stack));
+    pop(frame->operand_stack);
+
+    u4 result = value << (shift & 0x1F);
+
+    push(frame->operand_stack, &result);
+
+    return pc + 1;
+}
+
+// Faz deslocamento aritmético pra direita preservando o sinal
+static u4 handle_ishr(RuntimeContext *ctx, Code_attribute *code_attr) {
+
+    u4 pc = ctx->thread->pc;
+    Frame *frame = (Frame*)getTop(ctx->thread->frame_stack);
+
+    u4 shift = *((u4*)getTop(frame->operand_stack));
+    pop(frame->operand_stack);
+
+    int32_t value =
+        *((int32_t*)getTop(frame->operand_stack));
+    pop(frame->operand_stack);
+
+    int32_t result =
+        value >> (shift & 0x1F);
+
+    push(frame->operand_stack, &result);
+
+    return pc + 1;
+}
+
+// Faz deslocamento lógico pra direita preenchendo com zeros
+static u4 handle_iushr(RuntimeContext *ctx, Code_attribute *code_attr) {
+
+    u4 pc = ctx->thread->pc;
+    Frame *frame = (Frame*)getTop(ctx->thread->frame_stack);
+
+    u4 shift = *((u4*)getTop(frame->operand_stack));
+    pop(frame->operand_stack);
+
+    u4 value = *((u4*)getTop(frame->operand_stack));
+    pop(frame->operand_stack);
+
+    u4 result =
+        value >> (shift & 0x1F);
+
+    push(frame->operand_stack, &result);
+
+    return pc + 1;
+}
 static u4 handle_iaload(RuntimeContext *ctx, Code_attribute *code_attr) {}
 static u4 handle_iastore(RuntimeContext *ctx, Code_attribute *code_attr) {}
 static u4 handle_instanceof(RuntimeContext *ctx, Code_attribute *code_attr) {}
 static u4 handle_invokedynamic(RuntimeContext *ctx, Code_attribute *code_attr) {}
-static u4 handle_ishl(RuntimeContext *ctx, Code_attribute *code_attr) {}
-static u4 handle_ishr(RuntimeContext *ctx, Code_attribute *code_attr) {}
-static u4 handle_iushr(RuntimeContext *ctx, Code_attribute *code_attr) {}
 static u4 handle_laload(RuntimeContext *ctx, Code_attribute *code_attr) {}
 static u4 handle_lastore(RuntimeContext *ctx, Code_attribute *code_attr) {}
 static u4 handle_lconst_0(RuntimeContext *ctx, Code_attribute *code_attr) {}
@@ -1568,7 +1746,6 @@ static u4 handle_lstore_2(RuntimeContext *ctx, Code_attribute *code_attr) {}
 static u4 handle_lstore_3(RuntimeContext *ctx, Code_attribute *code_attr) {}
 static u4 handle_monitorenter(RuntimeContext *ctx, Code_attribute *code_attr) {}
 static u4 handle_monitorexit(RuntimeContext *ctx, Code_attribute *code_attr) {}
-static u4 handle_pop2(RuntimeContext *ctx, Code_attribute *code_attr) {}
 static u4 handle_saload(RuntimeContext *ctx, Code_attribute *code_attr) {}
 static u4 handle_sastore(RuntimeContext *ctx, Code_attribute *code_attr) {}
 
