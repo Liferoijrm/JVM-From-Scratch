@@ -1885,8 +1885,54 @@ static u4 handle_astore_3(RuntimeContext *ctx, Code_attribute *code_attr) {
     frame->local_variables[3] = content;
     return pc + 1;
 }
-static u4 handle_baload(RuntimeContext *ctx, Code_attribute *code_attr) {}
-static u4 handle_bastore(RuntimeContext *ctx, Code_attribute *code_attr) {}
+static u4 handle_baload(RuntimeContext *ctx, Code_attribute *code_attr) {
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+    
+    int32_t index = (int32_t)(*((u4*) getTop(frame->operand_stack))); pop(frame->operand_stack);
+    JVMArray* arrayref = (JVMArray*)(uintptr_t)(*((u4*) getTop(frame->operand_stack))); pop(frame->operand_stack);
+
+    if (arrayref == NULL) {
+        printf("NullPointerException em baload\n");
+        exit(1);
+    }
+    if (index < 0 || (u4)index >= arrayref->length) {
+        printf("ArrayIndexOutOfBoundsException em baload\n");
+        exit(1);
+    }
+
+    // Lê apenas 1 byte da memória e realiza "Sign Extension" para int32_t
+    int8_t byte_val = ((int8_t*)arrayref->data)[index];
+    u4 value = (u4)(int32_t)byte_val; 
+
+    push(frame->operand_stack, (void*)&value);
+
+    return pc + 1;
+}
+
+static u4 handle_bastore(RuntimeContext *ctx, Code_attribute *code_attr) {
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+    
+    u4 value = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    int32_t index = (int32_t)(*((u4*) getTop(frame->operand_stack))); pop(frame->operand_stack);
+    JVMArray* arrayref = (JVMArray*)(uintptr_t)(*((u4*) getTop(frame->operand_stack))); pop(frame->operand_stack);
+
+    if (arrayref == NULL) {
+        printf("NullPointerException em bastore\n");
+        exit(1);
+    }
+    if (index < 0 || (u4)index >= arrayref->length) {
+        printf("ArrayIndexOutOfBoundsException em bastore\n");
+        exit(1);
+    }
+
+    // Trunca o inteiro que está na pilha para caber em 8 bits
+    ((int8_t*)arrayref->data)[index] = (int8_t)(value & 0xFF);
+
+    return pc + 1;
+}
+
 static u4 handle_caload(RuntimeContext *ctx, Code_attribute *code_attr) {}
 static u4 handle_castore(RuntimeContext *ctx, Code_attribute *code_attr) {}
 static u4 handle_checkcast(RuntimeContext *ctx, Code_attribute *code_attr) {}
@@ -2375,11 +2421,114 @@ static u4 handle_iushr(RuntimeContext *ctx, Code_attribute *code_attr) {
 
     return pc + 1;
 }
-static u4 handle_iaload(RuntimeContext *ctx, Code_attribute *code_attr) {}
-static u4 handle_iastore(RuntimeContext *ctx, Code_attribute *code_attr) {}
+
+static u4 handle_iaload(RuntimeContext *ctx, Code_attribute *code_attr) {
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+    
+    // Pop do índice
+    int32_t index = (int32_t)(*((u4*) getTop(frame->operand_stack))); pop(frame->operand_stack);
+    // Pop da referência do array (convertendo u4 para ponteiro)
+    JVMArray* arrayref = (JVMArray*)(uintptr_t)(*((u4*) getTop(frame->operand_stack))); pop(frame->operand_stack);
+
+    // Verificações de segurança
+    if (arrayref == NULL) {
+        printf("NullPointerException em iaload\n");
+        exit(1);
+    }
+    if (index < 0 || (u4)index >= arrayref->length) {
+        printf("ArrayIndexOutOfBoundsException em iaload\n");
+        exit(1);
+    }
+
+    // Acessar o array e empilhar o valor
+    u4 value = (u4)((int32_t*)arrayref->data)[index];
+    push(frame->operand_stack, (void*)&value);
+
+    return pc + 1;
+}
+
+static u4 handle_iastore(RuntimeContext *ctx, Code_attribute *code_attr) {
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+    
+    // A ordem de POP é: value, index, arrayref
+    u4 value = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    int32_t index = (int32_t)(*((u4*) getTop(frame->operand_stack))); pop(frame->operand_stack);
+    JVMArray* arrayref = (JVMArray*)(uintptr_t)(*((u4*) getTop(frame->operand_stack))); pop(frame->operand_stack);
+
+    if (arrayref == NULL) {
+        printf("NullPointerException em iastore\n");
+        exit(1);
+    }
+    if (index < 0 || (u4)index >= arrayref->length) {
+        printf("ArrayIndexOutOfBoundsException em iastore\n");
+        exit(1);
+    }
+
+    // Armazena no buffer de dados como int32_t
+    ((int32_t*)arrayref->data)[index] = (int32_t)value;
+
+    return pc + 1;
+}
+
 static u4 handle_instanceof(RuntimeContext *ctx, Code_attribute *code_attr) {}
-static u4 handle_laload(RuntimeContext *ctx, Code_attribute *code_attr) {}
-static u4 handle_lastore(RuntimeContext *ctx, Code_attribute *code_attr) {}
+
+static u4 handle_laload(RuntimeContext *ctx, Code_attribute *code_attr) {
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+    
+    int32_t index = (int32_t)(*((u4*) getTop(frame->operand_stack))); pop(frame->operand_stack);
+    JVMArray* arrayref = (JVMArray*)(uintptr_t)(*((u4*) getTop(frame->operand_stack))); pop(frame->operand_stack);
+
+    if (arrayref == NULL) {
+        printf("NullPointerException em laload\n");
+        exit(1);
+    }
+    if (index < 0 || (u4)index >= arrayref->length) {
+        printf("ArrayIndexOutOfBoundsException em laload\n");
+        exit(1);
+    }
+
+    // Acessa o array como um array de int64_t
+    int64_t value = ((int64_t*)arrayref->data)[index];
+    
+    // Divide o long de 64 bits em duas partes de 32 bits para a pilha
+    u4 high = (u4)(value >> 32);
+    u4 low = (u4)(value & 0xFFFFFFFF);
+
+    push(frame->operand_stack, (void*)&high);
+    push(frame->operand_stack, (void*)&low);
+
+    return pc + 1;
+}
+
+static u4 handle_lastore(RuntimeContext *ctx, Code_attribute *code_attr) {
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+    
+    // Pop de um long são dois u4: low, depois high.
+    u4 low = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    u4 high = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    int64_t value = (((int64_t)high) << 32) | low;
+
+    int32_t index = (int32_t)(*((u4*) getTop(frame->operand_stack))); pop(frame->operand_stack);
+    JVMArray* arrayref = (JVMArray*)(uintptr_t)(*((u4*) getTop(frame->operand_stack))); pop(frame->operand_stack);
+
+    if (arrayref == NULL) {
+        printf("NullPointerException em lastore\n");
+        exit(1);
+    }
+    if (index < 0 || (u4)index >= arrayref->length) {
+        printf("ArrayIndexOutOfBoundsException em lastore\n");
+        exit(1);
+    }
+
+    ((int64_t*)arrayref->data)[index] = value;
+
+    return pc + 1;
+}
+
 static u4 handle_ldc_w(RuntimeContext *ctx, Code_attribute *code_attr) {}
 static u4 handle_ldc2_w(RuntimeContext *ctx, Code_attribute *code_attr) {}
 static u4 handle_lneg(RuntimeContext *ctx, Code_attribute *code_attr) {}
