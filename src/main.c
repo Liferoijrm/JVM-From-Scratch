@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "viewer/printer.h"
 #include "class_loader/loading/classloader.h"
 #include "class_loader/linking/linking.h"
 #include "class_loader/initialization/initialization.h"
@@ -16,12 +17,23 @@ static u1 LinkAllLoaded(MethodArea *method_area);
 
 int main(int argc, char **argv){
 
-    if (argc < 2) {
-        printf("Uso: %s <arquivo.class>\n", argv[0]);
+    if (argc < 3 || (strcmp(argv[1], "run") && strcmp(argv[1], "view"))) {
+        printf("Uso: ./<.exe> run <arquivo>       - Rodar a JVM\n");
+        printf("Uso: ./<.exe> view <arquivo>      - Rodar o exibidor de bytecode\n");
         return 1;
     }
 
-    char *class_name = argv[1];
+    char *class_name = argv[2];
+
+    if (!strcmp(argv[1], "view")) {
+        char full_path[512];
+
+        snprintf(full_path, sizeof(full_path), "Examples/%s.class", class_name);
+
+        ClassFile* cf = ParseClass(full_path);
+        printClass(cf);
+        return 0;
+    }
 
     MethodArea *method_area = CreateMethodArea();
     if (!method_area) {
