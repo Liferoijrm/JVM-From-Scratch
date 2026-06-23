@@ -1179,22 +1179,26 @@ static u4 handle_invokeinterface(RuntimeContext *ctx, Code_attribute *code_attr)
 }
 
 static u4 handle_getstatic(RuntimeContext *ctx, Code_attribute *code_attr) {
-    JVMThread *thread = ctx->thread;
     
+    // 1. Pega o frame atual e o constant pool da classe
+    JVMThread *thread = ctx->thread;
     Frame *frame = (Frame*)getTop(thread->frame_stack);
     ClassFile *class_file = frame->class_file;
     Cp_info *constant_pool = class_file->constant_pool;
 
+    // 2. Pega o índice do campo no constant pool a partir do bytecode
     u4 pc = thread->pc;
     u1* code = code_attr->code;
     u2 field_index = ((u2)code[pc + 1] << 8) | code[pc + 2];
-    // Resolve field from constant pool, push static field value
+    
+    // 3. Checa se o entry do constant pool é do tipo Fieldref
     Cp_info field_ref = constant_pool[field_index];
     if (field_ref.tag != CONSTANT_Fieldref) {
         fprintf(stderr, "Invalid constant pool entry for getstatic\n");
         exit(1);
     }
     else {
+        // 4. Resgata o array de static fields da classe e o entry do method area correspondente
         MethodArea *method_area = ctx->method_area;
         MethodAreaEntry *entry = get_method_area_entry(method_area, class_file->this_class);
         StaticField *static_fields = entry->static_fields;
@@ -1206,48 +1210,69 @@ static u4 handle_getstatic(RuntimeContext *ctx, Code_attribute *code_attr) {
         char fieldType;
 
         Field_info *field_info = class_file->fields;
-        u2 count = class_file->fields_count;
-        u4 mem_offset = 0;
+        u2 static_field_count = entry->static_field_count;
 
-        for (u2 i = 0; i < count; i++) {
-            u2 field_name = field_info[i].name_index;
-            u2 field_descriptor = field_info[i].descriptor_index;
+        // 5. Itera sobre os static fields para encontrar o campo correspondente e empilha seu valor na operand stack
+        for (u2 i = 0; i < static_field_count; i++) {
+            StaticField *static_field = &static_fields[i];
+            Field_info *field = &class_file->fields[static_field->field_index];
 
-            if (field_name == target_name_index && field_descriptor == target_descriptor_index) {
-                Field_info *field = &field_info[i];
+            if (field->name_index == target_name_index && field->descriptor_index == target_descriptor_index) {
+                // 6. Empilha o valor do campo estático na operand stack
+                push(frame->operand_stack, (void*)&static_field->value);
                 break;
             }
-            
-            else {
-                fieldType = constant_pool[field_descriptor].info.Utf8.bytes[0];
-                if (fieldType == 'J' || fieldType == 'D') {
-                    mem_offset += 8;
-                } else {
-                    mem_offset += 4;
-                }
-            }
-        }
-
-        // Push the value of the static field onto the operand stack based on its type
-        StaticField *target_field = (StaticField*)((u1*)static_fields + mem_offset);
-        if (constant_pool[target_descriptor_index].info.Utf8.bytes[0] == 'J' || constant_pool[target_descriptor_index].info.Utf8.bytes[0] == 'D') {
-            u4 high = target_field->value[0];
-            u4 low = target_field->value[1];
-            push(frame->operand_stack, (void*)&high);
-            push(frame->operand_stack, (void*)&low);
-        } else {
-            u4 value = target_field->value[0];
-            push(frame->operand_stack, (void*)&value);
         }
     }
     return pc + 3;
 }
 
 static u4 handle_putstatic(RuntimeContext *ctx, Code_attribute *code_attr) {
-    //(void)frame;
-    //u2 field_index = ((u2)code[pc + 1] << 8) | code[pc + 2];
-    // TODO: pop value, store in static field
-    //return pc + 3;
+
+    // 1. Pega o frame atual, o method area e o entry correspondente à classe
+    JVMThread *thread = ctx->thread;
+    MethodArea *method_area = ctx->method_area;
+    Frame *frame = (Frame*)getTop(thread->frame_stack);
+    MethodAreaEntry *entry = get_method_area_entry(method_area, frame->class_file->this_class);
+    StaticField *static_fields = entry->static_fields;
+
+    // 2. Pega o índice do campo no constant pool a partir do bytecode
+    u4 pc = thread->pc;
+    u1* code = code_attr->code;
+    u2 field_index = ((u2)code[pc + 1] << 8) | code[pc + 2];
+    u2 static_field_count = entry->static_field_count;
+
+    // 3. Checa se o entry do constant pool é do tipo Fieldref
+    ClassFile *class_file = frame->class_file;
+    Cp_info field_ref = class_file->constant_pool[field_index];
+    if (field_ref.tag != CONSTANT_Fieldref) {
+        fprintf(stderr, "Invalid constant pool entry for putstatic\n");
+        exit(1);
+    }
+    else {
+        // 4. Resgata o name_and_type_index do Fieldref e os índices de nome e descriptor
+        u2 name_and_type_index = field_ref.info.Fieldref.name_and_type_index;
+        Cp_info name_and_type = class_file->constant_pool[name_and_type_index];
+        u2 target_name_index = name_and_type.info.NameAndType.name_index;
+        u2 target_descriptor_index = name_and_type.info.NameAndType.descriptor_index;
+
+        // 5. Itera sobre os static fields para encontrar o campo correspondente e atualiza seu valor com o valor da operand stack
+        for(u2 i = 0; i < static_field_count; i++) {
+            StaticField *static_field = &static_fields[i];
+            Field_info *field = &class_file->fields[static_field->field_index];
+
+            if (field->name_index == target_name_index && field->descriptor_index == target_descriptor_index) {
+                // 6. Atualiza o valor do campo estático com o valor da operand stack
+                u4 value = *((u4*)getTop(frame->operand_stack));
+                memcpy(&static_field->value, &value, sizeof(u4) * 2);
+                pop(frame->operand_stack);
+                break;
+            }
+        }
+    }
+
+
+    return pc + 3;
 }
 
 static u4 handle_getfield(RuntimeContext *ctx, Code_attribute *code_attr) {
@@ -1359,10 +1384,78 @@ static u4 handle_newarray(RuntimeContext *ctx, Code_attribute *code_attr) {
 }
 
 static u4 handle_anewarray(RuntimeContext *ctx, Code_attribute *code_attr) {
-    //(void)frame;
-    //u2 class_index = ((u2)code[pc + 1] << 8) | code[pc + 2];
-    // TODO: pop size, allocate object array at class_index
-    //return pc + 3;
+    u4 pc = ctx->thread->pc;
+    u1 *code = code_attr->code;
+    ReferenceMap* reference_map = ctx->reference_map;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+    
+    // 1. O tipo de referência do array (índice no constant pool)
+    u2 idx = ((u2)code[pc + 1] << 8) | (u2)code[pc + 2];
+    u1 atype = 12; // Arrays de referência sempre têm atype = JVM_ATYPE_REF
+
+    // 2. Pop do tamanho do array (count)
+    int32_t count = (int32_t)(*((u4*) getTop(frame->operand_stack))); pop(frame->operand_stack);
+
+    // 3. Verificação de segurança obrigatória para arrays
+    if (count < 0) {
+        printf("NegativeArraySizeException em newarray (count = %d)\n", count);
+        exit(1);
+    }
+
+    // 4. Alocação da estrutura do Array
+    JVMArray* new_array = (JVMArray*) malloc(sizeof(JVMArray));
+    if (new_array == NULL) {
+        printf("OutOfMemoryError: Não foi possível alocar JVMArray em newarray\n");
+        exit(1);
+    }
+
+    new_array->length = count;
+    new_array->atype = atype; 
+    
+    // 5. Alocar o bloco de dados correto usando o tamanho do elemento de referência (tamanho de ponteiro)
+    MethodArea *method_area = ctx->method_area;
+    Cp_info *constant_pool = frame->class_file->constant_pool;
+    Cp_info class = constant_pool[idx];
+    if (class.tag != CONSTANT_Class) {
+        printf("Invalid constant pool entry for anewarray\n");
+        exit(1);
+    }
+    else {
+        u2 name_index = class.info.Class.name_index;
+        ClassFile *resolved_class = MethodAreaFindClass(method_area, constant_pool[name_index].info.Utf8.bytes);
+        if (resolved_class == NULL) {
+            printf("ClassNotFoundException: Não foi possível resolver a classe para o array de referência\n");
+            exit(1);
+        }
+    }
+
+    // 6. Alocar o bloco de dados para o array de referências (tamanho de ponteiro para as referências)
+    size_t element_size = sizeof(u4);
+    
+    // Usamos calloc para garantir que valores numéricos iniciem com 0 (ou 0.0) e booleanos com false
+    new_array->data = calloc(count, element_size);
+    
+    if (count > 0 && new_array->data == NULL) {
+        printf("OutOfMemoryError: Não foi possível alocar dados do array em newarray\n");
+        free(new_array);
+        exit(1);
+    }
+
+    u4 ref_key = reference_map->size;
+    reference_map->size++;
+
+    if (ref_key > MAX_REF_MAP) {
+        printf("OutOfMemoryError: ReferenceMap cheio!\n");
+        exit(1);
+    }
+
+    reference_map->entries[ref_key] = (void*)new_array;
+
+    // 7. Push da nova chave (ref_key) para a pilha de operandos
+    push(frame->operand_stack, (void*)&ref_key);
+
+    // anewarray tem 2 bytes: 1 de opcode + 1 de atype
+    return pc + 2;
 }
 
 static u4 handle_arraylength(RuntimeContext *ctx, Code_attribute *code_attr) {
