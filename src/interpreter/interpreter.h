@@ -9,7 +9,7 @@
 typedef struct {
     JVMThread *thread;
     MethodArea *method_area;
-    // futuramente talvez o contexto de alocação de objetos e arrays
+    ReferenceMap *reference_map
 } RuntimeContext;
 
 // ============================================================

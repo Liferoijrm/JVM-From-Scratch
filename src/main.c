@@ -96,15 +96,21 @@ int main(int argc, char **argv){
 
     /*
         Quando for interpretar:
+
+        cria um ReferenceMap (usar calloc com MAX_REF_MAP para entries)
+
+        cria um
         RuntimeContext ctx = {
             .thread = thread,
             .method_area = method_area
-            // talvez o contexto dos objetos e arrays instanciados
+            .reference_map = reference_map
         };
 
         interpret(&ctx);
 
         // OU CRIA UM PONTEIRO DE CTX EM VEZ DE PASSAR POR REFERENCIA COM &
+
+        // tem que dar free nessas estruturas dps tambem
     */
 
     printf("Interpretador nao implementado ainda\n");

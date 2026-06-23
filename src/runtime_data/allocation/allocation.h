@@ -14,6 +14,13 @@
 #define JVM_ATYPE_SHORT 9
 #define JVM_ATYPE_INT 10
 #define JVM_ATYPE_LONG 11
+#define MAX_REF_MAP 100000
+
+// mapeia uma referencia cat1 para o ponteiro real na Heap do C (objetos e arrays)
+typedef struct ReferenceMap {
+	void** entries;
+    u4 size;
+} ReferenceMap;
 
 typedef struct JVMObject {
 	ClassFile *class_ref;
