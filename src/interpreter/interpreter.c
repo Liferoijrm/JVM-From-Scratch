@@ -1243,24 +1243,346 @@ static u4 handle_getstatic(RuntimeContext *ctx, Code_attribute *code_attr) {
     return pc + 3;
 }
 
+static u4 handle_getfield(RuntimeContext *ctx, Code_attribute *code_attr) {
+    JVMThread *thread = ctx->thread;
+    Frame *frame = (Frame*)getTop(thread->frame_stack);
+    ClassFile *class_file = frame->class_file;
+    Cp_info *constant_pool = class_file->constant_pool;
+
+    u4 pc = thread->pc;
+    u1* code = code_attr->code;
+    u2 field_index = ((u2)code[pc + 1] << 8) | code[pc + 2];
+
+    Cp_info field_ref = constant_pool[field_index];
+    u2 class_index = field_ref.info.Fieldref.class_index;
+    u2 name_and_type_index = field_ref.info.Fieldref.name_and_type_index;
+
+    // classe alvo apontada pelo fieldref
+    u2 class_name_idx = constant_pool[class_index].info.Class.name_index;
+    char* target_class_name = (char*)constant_pool[class_name_idx].info.Utf8.bytes;
+    u2 target_class_name_len = constant_pool[class_name_idx].info.Utf8.length;
+
+    // ome e descritor do campo procurado
+    u2 target_name_idx = constant_pool[name_and_type_index].info.NameAndType.name_index;
+    u2 target_desc_idx = constant_pool[name_and_type_index].info.NameAndType.descriptor_index;
+
+    char* target_name = (char*)constant_pool[target_name_idx].info.Utf8.bytes;
+    u2 target_name_len = constant_pool[target_name_idx].info.Utf8.length;
+    char* target_desc = (char*)constant_pool[target_desc_idx].info.Utf8.bytes;
+    u2 target_desc_len = constant_pool[target_desc_idx].info.Utf8.length;
+
+    // desempilha a chave de referência do objeto (objectref)
+    u4 ref_key = *((u4*) getTop(frame->operand_stack)); 
+    pop(frame->operand_stack);
+
+    if (ref_key == 0) {
+        printf("NullPointerException em getfield\n");
+        exit(1);
+    }
+
+    JVMObject* obj = (JVMObject*) ctx->reference_map->entries[ref_key];
+    if (obj == NULL) {
+        printf("NullPointerException: Objeto não encontrado no ReferenceMap\n");
+        exit(1);
+    }
+
+    // setermina estritamente qual classe na árvore de tipos introduziu o campo referenciado.
+    char res_class_name[target_class_name_len + 1];
+    memcpy(res_class_name, target_class_name, target_class_name_len);
+    res_class_name[target_class_name_len] = '\0';
+
+    MethodAreaEntry *res_entry = MethodAreaGetEntry(ctx->method_area, res_class_name);
+    ClassFile* res_class = res_entry ? res_entry->class_file : NULL;
+
+    ClassFile* declaring_class = NULL;
+    Field_info* resolved_field = NULL;
+
+    while (res_class != NULL) {
+        for (u2 i = 0; i < res_class->fields_count; i++) {
+            Field_info* f = &res_class->fields[i];
+            char* f_name = (char*)res_class->constant_pool[f->name_index].info.Utf8.bytes;
+            u2 f_name_len = res_class->constant_pool[f->name_index].info.Utf8.length;
+            char* f_desc = (char*)res_class->constant_pool[f->descriptor_index].info.Utf8.bytes;
+            u2 f_desc_len = res_class->constant_pool[f->descriptor_index].info.Utf8.length;
+
+            if (f_name_len == target_name_len && strncmp(f_name, target_name, target_name_len) == 0 &&
+                f_desc_len == target_desc_len && strncmp(f_desc, target_desc, target_desc_len) == 0) {
+                declaring_class = res_class;
+                resolved_field = f;
+                break;
+            }
+        }
+        if (declaring_class != NULL) break;
+        
+        // sobe na hierarquia da classe alvo se não achar nela
+        if (res_class->super_class == 0) {
+            res_class = NULL;
+        } else {
+            u2 s_name_in = res_class->constant_pool[res_class->super_class].info.Class.name_index;
+            u2 s_len = res_class->constant_pool[s_name_in].info.Utf8.length;
+            char s_name[s_len + 1];
+            memcpy(s_name, res_class->constant_pool[s_name_in].info.Utf8.bytes, s_len);
+            s_name[s_len] = '\0';
+            
+            MethodAreaEntry *entry = MethodAreaGetEntry(ctx->method_area, s_name);
+            res_class = entry ? entry->class_file : NULL;
+        }
+    }
+
+    if (declaring_class == NULL) {
+        printf("NoSuchFieldError: Campo não encontrado na resolução de tipos\n");
+        exit(1);
+    }
+
+    // se o campo resolvido for estático getfield aborta.
+    if ((resolved_field->access_flags & 0x0008) != 0) { // ACC_STATIC
+        printf("IncompatibleClassChangeError: Tentativa de usar getfield em um campo estático\n");
+        exit(1);
+    }
+
+    // monta a hierarquia real do objeto instanciado
+    ClassFile* hierarchy[128];
+    int h_count = 0;
+    ClassFile* curr = obj->class_ref;
+    
+    while (curr != NULL && h_count < 128) {
+        hierarchy[h_count++] = curr;
+        
+        if (curr->super_class == 0) {
+            curr = NULL; 
+        } 
+        else {
+            u2 s_name_in = curr->constant_pool[curr->super_class].info.Class.name_index;
+            u2 s_len = curr->constant_pool[s_name_in].info.Utf8.length;
+            char s_name[s_len + 1];
+            memcpy(s_name, curr->constant_pool[s_name_in].info.Utf8.bytes, s_len);
+            s_name[s_len] = '\0';
+            
+            MethodAreaEntry *entry = MethodAreaGetEntry(ctx->method_area, s_name);
+            curr = entry ? entry->class_file : NULL;
+        }
+    }
+
+    u4 slot_offset = 0;
+    u1 field_found = 0;
+    char field_type_char = '\0';
+
+    // varre de cima para baixo
+    for (int h = h_count - 1; h >= 0; h--) {
+        ClassFile* cf_curr = hierarchy[h];
+        
+        for (u2 i = 0; i < cf_curr->fields_count; i++) {
+            Field_info* f = &cf_curr->fields[i];
+
+            if ((f->access_flags & 0x0008) == 0) {
+                if (cf_curr == declaring_class && f == resolved_field) {
+                    field_type_char = cf_curr->constant_pool[f->descriptor_index].info.Utf8.bytes[0];
+                    field_found = 1;
+                    break;
+                }
+
+                char type = cf_curr->constant_pool[f->descriptor_index].info.Utf8.bytes[0];
+                (type == 'J' || type == 'D') ? slot_offset += 2 : slot_offset += 1;
+            }
+        }
+        if (field_found) break;
+    }
+
+    if (!field_found) {
+        printf("NoSuchFieldError: Campo resolvido não existe na hierarquia do objeto real instanciado\n");
+        exit(1);
+    }
+
+    if (field_type_char == 'J' || field_type_char == 'D') {
+        u4 high = obj->fields[slot_offset];
+        u4 low  = obj->fields[slot_offset + 1];
+        push(frame->operand_stack, (void*)&high);
+        push(frame->operand_stack, (void*)&low);
+    } 
+    else {
+        u4 value = obj->fields[slot_offset];
+        push(frame->operand_stack, (void*)&value);
+    }
+
+    return pc + 3;
+}
+
+static u4 handle_putfield(RuntimeContext *ctx, Code_attribute *code_attr) {
+    JVMThread *thread = ctx->thread;
+    Frame *frame = (Frame*)getTop(thread->frame_stack);
+    ClassFile *class_file = frame->class_file;
+    Cp_info *constant_pool = class_file->constant_pool;
+
+    u4 pc = thread->pc;
+    u1* code = code_attr->code;
+    u2 field_index = ((u2)code[pc + 1] << 8) | code[pc + 2];
+
+    Cp_info field_ref = constant_pool[field_index];
+    u2 class_index = field_ref.info.Fieldref.class_index;
+    u2 name_and_type_index = field_ref.info.Fieldref.name_and_type_index;
+
+    // classe alvo apontada pelo fieldref
+    u2 class_name_idx = constant_pool[class_index].info.Class.name_index;
+    char* target_class_name = (char*)constant_pool[class_name_idx].info.Utf8.bytes;
+    u2 target_class_name_len = constant_pool[class_name_idx].info.Utf8.length;
+
+    // nome e descritor do campo procurado
+    u2 target_name_idx = constant_pool[name_and_type_index].info.NameAndType.name_index;
+    u2 target_desc_idx = constant_pool[name_and_type_index].info.NameAndType.descriptor_index;
+
+    char* target_name = (char*)constant_pool[target_name_idx].info.Utf8.bytes;
+    u2 target_name_len = constant_pool[target_name_idx].info.Utf8.length;
+    char* target_desc = (char*)constant_pool[target_desc_idx].info.Utf8.bytes;
+    u2 target_desc_len = constant_pool[target_desc_idx].info.Utf8.length;
+
+    // determina estritamente qual classe na árvore de tipos introduziu o campo referenciado
+    char res_class_name[target_class_name_len + 1];
+    memcpy(res_class_name, target_class_name, target_class_name_len);
+    res_class_name[target_class_name_len] = '\0';
+
+    MethodAreaEntry *res_entry = MethodAreaGetEntry(ctx->method_area, res_class_name);
+    ClassFile* res_class = res_entry ? res_entry->class_file : NULL;
+
+    ClassFile* declaring_class = NULL;
+    Field_info* resolved_field = NULL;
+
+    while (res_class != NULL) {
+        for (u2 i = 0; i < res_class->fields_count; i++) {
+            Field_info* f = &res_class->fields[i];
+            char* f_name = (char*)res_class->constant_pool[f->name_index].info.Utf8.bytes;
+            u2 f_name_len = res_class->constant_pool[f->name_index].info.Utf8.length;
+            char* f_desc = (char*)res_class->constant_pool[f->descriptor_index].info.Utf8.bytes;
+            u2 f_desc_len = res_class->constant_pool[f->descriptor_index].info.Utf8.length;
+
+            if (f_name_len == target_name_len && strncmp(f_name, target_name, target_name_len) == 0 &&
+                f_desc_len == target_desc_len && strncmp(f_desc, target_desc, target_desc_len) == 0) {
+                declaring_class = res_class;
+                resolved_field = f;
+                break;
+            }
+        }
+        if (declaring_class != NULL) break;
+        
+        // sobe na hierarquia da classe alvo se não encontrar nela
+        if (res_class->super_class == 0) {
+            res_class = NULL;
+        } else {
+            u2 s_name_in = res_class->constant_pool[res_class->super_class].info.Class.name_index;
+            u2 s_len = res_class->constant_pool[s_name_in].info.Utf8.length;
+            char s_name[s_len + 1];
+            memcpy(s_name, res_class->constant_pool[s_name_in].info.Utf8.bytes, s_len);
+            s_name[s_len] = '\0';
+            
+            MethodAreaEntry *entry = MethodAreaGetEntry(ctx->method_area, s_name);
+            res_class = entry ? entry->class_file : NULL;
+        }
+    }
+
+    if (declaring_class == NULL) {
+        printf("NoSuchFieldError: Campo não encontrado na resolução de tipos\n");
+        exit(1);
+    }
+    
+    // se o campo resolvido for estático putfield aborta
+    if ((resolved_field->access_flags & 0x0008) != 0) { // ACC_STATIC
+        printf("IncompatibleClassChangeError: Tentativa de usar putfield em um campo estático\n");
+        exit(1);
+    }
+
+    // desempilha os valores
+    char field_type_char = declaring_class->constant_pool[resolved_field->descriptor_index].info.Utf8.bytes[0];
+    u4 value = 0, high = 0, low = 0;
+
+    if (field_type_char == 'J' || field_type_char == 'D') {
+        low = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+        high = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    } 
+    else {
+        value = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    }
+
+    // desempilha a referencia do objeto
+    u4 ref_key = *((u4*) getTop(frame->operand_stack)); 
+    pop(frame->operand_stack);
+
+    if (ref_key == 0) {
+        printf("NullPointerException em putfield\n");
+        exit(1);
+    }
+
+    JVMObject* obj = (JVMObject*) ctx->reference_map->entries[ref_key];
+    if (obj == NULL) {
+        printf("NullPointerException: Objeto não encontrado no ReferenceMap\n");
+        exit(1);
+    }
+
+    // monta a hierarquia real do objeto instanciado
+    ClassFile* hierarchy[128];
+    int h_count = 0;
+    ClassFile* curr = obj->class_ref;
+    
+    while (curr != NULL && h_count < 128) {
+        hierarchy[h_count++] = curr;
+        
+        if (curr->super_class == 0) {
+            curr = NULL; 
+        } 
+        else {
+            u2 s_name_in = curr->constant_pool[curr->super_class].info.Class.name_index;
+            u2 s_len = curr->constant_pool[s_name_in].info.Utf8.length;
+            char s_name[s_len + 1];
+            memcpy(s_name, curr->constant_pool[s_name_in].info.Utf8.bytes, s_len);
+            s_name[s_len] = '\0';
+            
+            MethodAreaEntry *entry = MethodAreaGetEntry(ctx->method_area, s_name);
+            curr = entry ? entry->class_file : NULL;
+        }
+    }
+
+    u4 slot_offset = 0;
+    u1 field_found = 0;
+
+    // varre de cima para baixo para calcular o offset
+    for (int h = h_count - 1; h >= 0; h--) {
+        ClassFile* cf_curr = hierarchy[h];
+        
+        for (u2 i = 0; i < cf_curr->fields_count; i++) {
+            Field_info* f = &cf_curr->fields[i];
+
+            if ((f->access_flags & 0x0008) == 0) {
+                if (cf_curr == declaring_class && f == resolved_field) {
+                    field_found = 1;
+                    break;
+                }
+
+                char type = cf_curr->constant_pool[f->descriptor_index].info.Utf8.bytes[0];
+                (type == 'J' || type == 'D') ? slot_offset += 2 : slot_offset += 1;
+            }
+        }
+        if (field_found) break;
+    }
+
+    if (!field_found) {
+        printf("NoSuchFieldError: Campo resolvido não existe na hierarquia do objeto real instanciado\n");
+        exit(1);
+    }
+
+    // atribui os valores no heap do objeto
+    if (field_type_char == 'J' || field_type_char == 'D') {
+        obj->fields[slot_offset] = high;
+        obj->fields[slot_offset + 1] = low;
+    } 
+    else {
+        obj->fields[slot_offset] = value;
+    }
+
+    return pc + 3;
+}
+
 static u4 handle_putstatic(RuntimeContext *ctx, Code_attribute *code_attr) {
     //(void)frame;
     //u2 field_index = ((u2)code[pc + 1] << 8) | code[pc + 2];
     // TODO: pop value, store in static field
-    //return pc + 3;
-}
-
-static u4 handle_getfield(RuntimeContext *ctx, Code_attribute *code_attr) {
-    //(void)frame;
-    //u2 field_index = ((u2)code[pc + 1] << 8) | code[pc + 2];
-    // TODO: pop object ref, resolve field, push field value
-    //return pc + 3;
-}
-
-static u4 handle_putfield(RuntimeContext *ctx, Code_attribute *code_attr) {
-    //(void)frame;
-    //u2 field_index = ((u2)code[pc + 1] << 8) | code[pc + 2];
-    // TODO: pop value and object ref, store in object's field
     //return pc + 3;
 }
 
@@ -1900,9 +2222,68 @@ static u4 handle_lookupswitch(RuntimeContext *ctx, Code_attribute *code_attr) {
 }
 
 static u4 handle_wide(RuntimeContext *ctx, Code_attribute *code_attr) {
-    //(void)frame;
-    // TODO: next opcode uses 2-byte index instead of 1-byte
-    //return pc + 1;
+    u4 pc = ctx->thread->pc;
+    Frame *frame = (Frame*)getTop(ctx->thread->frame_stack);
+    u1* code = code_attr->code;
+
+    // proxima instruçao vai ser estendida
+    u1 modified_opcode = code[pc + 1];
+    u2 index = ((u2)code[pc + 2] << 8) | code[pc + 3];
+
+    switch (modified_opcode) {
+        case OP_ILOAD:
+        case OP_FLOAD:
+        case OP_ALOAD: {
+            u4 content = frame->local_variables[index];
+            push(frame->operand_stack, (void*)&content);
+            return pc + 4; 
+        }
+        
+        case OP_LLOAD:
+        case OP_DLOAD: {
+            u4 high = frame->local_variables[index];
+            u4 low  = frame->local_variables[index + 1];
+            push(frame->operand_stack, (void*)&high);
+            push(frame->operand_stack, (void*)&low);
+            return pc + 4;
+        }
+
+        case OP_ISTORE:
+        case OP_FSTORE:
+        case OP_ASTORE: {
+            u4 content = *((u4*) getTop(frame->operand_stack)); 
+            pop(frame->operand_stack);
+            frame->local_variables[index] = content;
+            return pc + 4;
+        }
+
+        case OP_LSTORE:
+        case OP_DSTORE: {
+            u4 low = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+            u4 high = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+            frame->local_variables[index] = high;
+            frame->local_variables[index + 1] = low;
+            return pc + 4;
+        }
+
+        case OP_IINC: {
+            u2 const_unsigned = ((u2)code[pc + 4] << 8) | code[pc + 5];
+            int32_t const_val = (int32_t)sign_extend_short(const_unsigned);
+            u4 current_val = frame->local_variables[index];
+            current_val += (u4) const_val; 
+            frame->local_variables[index] = current_val;
+            return pc + 6; 
+        }
+
+        case OP_RET: {
+            u4 return_pc = frame->local_variables[index];
+            return return_pc; 
+        }
+
+        default:
+            printf("VerifyError: Opcode 0x%02X não suportado com a instrução WIDE\n", modified_opcode);
+            exit(1);
+    }
 }
 
 static u4 handle_multianewarray(RuntimeContext *ctx, Code_attribute *code_attr) {
