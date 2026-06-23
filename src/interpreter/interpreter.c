@@ -1179,10 +1179,68 @@ static u4 handle_invokeinterface(RuntimeContext *ctx, Code_attribute *code_attr)
 }
 
 static u4 handle_getstatic(RuntimeContext *ctx, Code_attribute *code_attr) {
-    //(void)frame;
-    //u2 field_index = ((u2)code[pc + 1] << 8) | code[pc + 2];
-    // TODO: resolve field from constant pool, push static field value
-    //return pc + 3;
+    JVMThread *thread = ctx->thread;
+    
+    Frame *frame = (Frame*)getTop(thread->frame_stack);
+    ClassFile *class_file = frame->class_file;
+    Cp_info *constant_pool = class_file->constant_pool;
+
+    u4 pc = thread->pc;
+    u1* code = code_attr->code;
+    u2 field_index = ((u2)code[pc + 1] << 8) | code[pc + 2];
+    // Resolve field from constant pool, push static field value
+    Cp_info field_ref = constant_pool[field_index];
+    if (field_ref.tag != CONSTANT_Fieldref) {
+        fprintf(stderr, "Invalid constant pool entry for getstatic\n");
+        exit(1);
+    }
+    else {
+        MethodArea *method_area = ctx->method_area;
+        MethodAreaEntry *entry = get_method_area_entry(method_area, class_file->this_class);
+        StaticField *static_fields = entry->static_fields;
+
+        u2 field_idx = field_ref.info.Fieldref.name_and_type_index;
+        Cp_info name_and_type = constant_pool[field_idx];
+        u2 target_name_index = name_and_type.info.NameAndType.name_index;
+        u2 target_descriptor_index = name_and_type.info.NameAndType.descriptor_index;
+        char fieldType;
+
+        Field_info *field_info = class_file->fields;
+        u2 count = class_file->fields_count;
+        u4 mem_offset = 0;
+
+        for (u2 i = 0; i < count; i++) {
+            u2 field_name = field_info[i].name_index;
+            u2 field_descriptor = field_info[i].descriptor_index;
+
+            if (field_name == target_name_index && field_descriptor == target_descriptor_index) {
+                Field_info *field = &field_info[i];
+                break;
+            }
+            
+            else {
+                fieldType = constant_pool[field_descriptor].info.Utf8.bytes[0];
+                if (fieldType == 'J' || fieldType == 'D') {
+                    mem_offset += 8;
+                } else {
+                    mem_offset += 4;
+                }
+            }
+        }
+
+        // Push the value of the static field onto the operand stack based on its type
+        StaticField *target_field = (StaticField*)((u1*)static_fields + mem_offset);
+        if (constant_pool[target_descriptor_index].info.Utf8.bytes[0] == 'J' || constant_pool[target_descriptor_index].info.Utf8.bytes[0] == 'D') {
+            u4 high = target_field->value[0];
+            u4 low = target_field->value[1];
+            push(frame->operand_stack, (void*)&high);
+            push(frame->operand_stack, (void*)&low);
+        } else {
+            u4 value = target_field->value[0];
+            push(frame->operand_stack, (void*)&value);
+        }
+    }
+    return pc + 3;
 }
 
 static u4 handle_putstatic(RuntimeContext *ctx, Code_attribute *code_attr) {
