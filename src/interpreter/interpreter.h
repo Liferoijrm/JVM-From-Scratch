@@ -5,6 +5,7 @@
 #include "../runtime_data/allocation/allocation.h"
 #include "../runtime_data/method_area/methodarea.h"
 #include "../runtime_data/thread_data/thread_data.h"
+#include "resolve.h"
 
 typedef struct {
     JVMThread *thread;
