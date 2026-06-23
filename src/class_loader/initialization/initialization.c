@@ -38,7 +38,9 @@ u1 InitializeClass(MethodArea *method_area, MethodAreaEntry *entry, JVMThread *t
         return 0;
     }
 
-    if (entry->state < CLASS_LINKED) return 0;
+    if (entry->state < CLASS_LINKED) {
+        return 0;
+    }
 
     // Se já estiver inicializada ou inicializando, não faz nada
     if (entry->state == CLASS_INITIALIZED || entry->state == CLASS_INITIALIZING) {
@@ -49,26 +51,9 @@ u1 InitializeClass(MethodArea *method_area, MethodAreaEntry *entry, JVMThread *t
     entry->state = CLASS_INITIALIZING;
 
     /*
-     * Inicializa a superclasse primeiro (se houver)
-     */
-    if (entry->class_file->super_class != 0) {
-        char *super_name = GetClassName(entry->class_file, entry->class_file->super_class);
-
-        if (super_name != NULL) {
-            MethodAreaEntry *super_entry = MethodAreaGetEntry(method_area, super_name);
-
-            // A superclasse precisa já estar carregada/alocada na Method Area
-            if (super_entry != NULL) {
-                if (!InitializeClass(method_area, super_entry, thread)) {
-                    return 0; // Falha na inicialização da superclasse aborta a atual
-                }
-            }
-        }
-    }
-
-    /*
-     * 5. Busca e executa o <clinit> da própria classe
-     * O descritor de um <clinit> é sempre "()V"
+     * Empilha primeiro o <clinit> da classe atual.
+     * Isso garante que, após a recursão nas superclasses,
+     * a pilha fique na ordem correta para execução LIFO.
      */
     clinit = FindMethod(entry->class_file, "<clinit>", "()V");
 
@@ -76,11 +61,36 @@ u1 InitializeClass(MethodArea *method_area, MethodAreaEntry *entry, JVMThread *t
         printf("[INITIALIZATION] <clinit> encontrado na classe %s\n", entry->class_name);
 
         /*
-         * Futuramente: 
-         * o frame vai ser executado pelo interpretador primeiro, pois foi o último a ser alocado (LIFO)
+         * Futuramente:
+         * o frame vai ser executado pelo interpretador primeiro,
+         * pois foi o último a ser alocado (LIFO)
          */
         pushFrame(thread, entry->class_file, clinit, thread->pc);
-        // interpreter deve setar como inicializada apos executar <clinit>
+    }
+    
+    thread->pc = 0;
+
+    /*
+     * Inicializa a superclasse depois.
+     * Como a pilha é LIFO, os <clinit> das superclasses
+     * acabarão ficando acima dos das subclasses.
+     */
+    if (entry->class_file->super_class != 0) {
+        char *super_name = GetClassName(
+            entry->class_file,
+            entry->class_file->super_class
+        );
+
+        if (super_name != NULL) {
+            MethodAreaEntry *super_entry = MethodAreaGetEntry(method_area, super_name);
+
+            // A superclasse precisa já estar carregada/alocada na Method Area
+            if (super_entry != NULL) {
+                if (!InitializeClass(method_area, super_entry, thread)) {
+                    return 0;
+                }
+            }
+        }
     }
 
     printf("[INITIALIZATION] Classe %s inicializada com sucesso.\n", entry->class_name);

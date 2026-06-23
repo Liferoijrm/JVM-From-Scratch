@@ -1265,17 +1265,97 @@ static u4 handle_putfield(RuntimeContext *ctx, Code_attribute *code_attr) {
 }
 
 static u4 handle_new(RuntimeContext *ctx, Code_attribute *code_attr) {
-    //(void)frame;
-    //u2 class_index = ((u2)code[pc + 1] << 8) | code[pc + 2];
-    // TODO: allocate object at class_index, push reference
-    //return pc + 3;
+    u4 pc = ctx->thread->pc;
+    ReferenceMap* reference_map = ctx->reference_map;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+    
+    // 1. Pega o índice no constant pool
+    u2 class_index = (code_attr->code[pc + 1] << 8) | code_attr->code[pc + 2];
+
+    // 2. Resolve a classe!
+    ClassFile* resolved_class = get_class_from_constant_pool(ctx->thread, ctx->method_area, frame, class_index);
+
+    // SE RETORNOU NULL, UM NOVO FRAME (<clinit>) FOI EMPILHADO!
+    if (resolved_class == NULL) {
+        return pc; 
+    }
+
+    JVMObject* new_obj = (JVMObject*) malloc(sizeof(JVMObject));
+    if (new_obj == NULL) {
+        printf("OutOfMemoryError em 'new'\n");
+        exit(1);
+    }
+
+    new_obj->class_ref = resolved_class;
+
+    u4 ref_key = reference_map->size;
+    reference_map->size++;
+
+    if (ref_key > MAX_REF_MAP) {
+        printf("OutOfMemoryError: ReferenceMap cheio!\n");
+        exit(1);
+    }
+
+    reference_map->entries[ref_key] = (void*)new_obj;
+    push(frame->operand_stack, (void*)&ref_key);
+
+    return pc + 3;
 }
 
 static u4 handle_newarray(RuntimeContext *ctx, Code_attribute *code_attr) {
-    //(void)frame;
-    //u1 atype = code[pc + 1];
-    // TODO: pop size, allocate primitive array
-    //return pc + 2;
+    u4 pc = ctx->thread->pc;
+    ReferenceMap* reference_map = ctx->reference_map;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+    
+    // 1. O tipo primitivo do array (ex: JVM_ATYPE_INT, JVM_ATYPE_FLOAT)
+    u1 atype = code_attr->code[pc + 1];
+
+    // 2. Pop do tamanho do array (count)
+    int32_t count = (int32_t)(*((u4*) getTop(frame->operand_stack))); pop(frame->operand_stack);
+
+    // 3. Verificação de segurança obrigatória para arrays
+    if (count < 0) {
+        printf("NegativeArraySizeException em newarray (count = %d)\n", count);
+        exit(1);
+    }
+
+    // 4. Alocação da estrutura do Array
+    JVMArray* new_array = (JVMArray*) malloc(sizeof(JVMArray));
+    if (new_array == NULL) {
+        printf("OutOfMemoryError: Não foi possível alocar JVMArray em newarray\n");
+        exit(1);
+    }
+
+    new_array->length = count;
+    new_array->atype = atype;
+    
+    // 5. Alocar o bloco de dados correto usando o ArrayTypeSize do seu allocation.h
+    size_t element_size = ArrayTypeSize(atype);
+    
+    // Usamos calloc para garantir que valores numéricos iniciem com 0 (ou 0.0) e booleanos com false
+    new_array->data = calloc(count, element_size);
+    
+    if (count > 0 && new_array->data == NULL) {
+        printf("OutOfMemoryError: Não foi possível alocar dados do array em newarray\n");
+        free(new_array);
+        exit(1);
+    }
+
+    u4 ref_key = reference_map->size;
+    reference_map->size++;
+
+    if (ref_key > MAX_REF_MAP) {
+        printf("OutOfMemoryError: ReferenceMap cheio!\n");
+        exit(1);
+    }
+
+    reference_map->entries[ref_key] = (void*)new_array;
+
+    // 7. Push da nova chave (ref_key) para a pilha de operandos
+    push(frame->operand_stack, (void*)&ref_key);
+
+    // newarray tem 2 bytes: 1 de opcode + 1 de atype
+    return pc + 2;
 }
 
 static u4 handle_anewarray(RuntimeContext *ctx, Code_attribute *code_attr) {
