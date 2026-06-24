@@ -1270,7 +1270,7 @@ static u4 handle_getfield(RuntimeContext *ctx, Code_attribute *code_attr) {
         exit(1);
     }
 
-    // setermina estritamente qual classe na árvore de tipos introduziu o campo referenciado.
+    // determina estritamente qual classe na árvore de tipos introduziu o campo referenciado.
     char res_class_name[target_class_name_len + 1];
     memcpy(res_class_name, target_class_name, target_class_name_len);
     res_class_name[target_class_name_len] = '\0';
@@ -1366,7 +1366,7 @@ static u4 handle_getfield(RuntimeContext *ctx, Code_attribute *code_attr) {
                 }
 
                 char type = cf_curr->constant_pool[f->descriptor_index].info.Utf8.bytes[0];
-                (type == 'J' || type == 'D') ? slot_offset += 2 : slot_offset += 1;
+                slot_offset += ((type == 'J' || type == 'D') ? 2 : 1);
             }
         }
         if (field_found) break;
@@ -1540,7 +1540,7 @@ static u4 handle_putfield(RuntimeContext *ctx, Code_attribute *code_attr) {
                 }
 
                 char type = cf_curr->constant_pool[f->descriptor_index].info.Utf8.bytes[0];
-                (type == 'J' || type == 'D') ? slot_offset += 2 : slot_offset += 1;
+                slot_offset += ((type == 'J' || type == 'D') ? 2 : 1);
             }
         }
         if (field_found) break;

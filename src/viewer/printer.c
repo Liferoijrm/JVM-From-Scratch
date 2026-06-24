@@ -12,6 +12,15 @@ void printClass(ClassFile *cf){
     strcpy(filename, cf->constant_pool[c_index].info.Utf8.bytes);
     strcat(filename, ".txt");
 
+    // Substituir '/' por '_' para evitar problemas com diretórios
+    for(int i = 0; filename[i] != '\0'; i++) {
+        if(filename[i] == '/') {
+            filename[i] = '_';
+        }
+    }
+
+    printf("abrindo: %s\n", filename);
+
     if(freopen(filename, "w", stdout) == NULL){
         perror("Nao conseguiu abrir\n");
     }

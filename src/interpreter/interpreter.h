@@ -7,10 +7,10 @@
 #include "../runtime_data/thread_data/thread_data.h"
 #include "resolve.h"
 
-typedef struct {
+typedef struct RuntimeContext{
     JVMThread *thread;
     MethodArea *method_area;
-    ReferenceMap *reference_map
+    ReferenceMap *reference_map;
 } RuntimeContext;
 
 // ============================================================
