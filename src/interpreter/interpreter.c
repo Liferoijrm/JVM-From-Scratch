@@ -1176,7 +1176,7 @@ static u4 handle_i_return(RuntimeContext *ctx, Code_attribute *code_attr) {
     u4 return_pc = frame->return_pc;
 
     if(isMethodNamed(frame->method, frame->class_file, "<clinit>", 8)){
-        MethodAreaEntry* entry = GetMethodAreaEntry(ctx->method_area, "<clinit>");
+        MethodAreaEntry* entry = MethodAreaGetEntry(ctx->method_area, "<clinit>");
         entry->state = CLASS_INITIALIZED;
     }
 
@@ -1205,7 +1205,7 @@ static u4 handle_lreturn(RuntimeContext *ctx, Code_attribute *code_attr) {
     u4 return_pc = frame->return_pc;
 
     if(isMethodNamed(frame->method, frame->class_file, "<clinit>", 8)){
-        MethodAreaEntry* entry = GetMethodAreaEntry(ctx->method_area, "<clinit>");
+        MethodAreaEntry* entry = MethodAreaGetEntry(ctx->method_area, GetClassName(frame->class_file, frame->class_file->this_class));
         entry->state = CLASS_INITIALIZED;
     }
 
@@ -1229,8 +1229,8 @@ static u4 handle_freturn(RuntimeContext *ctx, Code_attribute *code_attr) {
     u4 value = *((u4*)getTop(frame->operand_stack));
     u4 return_pc = frame->return_pc;
 
-    if(isMethodNamed(frame->method, frame->class_file, "<clinit>", 8)){
-        MethodAreaEntry* entry = GetMethodAreaEntry(ctx->method_area, "<clinit>");
+    if(IsMethodNamed(frame->method, frame->class_file, "<clinit>", 8)){
+        MethodAreaEntry* entry = MethodAreaGetEntry(ctx->method_area, "<clinit>");
         entry->state = CLASS_INITIALIZED;
     }
 
@@ -1259,7 +1259,7 @@ static u4 handle_dreturn(RuntimeContext *ctx, Code_attribute *code_attr) {
     u4 return_pc = frame->return_pc;
 
     if(isMethodNamed(frame->method, frame->class_file, "<clinit>", 8)){
-        MethodAreaEntry* entry = GetMethodAreaEntry(ctx->method_area, "<clinit>");
+        MethodAreaEntry* entry = MethodAreaGetEntry(ctx->method_area, "<clinit>");
         entry->state = CLASS_INITIALIZED;
     }
 
@@ -1284,7 +1284,7 @@ static u4 handle_areturn(RuntimeContext *ctx, Code_attribute *code_attr) {
     u4 return_pc = frame->return_pc;
 
     if(isMethodNamed(frame->method, frame->class_file, "<clinit>", 8)){
-        MethodAreaEntry* entry = GetMethodAreaEntry(ctx->method_area, "<clinit>");
+        MethodAreaEntry* entry = MethodAreaGetEntry(ctx->method_area, "<clinit>");
         entry->state = CLASS_INITIALIZED;
     }
 
@@ -1307,7 +1307,7 @@ static u4 handle_return(RuntimeContext *ctx, Code_attribute *code_attr) {
     u4 return_pc = frame->return_pc;
 
     if(isMethodNamed(frame->method, frame->class_file, "<clinit>", 8)){
-        MethodAreaEntry* entry = GetMethodAreaEntry(ctx->method_area, "<clinit>");
+        MethodAreaEntry* entry = MethodAreaGetEntry(ctx->method_area, "<clinit>");
         entry->state = CLASS_INITIALIZED;
     }
 
