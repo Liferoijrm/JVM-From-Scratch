@@ -1324,17 +1324,81 @@ static u4 handle_invokestatic(RuntimeContext *ctx, Code_attribute *code_attr) {
 }
 
 static u4 handle_invokevirtual(RuntimeContext *ctx, Code_attribute *code_attr) {
-    //(void)frame;
-    //u2 method_index = ((u2)code[pc + 1] << 8) | code[pc + 2];
-    // TODO: resolve method ref, dispatch by object type, push new frame
-    //return pc + 3;
+    Frame *frame = (Frame*)getTop(ctx->thread->frame_stack);
+    Cp_info *cp = frame->class_file->constant_pool;
+    u4 pc = ctx->thread->pc;
+    u1 *code = code_attr->code;
+
+    u2 method_index = ((u2)code[pc + 1] << 8) | code[pc + 2];
+    Cp_info methodref = cp[method_index];
+
+    u2 class_idx = methodref.info.Methodref.class_index;
+    u2 class_name_idx = cp[class_idx].info.Class.name_index;
+    char *class_name = (char*) cp[class_name_idx].info.Utf8.bytes;
+    u2 class_name_len = cp[class_name_idx].info.Utf8.length;
+
+    u2 nat_idx = methodref.info.Methodref.name_and_type_index;
+    u2 name_idx = cp[nat_idx].info.NameAndType.name_index;
+    u2 desc_idx = cp[nat_idx].info.NameAndType.descriptor_index;
+    char *method_name = (char*) cp[name_idx].info.Utf8.bytes;
+    u2 method_name_len = cp[name_idx].info.Utf8.length;
+    char *descriptor = (char*) cp[desc_idx].info.Utf8.bytes;
+
+    if (class_name_len == 19 && strncmp(class_name, "java/io/PrintStream", 19) == 0) {
+        return dispatch_printstream(ctx->thread, ctx->reference_map, method_name_len, descriptor, pc);
+    }
+    if (class_name_len == 22 && strncmp(class_name, "java/lang/StringBuffer", 22) == 0) {
+        return dispatch_stringbuffer(ctx->thread, ctx->reference_map, method_name_len, method_name, descriptor, pc);
+    }
+
+    // TODO: dispatch de métodos de usuário (Jogador.play, Carta.printOut, ...).
+    // Diferente do invokespecial: aqui a resolução do método deveria usar a classe
+    // RUNTIME do objeto (obj->class_ref, não a classe estática gravada no Methodref) —
+    // é justamente isso que dá ao invokevirtual seu comportamento polimórfico.
+    fprintf(stderr, "invokevirtual: dispatch de usuário ainda não implementado (%.*s.%.*s)\n",
+            class_name_len, class_name, method_name_len, method_name);
+    exit(1);
 }
 
 static u4 handle_invokespecial(RuntimeContext *ctx, Code_attribute *code_attr) {
-    //(void)frame;
-    //u2 method_index = ((u2)code[pc + 1] << 8) | code[pc + 2];
-    // TODO: handle <init>, super, private methods
-    //return pc + 3;
+    u4 pc = ctx->thread->pc;
+    Frame *frame = (Frame*)getTop(ctx->thread->frame_stack);
+    Cp_info *cp = frame->class_file->constant_pool;
+    u1 *code = code_attr->code;
+
+    u2 method_index = ((u2)code[pc + 1] << 8) | code[pc + 2];
+    Cp_info methodref = cp[method_index];
+
+    u2 class_idx = methodref.info.Methodref.class_index;
+    u2 class_name_idx = cp[class_idx].info.Class.name_index;
+    char *class_name = (char*) cp[class_name_idx].info.Utf8.bytes;
+    u2 class_name_len = cp[class_name_idx].info.Utf8.length;
+
+    u2 nat_idx = methodref.info.Methodref.name_and_type_index;
+    u2 name_idx = cp[nat_idx].info.NameAndType.name_index;
+    char *method_name = (char*) cp[name_idx].info.Utf8.bytes;
+    u2 method_name_len = cp[name_idx].info.Utf8.length;
+
+    u1 is_init = (method_name_len == 6 && strncmp(method_name, "<init>", 6) == 0);
+
+    if (is_init && is_native_class(class_name, class_name_len)) {
+        // Object/String/StringBuffer: objeto já populado em 'new'.
+        // invokespecial aqui só descarta o objectref empilhado.
+        pop(frame->operand_stack);
+        return pc + 3;
+    }
+
+    // TODO: <init> de classes do usuário, métodos privados, chamadas a super.
+    // Quando implementar: resolver via
+    //   get_class_from_constant_pool(ctx->thread, ctx->method_area, frame, class_name)
+    // (NULL só significa <clinit> empilhado — raro aqui, pois 'new' já força a
+    // inicialização da classe antes do invokespecial rodar); localizar o Method_info
+    // por nome+descriptor; montar um Frame novo com objectref em local[0] + argumentos
+    // copiados da operand stack (definindo apenas new_frame->method e
+    // new_frame->class_file, sem Code_attribute); empilhar e retornar 0 (pc do callee).
+    fprintf(stderr, "invokespecial: dispatch de usuário ainda não implementado (%.*s.%.*s)\n",
+            class_name_len, class_name, method_name_len, method_name);
+    exit(1);
 }
 
 static u4 handle_invokeinterface(RuntimeContext *ctx, Code_attribute *code_attr) {
