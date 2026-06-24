@@ -23,21 +23,6 @@ ClassFile* get_class_from_constant_pool(JVMThread* thread, MethodArea* method_ar
     // 1. Tenta buscar na MethodArea
     MethodAreaEntry* entry = MethodAreaGetEntry(method_area, class_name);
 
-    // --- PROTEÇÃO E TODO ---
-    // 1. Verifica se a classe é nativa/simulada
-    if (strstr(class_name, "java/io/") == class_name || 
-        strstr(class_name, "java/lang/System") == class_name) {
-        
-        printf("[DEBUG] Ignorando carregamento de classe nativa/simulada: %s\n", class_name);
-        
-        /* TODO: Retornar uma estrutura de "Classe Mock" ou um ponteiro especial
-           para que a instrução 'new' e 'invokevirtual' saibam como agir.
-           Por enquanto, retornamos NULL para impedir que o interpretador tente 
-           carregar o arquivo inexistente no disco.
-        */
-        return NULL; 
-    }
-
     // 2. Se não estiver carregada, faz Load e Link
     if (entry == NULL) {
         printf("[RESOLVE] Carregando a classe '%s' dinamicamente...\n", class_name);

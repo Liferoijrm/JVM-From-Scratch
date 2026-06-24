@@ -173,10 +173,118 @@ static u4 handle_sipush(RuntimeContext *ctx, Code_attribute *code_attr) {
 }
 
 static u4 handle_ldc(RuntimeContext *ctx, Code_attribute *code_attr) {
-    //(void)frame;
-    //u1 index = code[pc + 1];
-    // TODO: push constant from constant pool at index
-    //return pc + 2;
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+    Cp_info *cp = frame->class_file->constant_pool;
+    ReferenceMap *rm = ctx->reference_map;
+
+    u1 index = code_attr->code[pc + 1];
+    Cp_info entry = cp[index];
+
+    switch (entry.tag) {
+        case CONSTANT_Integer: {
+            u4 value = entry.info.Integer.bytes;
+            push(frame->operand_stack, (void*)&value);
+            break;
+        }
+        case CONSTANT_Float: {
+            u4 value = entry.info.Float.bytes; // já são os bits IEEE754
+            push(frame->operand_stack, (void*)&value);
+            break;
+        }
+        case CONSTANT_String: {
+            u2 utf8_idx = entry.info.String.string_index;
+            u1 *bytes = cp[utf8_idx].info.Utf8.bytes;
+            u2 len = cp[utf8_idx].info.Utf8.length;
+
+            char *str = (char*) malloc(len + 1);
+            memcpy(str, bytes, len);
+            str[len] = '\0';
+
+            u4 ref_key = rm->size++;
+            rm->entries[ref_key] = (void*) str;
+            push(frame->operand_stack, (void*)&ref_key);
+            break;
+        }
+        // TODO: suportar tags de Class, MethodInfo e MethodType se necessario (nao tem nos .class dos exemplos ent n precisa por enquanto)
+        default:
+            fprintf(stderr, "ldc: tag não suportada (%d)\n", entry.tag);
+            exit(1);
+    }
+    return pc + 2;
+}
+
+static u4 handle_ldc_w(RuntimeContext *ctx, Code_attribute *code_attr) {
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+    Cp_info *cp = frame->class_file->constant_pool;
+    ReferenceMap *rm = ctx->reference_map;
+    u1* code = code_attr->code;
+
+    u2 index = ((u2)code[pc + 1] << 8) | code[pc + 2];
+    Cp_info entry = cp[index];
+
+    switch (entry.tag) {
+        case CONSTANT_Integer: {
+            u4 value = entry.info.Integer.bytes;
+            push(frame->operand_stack, (void*)&value);
+            break;
+        }
+        case CONSTANT_Float: {
+            u4 value = entry.info.Float.bytes; // já são os bits IEEE754
+            push(frame->operand_stack, (void*)&value);
+            break;
+        }
+        case CONSTANT_String: {
+            u2 utf8_idx = entry.info.String.string_index;
+            u1 *bytes = cp[utf8_idx].info.Utf8.bytes;
+            u2 len = cp[utf8_idx].info.Utf8.length;
+
+            char *str = (char*) malloc(len + 1);
+            memcpy(str, bytes, len);
+            str[len] = '\0';
+
+            if (rm->size >= MAX_REF_MAP) {
+                printf("OutOfMemoryError: ReferenceMap cheio!\n");
+                exit(1);
+            }
+            u4 ref_key = rm->size++;
+            rm->entries[ref_key] = (void*) str;
+            push(frame->operand_stack, (void*)&ref_key);
+            break;
+        }
+        default:
+            fprintf(stderr, "ldc_w: tag não suportada (%d)\n", entry.tag);
+            exit(1);
+    }
+
+    return pc + 3; // 1 opcode + 2 bytes de índice
+}
+
+static u4 handle_ldc2_w(RuntimeContext *ctx, Code_attribute *code_attr) {
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+    Cp_info *cp = frame->class_file->constant_pool;
+    u1 *code = code_attr->code;
+
+    u2 index = ((u2)code[pc+1] << 8) | code[pc+2];
+    Cp_info entry = cp[index];
+    u4 high, low;
+
+    if (entry.tag == CONSTANT_Double) {
+        high = entry.info.Double.high_bytes;
+        low  = entry.info.Double.low_bytes;
+    } else if (entry.tag == CONSTANT_Long) {
+        high = entry.info.Long.high_bytes;
+        low  = entry.info.Long.low_bytes;
+    } else {
+        fprintf(stderr, "ldc2_w: tag inválida (%d)\n", entry.tag);
+        exit(1);
+    }
+
+    push(frame->operand_stack, (void*)&high);
+    push(frame->operand_stack, (void*)&low);
+    return pc + 3;
 }
 
 // da push em uma variavel local no indice idx na operand stack
@@ -904,6 +1012,35 @@ static u4 handle_lushr(RuntimeContext *ctx, Code_attribute *code_attr) {
 
     push(frame->operand_stack, (void*)&high);
     push(frame->operand_stack, (void*)&low);
+
+    return pc + 1;
+}
+
+// da pop na operand stack de um long e da push do operando negativo
+static u4 handle_lneg(RuntimeContext *ctx, Code_attribute *code_attr) {
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+
+    // Desempilha os 64 bits (primeiro low, depois high)
+    u4 low = *((u4*) getTop(frame->operand_stack)); 
+    pop(frame->operand_stack);
+    
+    u4 high = *((u4*) getTop(frame->operand_stack)); 
+    pop(frame->operand_stack);
+
+    // Combina os u4 em um int64_t para operação aritmética
+    int64_t value = (((int64_t)high) << 32) | low;
+
+    // Aplica a negação
+    int64_t neg_result = -value;
+
+    // Divide o resultado novamente em high e low para empilhar
+    u4 res_high = (u4)(neg_result >> 32);
+    u4 res_low  = (u4)(neg_result & 0xFFFFFFFF);
+
+    // Empilha de volta (primeiro high, depois low)
+    push(frame->operand_stack, (void*)&res_high);
+    push(frame->operand_stack, (void*)&res_low);
 
     return pc + 1;
 }
@@ -1638,7 +1775,7 @@ static u4 handle_new(RuntimeContext *ctx, Code_attribute *code_attr) {
     u4 ref_key = reference_map->size;
     reference_map->size++;
 
-    if (ref_key > MAX_REF_MAP) {
+    if (ref_key >= MAX_REF_MAP) {
         printf("OutOfMemoryError: ReferenceMap cheio!\n");
         exit(1);
     }
@@ -3343,9 +3480,6 @@ static u4 handle_lastore(RuntimeContext *ctx, Code_attribute *code_attr) {
     return pc + 1;
 }
 
-static u4 handle_ldc_w(RuntimeContext *ctx, Code_attribute *code_attr) {}
-static u4 handle_ldc2_w(RuntimeContext *ctx, Code_attribute *code_attr) {}
-static u4 handle_lneg(RuntimeContext *ctx, Code_attribute *code_attr) {}
 static u4 handle_saload(RuntimeContext *ctx, Code_attribute *code_attr) {}
 static u4 handle_sastore(RuntimeContext *ctx, Code_attribute *code_attr) {}
 
