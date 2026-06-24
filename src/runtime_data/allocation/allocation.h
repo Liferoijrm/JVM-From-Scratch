@@ -34,6 +34,12 @@ typedef struct JVMArray {
 	void *data;
 } JVMArray;
 
+typedef struct JVMStringBuffer {
+    char *data;
+    size_t length;
+    size_t capacity;
+} JVMStringBuffer;
+
 JVMObject *CreateObject(const MethodArea *method_area, ClassFile *class_file);
 
 JVMArray *CreatePrimitiveArray(u1 atype, int32_t length);

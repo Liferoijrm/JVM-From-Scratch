@@ -1330,6 +1330,20 @@ static u4 handle_getstatic(RuntimeContext *ctx, Code_attribute *code_attr) {
     
     // 3. Checa se o entry do constant pool é do tipo Fieldref
     Cp_info field_ref = constant_pool[field_index];
+
+    u2 class_idx = field_ref.info.Fieldref.class_index;
+    u2 class_name_idx = constant_pool[class_idx].info.Class.name_index;
+    char *class_name = (char*) constant_pool[class_name_idx].info.Utf8.bytes;
+    u2 class_name_len = constant_pool[class_name_idx].info.Utf8.length;
+
+    if (class_name_len == 16 && strncmp(class_name, "java/lang/System", 16) == 0) {
+        // sentinela qualquer — invokevirtual nunca vai de-referenciar isso,
+        // ele intercepta PrintStream.println/print antes
+        u4 sentinel = 0;
+        push(frame->operand_stack, (void*)&sentinel);
+        return pc + 3;
+    }
+
     if (field_ref.tag != CONSTANT_Fieldref) {
         fprintf(stderr, "Invalid constant pool entry for getstatic\n");
         exit(1);
@@ -1756,8 +1770,54 @@ static u4 handle_new(RuntimeContext *ctx, Code_attribute *code_attr) {
     // 1. Pega o índice no constant pool
     u2 class_index = (code_attr->code[pc + 1] << 8) | code_attr->code[pc + 2];
 
+    ClassFile* current_class = frame->class_file;
+
+    // Pega a entrada da classe no pool
+    Cp_info class_info = current_class->constant_pool[class_index];
+    u2 name_index = class_info.info.Class.name_index;
+
+    // Extrai o nome UTF-8 e converte para string C (null-terminated)
+    u2 name_length = current_class->constant_pool[name_index].info.Utf8.length;
+    u1* name_bytes = current_class->constant_pool[name_index].info.Utf8.bytes;
+
+    char class_name[name_length + 1];
+    memcpy(class_name, name_bytes, name_length);
+    class_name[name_length] = '\0';
+
+    // caso nativo java/lang/String
+    if (name_length == 16 && strncmp(class_name, "java/lang/String", 16) == 0) {
+        char *str = (char*) malloc(1);
+        str[0] = '\0'; // new String() == ""
+
+        if (reference_map->size >= MAX_REF_MAP) {
+            printf("OutOfMemoryError: ReferenceMap cheio!\n");
+            exit(1);
+        }
+        u4 ref_key = reference_map->size++;
+        reference_map->entries[ref_key] = (void*) str;
+        push(frame->operand_stack, (void*)&ref_key);
+        return pc + 3;
+    }
+
+    // caso nativo java/lang/StringBuffer
+    if (name_length == 22 && strncmp(class_name, "java/lang/StringBuffer", 22) == 0) {
+        JVMStringBuffer *buf = (JVMStringBuffer*) malloc(sizeof(JVMStringBuffer));
+        buf->capacity = 16;
+        buf->length = 0;
+        buf->data = (char*) malloc(buf->capacity);
+        buf->data[0] = '\0';
+
+        if (reference_map->size >= MAX_REF_MAP) {
+            printf("OutOfMemoryError: ReferenceMap cheio!\n"); exit(1);
+        }
+        u4 ref_key = reference_map->size++;
+        reference_map->entries[ref_key] = (void*) buf;
+        push(frame->operand_stack, (void*)&ref_key);
+        return pc + 3;
+    }
+
     // 2. Resolve a classe!
-    ClassFile* resolved_class = get_class_from_constant_pool(ctx->thread, ctx->method_area, frame, class_index);
+    ClassFile* resolved_class = get_class_from_constant_pool(ctx->thread, ctx->method_area, frame, class_name);
 
     // SE RETORNOU NULL, UM NOVO FRAME (<clinit>) FOI EMPILHADO!
     if (resolved_class == NULL) {
@@ -1881,10 +1941,17 @@ static u4 handle_anewarray(RuntimeContext *ctx, Code_attribute *code_attr) {
     }
     else {
         u2 name_index = class.info.Class.name_index;
-        ClassFile *resolved_class = MethodAreaFindClass(method_area, constant_pool[name_index].info.Utf8.bytes);
-        if (resolved_class == NULL) {
-            printf("ClassNotFoundException: Não foi possível resolver a classe para o array de referência\n");
-            exit(1);
+        char *comp_name = (char*) constant_pool[name_index].info.Utf8.bytes;
+        u2 comp_name_len = constant_pool[name_index].info.Utf8.length;
+
+        // Classes nativas (String, StringBuffer, ...) não têm ClassFile real
+        // carregado na MethodArea, então pulamos a validação pra elas.
+        if (!is_native_class(comp_name, comp_name_len)) {
+            ClassFile *resolved_class = MethodAreaFindClass(method_area, (u1*) comp_name);
+            if (resolved_class == NULL) {
+                printf("ClassNotFoundException: Não foi possível resolver a classe para o array de referência\n");
+                exit(1);
+            }
         }
     }
 
@@ -1900,21 +1967,19 @@ static u4 handle_anewarray(RuntimeContext *ctx, Code_attribute *code_attr) {
         exit(1);
     }
 
-    u4 ref_key = reference_map->size;
-    reference_map->size++;
-
-    if (ref_key > MAX_REF_MAP) {
+    if (reference_map->size >= MAX_REF_MAP) {
         printf("OutOfMemoryError: ReferenceMap cheio!\n");
         exit(1);
     }
+    u4 ref_key = reference_map->size++;
 
     reference_map->entries[ref_key] = (void*)new_array;
 
     // 7. Push da nova chave (ref_key) para a pilha de operandos
     push(frame->operand_stack, (void*)&ref_key);
 
-    // anewarray tem 2 bytes: 1 de opcode + 1 de atype
-    return pc + 2;
+    // anewarray tem 3 bytes: 1 de opcode + 2 de índice no constant pool
+    return pc + 3;
 }
 
 // da pop de uma referencia de array e da push do seu comprimento
