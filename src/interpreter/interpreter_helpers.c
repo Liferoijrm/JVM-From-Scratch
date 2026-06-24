@@ -180,3 +180,178 @@ u4 dispatch_stringbuffer(JVMThread *thread, ReferenceMap *reference_map, u2 meth
     fprintf(stderr, "StringBuffer: método não suportado '%.*s'\n", method_name_len, method_name);
     exit(1);
 }
+
+static Code_attribute *ParseCodeAttribute(Attribute_info *attr);
+
+Code_attribute* getCodeAttributeFromTopFrame(Stack* frame_stack) {
+    if (frame_stack == NULL)
+        return NULL;
+
+    Frame *frame = (Frame*) getTop(frame_stack);
+    if (frame == NULL || frame->method == NULL || frame->class_file == NULL)
+        return NULL;
+
+    Method_info *method = frame->method;
+
+    for (u2 i = 0; i < method->attributes_count; i++) {
+
+        Attribute_info *attr = &method->attributes[i];
+
+        u2 name_index = attr->attribute_name_index;
+
+        Cp_info *cp = &frame->class_file->constant_pool[name_index];
+
+        if (cp->tag != CONSTANT_Utf8)
+            continue;
+
+        if (cp->info.Utf8.length == 4 &&
+            memcmp(cp->info.Utf8.bytes, "Code", 4) == 0)
+        {
+            return ParseCodeAttribute(attr);
+        }
+    }
+
+    return NULL;
+}
+
+static Code_attribute *ParseCodeAttribute(Attribute_info *attr) {
+    if (attr == NULL || attr->info == NULL)
+        return NULL;
+
+    u1 *ptr = attr->info;
+
+    Code_attribute *code = calloc(1, sizeof(Code_attribute));
+    if (code == NULL)
+        return NULL;
+
+    code->attribute_name_index = attr->attribute_name_index;
+    code->attribute_length     = attr->attribute_length;
+
+    code->max_stack  = read_u2(&ptr);
+    code->max_locals = read_u2(&ptr);
+
+    code->code_length = read_u4(&ptr);
+
+    if (code->code_length > 0) {
+        code->code = malloc(code->code_length);
+
+        if (code->code == NULL) {
+            free(code);
+            return NULL;
+        }
+
+        memcpy(code->code, ptr, code->code_length);
+        ptr += code->code_length;
+    }
+
+    code->exception_table_length = read_u2(&ptr);
+
+    if (code->exception_table_length > 0) {
+
+        code->exception_table =
+            malloc(sizeof(Exception_code) * code->exception_table_length);
+
+        if (code->exception_table == NULL) {
+            free(code->code);
+            free(code);
+            return NULL;
+        }
+
+        for (u2 i = 0; i < code->exception_table_length; i++) {
+            code->exception_table[i].start_pc   = read_u2(&ptr);
+            code->exception_table[i].end_pc     = read_u2(&ptr);
+            code->exception_table[i].handler_pc = read_u2(&ptr);
+            code->exception_table[i].catch_type = read_u2(&ptr);
+        }
+    }
+
+    code->attributes_count = read_u2(&ptr);
+
+    if (code->attributes_count > 0) {
+
+        code->attributes =
+            malloc(sizeof(Attribute_info) * code->attributes_count);
+
+        if (code->attributes == NULL) {
+            free(code->exception_table);
+            free(code->code);
+            free(code);
+            return NULL;
+        }
+
+        for (u2 i = 0; i < code->attributes_count; i++) {
+
+            code->attributes[i].attribute_name_index = read_u2(&ptr);
+            code->attributes[i].attribute_length     = read_u4(&ptr);
+
+            u4 len = code->attributes[i].attribute_length;
+
+            if (len > 0) {
+
+                code->attributes[i].info = malloc(len);
+
+                if (code->attributes[i].info == NULL) {
+
+                    for (u2 j = 0; j < i; j++)
+                        free(code->attributes[j].info);
+
+                    free(code->attributes);
+                    free(code->exception_table);
+                    free(code->code);
+                    free(code);
+
+                    return NULL;
+                }
+
+                memcpy(code->attributes[i].info, ptr, len);
+                ptr += len;
+            } else {
+                code->attributes[i].info = NULL;
+            }
+        }
+    }
+
+    return code;
+}
+
+void FreeCodeAttribute(Code_attribute *code) {
+    if (code == NULL)
+        return;
+
+    free(code->code);
+
+    if (code->attributes != NULL) {
+        for (u2 i = 0; i < code->attributes_count; i++) {
+            free(code->attributes[i].info);
+        }
+        free(code->attributes);
+    }
+
+    free(code->exception_table);
+
+    free(code);
+}
+
+char* GetClassName(ClassFile *cf, u2 class_index) {
+    // Validação de segurança básica (ausência de superclasse)
+    if (!cf || class_index == 0) {
+        return NULL; 
+    }
+
+    u2 name_index = cf->constant_pool[class_index].info.Class.name_index;
+
+    char *class_name = (char*) cf->constant_pool[name_index].info.Utf8.bytes;
+
+    return class_name;
+}
+
+u1 IsMethodNamed(Method_info *method, ClassFile *class_file, const char *name, size_t len) {
+    u2 idx = method->name_index;
+
+    if (idx == 0 || idx >= class_file->constant_pool_count)
+        return 0;
+
+    Cp_info *cp = &class_file->constant_pool[idx];
+
+    return (cp->tag == CONSTANT_Utf8 && cp->info.Utf8.length == len && memcmp(cp->info.Utf8.bytes, name, len) == 0);
+}

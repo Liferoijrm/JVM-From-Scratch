@@ -122,7 +122,6 @@ typedef struct Attribute_info{
     u2 attribute_name_index;
     u4 attribute_length;
     //u1 info[attribute_length];
-    // TODO: verificar melhor maneira de implementar essa parte de info
     u1 *info;
 }Attribute_info;
 

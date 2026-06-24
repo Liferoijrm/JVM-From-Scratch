@@ -66,9 +66,11 @@ u1 InitializeClass(MethodArea *method_area, MethodAreaEntry *entry, JVMThread *t
          * pois foi o último a ser alocado (LIFO)
          */
         pushFrame(thread, entry->class_file, clinit, thread->pc);
+        thread->pc = 0;
     }
-    
-    thread->pc = 0;
+    else{
+        entry->state = CLASS_INITIALIZED;
+    }
 
     /*
      * Inicializa a superclasse depois.

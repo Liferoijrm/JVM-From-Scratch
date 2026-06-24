@@ -1,5 +1,5 @@
 #ifndef PREPARATION_H
-#define PREPARTATION_H
+#define PREPARATION_H
 
 #include <stddef.h>
 #include <stdlib.h>

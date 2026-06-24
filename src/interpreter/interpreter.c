@@ -1169,13 +1169,16 @@ static u4 handle_goto(RuntimeContext *ctx, Code_attribute *code_attr) {
 }
 
 static u4 handle_i_return(RuntimeContext *ctx, Code_attribute *code_attr) {
-    (void)code_attr;
-
     JVMThread *thread = ctx->thread;
     Frame *frame = (Frame*)getTop(thread->frame_stack);
 
     u4 value = *((u4*)getTop(frame->operand_stack));
     u4 return_pc = frame->return_pc;
+
+    if(isMethodNamed(frame->method, frame->class_file, "<clinit>", 8)){
+        MethodAreaEntry* entry = GetMethodAreaEntry(ctx->method_area, "<clinit>");
+        entry->state = CLASS_INITIALIZED;
+    }
 
     pop(thread->frame_stack);
 
@@ -1201,6 +1204,11 @@ static u4 handle_lreturn(RuntimeContext *ctx, Code_attribute *code_attr) {
 
     u4 return_pc = frame->return_pc;
 
+    if(isMethodNamed(frame->method, frame->class_file, "<clinit>", 8)){
+        MethodAreaEntry* entry = GetMethodAreaEntry(ctx->method_area, "<clinit>");
+        entry->state = CLASS_INITIALIZED;
+    }
+
     pop(thread->frame_stack);
 
     if (!isEmpty(thread->frame_stack)) {
@@ -1220,6 +1228,11 @@ static u4 handle_freturn(RuntimeContext *ctx, Code_attribute *code_attr) {
 
     u4 value = *((u4*)getTop(frame->operand_stack));
     u4 return_pc = frame->return_pc;
+
+    if(isMethodNamed(frame->method, frame->class_file, "<clinit>", 8)){
+        MethodAreaEntry* entry = GetMethodAreaEntry(ctx->method_area, "<clinit>");
+        entry->state = CLASS_INITIALIZED;
+    }
 
     pop(thread->frame_stack);
 
@@ -1245,6 +1258,11 @@ static u4 handle_dreturn(RuntimeContext *ctx, Code_attribute *code_attr) {
 
     u4 return_pc = frame->return_pc;
 
+    if(isMethodNamed(frame->method, frame->class_file, "<clinit>", 8)){
+        MethodAreaEntry* entry = GetMethodAreaEntry(ctx->method_area, "<clinit>");
+        entry->state = CLASS_INITIALIZED;
+    }
+
     pop(thread->frame_stack);
 
     if (!isEmpty(thread->frame_stack)) {
@@ -1265,6 +1283,11 @@ static u4 handle_areturn(RuntimeContext *ctx, Code_attribute *code_attr) {
     u4 value = *((u4*)getTop(frame->operand_stack));
     u4 return_pc = frame->return_pc;
 
+    if(isMethodNamed(frame->method, frame->class_file, "<clinit>", 8)){
+        MethodAreaEntry* entry = GetMethodAreaEntry(ctx->method_area, "<clinit>");
+        entry->state = CLASS_INITIALIZED;
+    }
+
     pop(thread->frame_stack);
 
     if (!isEmpty(thread->frame_stack)) {
@@ -1282,6 +1305,11 @@ static u4 handle_return(RuntimeContext *ctx, Code_attribute *code_attr) {
 
     Frame *frame = (Frame*)getTop(thread->frame_stack);
     u4 return_pc = frame->return_pc;
+
+    if(isMethodNamed(frame->method, frame->class_file, "<clinit>", 8)){
+        MethodAreaEntry* entry = GetMethodAreaEntry(ctx->method_area, "<clinit>");
+        entry->state = CLASS_INITIALIZED;
+    }
 
     pop(thread->frame_stack);
 
@@ -1351,7 +1379,8 @@ static u4 handle_getstatic(RuntimeContext *ctx, Code_attribute *code_attr) {
     else {
         // 4. Resgata o array de static fields da classe e o entry do method area correspondente
         MethodArea *method_area = ctx->method_area;
-        MethodAreaEntry *entry = get_method_area_entry(method_area, class_file->this_class);
+        char *name = GetClassName(class_file, class_file->this_class);
+        MethodAreaEntry *entry = MethodAreaGetEntry(method_area, name);
         StaticField *static_fields = entry->static_fields;
 
         u2 field_idx = field_ref.info.Fieldref.name_and_type_index;
@@ -1720,7 +1749,8 @@ static u4 handle_putstatic(RuntimeContext *ctx, Code_attribute *code_attr) {
     JVMThread *thread = ctx->thread;
     MethodArea *method_area = ctx->method_area;
     Frame *frame = (Frame*)getTop(thread->frame_stack);
-    MethodAreaEntry *entry = get_method_area_entry(method_area, frame->class_file->this_class);
+    char *name = GetClassName(frame->class_file, frame->class_file->this_class);
+    MethodAreaEntry *entry = MethodAreaGetEntry(method_area, name);
     StaticField *static_fields = entry->static_fields;
 
     // 2. Pega o índice do campo no constant pool a partir do bytecode
@@ -1757,7 +1787,6 @@ static u4 handle_putstatic(RuntimeContext *ctx, Code_attribute *code_attr) {
             }
         }
     }
-
 
     return pc + 3;
 }
@@ -1821,7 +1850,7 @@ static u4 handle_new(RuntimeContext *ctx, Code_attribute *code_attr) {
 
     // SE RETORNOU NULL, UM NOVO FRAME (<clinit>) FOI EMPILHADO!
     if (resolved_class == NULL) {
-        return pc; 
+        return ctx->thread->pc; 
     }
 
     JVMObject* new_obj = (JVMObject*) malloc(sizeof(JVMObject));
@@ -2223,7 +2252,7 @@ static u4 handle_iand(RuntimeContext *ctx, Code_attribute *code_attr) {
     u4 val1 = *((u4*)getTop(frame->operand_stack)); pop(frame->operand_stack);
     u4 val2 = *((u4*)getTop(frame->operand_stack)); pop(frame->operand_stack);
     u4 res = val2 & val1;
-    push(frame->operand_stack, res);
+    push(frame->operand_stack, (void*)&res);
     return pc + 1;
 }
 
@@ -2233,7 +2262,7 @@ static u4 handle_ior(RuntimeContext *ctx, Code_attribute *code_attr) {
     u4 val1 = *((u4*)getTop(frame->operand_stack)); pop(frame->operand_stack);
     u4 val2 = *((u4*)getTop(frame->operand_stack)); pop(frame->operand_stack);
     u4 res = val2 | val1;
-    push(frame->operand_stack, res);
+    push(frame->operand_stack, (void*)&res);
     return pc + 1;
 }
 
@@ -2243,7 +2272,7 @@ static u4 handle_ixor(RuntimeContext *ctx, Code_attribute *code_attr) {
     u4 val1 = *((u4*)getTop(frame->operand_stack)); pop(frame->operand_stack);
     u4 val2 = *((u4*)getTop(frame->operand_stack)); pop(frame->operand_stack);
     u4 res = val2 ^ val1;
-    push(frame->operand_stack, res);
+    push(frame->operand_stack, (void*)&res);
     return pc + 1;
 }
 
@@ -2453,15 +2482,19 @@ static u4 handle_lor(RuntimeContext *ctx, Code_attribute *code_attr) {
     uint64_t v2 = ((uint64_t)h2 << 32) | l2;
     uint64_t res = v2 | v1;
 
-    push(frame->operand_stack, (void*)(u4)(res >> 32));
-    push(frame->operand_stack, (void*)(u4)(res & 0xFFFFFFFF));
+    u4 res_high = (u4)(res >> 32);
+    u4 res_low  = (u4)(res & 0xFFFFFFFF);
+
+    push(frame->operand_stack, (void*)&res_high);
+    push(frame->operand_stack, (void*)&res_low);
+
     return pc + 1;
 }
 
 static u4 handle_lxor(RuntimeContext *ctx, Code_attribute *code_attr) {
     u4 pc = ctx->thread->pc;
     Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
-    
+
     u4 l1 = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
     u4 h1 = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
     u4 l2 = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
@@ -2471,8 +2504,12 @@ static u4 handle_lxor(RuntimeContext *ctx, Code_attribute *code_attr) {
     uint64_t v2 = ((uint64_t)h2 << 32) | l2;
     uint64_t res = v2 ^ v1;
 
-    push(frame->operand_stack, (void*)(u4)(res >> 32));
-    push(frame->operand_stack, (void*)(u4)(res & 0xFFFFFFFF));
+    u4 res_high = (u4)(res >> 32);
+    u4 res_low  = (u4)(res & 0xFFFFFFFF);
+
+    push(frame->operand_stack, (void*)&res_high);
+    push(frame->operand_stack, (void*)&res_low);
+
     return pc + 1;
 }
 
@@ -3554,14 +3591,16 @@ static u4 handle_sastore(RuntimeContext *ctx, Code_attribute *code_attr) {}
 void interpret(RuntimeContext *ctx){
     JVMThread* thread = ctx->thread;
     while (!isEmpty(thread->frame_stack)){
-        Code_attribute* code_attr = getCodeFromTopFrame(thread->frame_stack);
+        Code_attribute* code_attr = getCodeAttributeFromTopFrame(thread->frame_stack);
         u1* code = code_attr->code;
         u1 opcode = code[thread->pc];
         InstructionHandler handler = decode(opcode);
         if (handler == NULL){
             // TODO: handle unimplemented opcode / throw error
+            FreeCodeAttribute(code_attr);
             break;
         }
         thread->pc = handler(ctx, code_attr);
+        FreeCodeAttribute(code_attr);
     }
 }

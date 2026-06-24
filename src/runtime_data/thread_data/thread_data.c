@@ -64,17 +64,3 @@ void freeFrame(void* frame_ptr){
         free(frame);
     }
 }
-
-Code_attribute* getCodeAttributeFromTopFrame(Stack* frame_stack){
-    Frame *frame = (Frame*) getTop(frame_stack);
-    Method_info* method = frame->method;
-
-    // busca nos atributos
-    for(u2 i = 0; i < method->attributes_count; i++){
-        u2 name_index = method->attributes[i].attribute_name_index;
-        char* attr_name = (char*) frame->class_file->constant_pool[name_index].info.Utf8.bytes;
-        if(!strcmp(attr_name, "Code")){
-            return (Code_attribute*) method->attributes[i].info;
-        }
-    }
-}
