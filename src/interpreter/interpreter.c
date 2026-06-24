@@ -3010,8 +3010,89 @@ static u4 handle_bastore(RuntimeContext *ctx, Code_attribute *code_attr) {
     return pc + 1;
 }
 
-static u4 handle_caload(RuntimeContext *ctx, Code_attribute *code_attr) {}
-static u4 handle_castore(RuntimeContext *ctx, Code_attribute *code_attr) {}
+/* Carrega um char de um array para a operand stack. */
+static u4 handle_caload(RuntimeContext *ctx, Code_attribute *code_attr) {
+
+    u4 pc = ctx->thread->pc;
+    ReferenceMap* reference_map = ctx->reference_map;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+
+    u4 index =
+        *((u4*)getTop(frame->operand_stack));
+    pop(frame->operand_stack);
+
+    u4 ref_key =
+        *((u4*)getTop(frame->operand_stack));
+    pop(frame->operand_stack);
+
+    JVMArray* arrayref =
+        (JVMArray*)reference_map->entries[ref_key];
+
+    if (arrayref == NULL) {
+        printf("NullPointerException em caload\n");
+        exit(1);
+    }
+
+    if (index >= arrayref->length) {
+        printf("ArrayIndexOutOfBoundsException em caload\n");
+        exit(1);
+    }
+
+    if (arrayref->atype != JVM_ATYPE_CHAR) {
+        printf("ArrayStoreTypeMismatch em caload\n");
+        exit(1);
+    }
+
+    u4 value =
+        (u4)((uint16_t*)arrayref->data)[index];
+
+    push(frame->operand_stack, &value);
+
+    return pc + 1;
+}
+
+/* Armazena um char da operand stack em um array. */
+static u4 handle_castore(RuntimeContext *ctx, Code_attribute *code_attr) {
+
+    u4 pc = ctx->thread->pc;
+    ReferenceMap* reference_map = ctx->reference_map;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+
+    u4 value =
+        *((u4*)getTop(frame->operand_stack));
+    pop(frame->operand_stack);
+
+    u4 index =
+        *((u4*)getTop(frame->operand_stack));
+    pop(frame->operand_stack);
+
+    u4 ref_key =
+        *((u4*)getTop(frame->operand_stack));
+    pop(frame->operand_stack);
+
+    JVMArray* arrayref =
+        (JVMArray*)reference_map->entries[ref_key];
+
+    if (arrayref == NULL) {
+        printf("NullPointerException em castore\n");
+        exit(1);
+    }
+
+    if (index >= arrayref->length) {
+        printf("ArrayIndexOutOfBoundsException em castore\n");
+        exit(1);
+    }
+
+    if (arrayref->atype != JVM_ATYPE_CHAR) {
+        printf("ArrayStoreTypeMismatch em castore\n");
+        exit(1);
+    }
+
+    ((uint16_t*)arrayref->data)[index] =
+        (uint16_t)value;
+
+    return pc + 1;
+}
 static u4 handle_checkcast(RuntimeContext *ctx, Code_attribute *code_attr) {}
 
 static u4 handle_dadd(RuntimeContext *ctx, Code_attribute *code_attr) {
@@ -3038,8 +3119,99 @@ static u4 handle_dadd(RuntimeContext *ctx, Code_attribute *code_attr) {
     push(frame->operand_stack, (void*)&res_low);
     return pc + 1;
 }
-static u4 handle_daload(RuntimeContext *ctx, Code_attribute *code_attr) {}
-static u4 handle_dastore(RuntimeContext *ctx, Code_attribute *code_attr) {}
+
+/* Carrega um double de um array para a operand stack. */
+static u4 handle_daload(RuntimeContext *ctx, Code_attribute *code_attr) {
+
+    u4 pc = ctx->thread->pc;
+    ReferenceMap* reference_map = ctx->reference_map;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+
+    u4 index = *((u4*)getTop(frame->operand_stack));
+    pop(frame->operand_stack);
+
+    u4 ref_key = *((u4*)getTop(frame->operand_stack));
+    pop(frame->operand_stack);
+
+    JVMArray* arrayref =
+        (JVMArray*)reference_map->entries[ref_key];
+
+    if (arrayref == NULL) {
+        printf("NullPointerException em daload\n");
+        exit(1);
+    }
+
+    if (index >= arrayref->length) {
+        printf("ArrayIndexOutOfBoundsException em daload\n");
+        exit(1);
+    }
+
+    if (arrayref->atype != JVM_ATYPE_DOUBLE) {
+        printf("ArrayStoreTypeMismatch em daload\n");
+        exit(1);
+    }
+
+    uint64_t value =
+        ((uint64_t*)arrayref->data)[index];
+
+    u4 high = (u4)(value >> 32);
+    u4 low  = (u4)(value & 0xFFFFFFFF);
+
+    push(frame->operand_stack, &high);
+    push(frame->operand_stack, &low);
+
+    return pc + 1;
+}
+
+/* Armazena um double da operand stack em um array. */
+static u4 handle_dastore(RuntimeContext *ctx, Code_attribute *code_attr) {
+
+    u4 pc = ctx->thread->pc;
+    ReferenceMap* reference_map = ctx->reference_map;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+
+    u4 low =
+        *((u4*)getTop(frame->operand_stack));
+    pop(frame->operand_stack);
+
+    u4 high =
+        *((u4*)getTop(frame->operand_stack));
+    pop(frame->operand_stack);
+
+    u4 index =
+        *((u4*)getTop(frame->operand_stack));
+    pop(frame->operand_stack);
+
+    u4 ref_key =
+        *((u4*)getTop(frame->operand_stack));
+    pop(frame->operand_stack);
+
+    JVMArray* arrayref =
+        (JVMArray*)reference_map->entries[ref_key];
+
+    if (arrayref == NULL) {
+        printf("NullPointerException em dastore\n");
+        exit(1);
+    }
+
+    if (index >= arrayref->length) {
+        printf("ArrayIndexOutOfBoundsException em dastore\n");
+        exit(1);
+    }
+
+    if (arrayref->atype != JVM_ATYPE_DOUBLE) {
+        printf("ArrayStoreTypeMismatch em dastore\n");
+        exit(1);
+    }
+
+    uint64_t value =
+        ((uint64_t)high << 32) | low;
+
+    ((uint64_t*)arrayref->data)[index] =
+        value;
+
+    return pc + 1;
+}
 
 static u4 handle_ddiv(RuntimeContext *ctx, Code_attribute *code_attr) {
     u4 pc = ctx->thread->pc;
@@ -3646,8 +3818,92 @@ static u4 handle_lastore(RuntimeContext *ctx, Code_attribute *code_attr) {
     return pc + 1;
 }
 
-static u4 handle_saload(RuntimeContext *ctx, Code_attribute *code_attr) {}
-static u4 handle_sastore(RuntimeContext *ctx, Code_attribute *code_attr) {}
+/* Carrega um short de um array para a operand stack. */
+static u4 handle_saload(RuntimeContext *ctx, Code_attribute *code_attr) {
+
+    u4 pc = ctx->thread->pc;
+    ReferenceMap* reference_map = ctx->reference_map;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+
+    u4 index =
+        *((u4*)getTop(frame->operand_stack));
+    pop(frame->operand_stack);
+
+    u4 ref_key =
+        *((u4*)getTop(frame->operand_stack));
+    pop(frame->operand_stack);
+
+    JVMArray* arrayref =
+        (JVMArray*)reference_map->entries[ref_key];
+
+    if (arrayref == NULL) {
+        printf("NullPointerException em saload\n");
+        exit(1);
+    }
+
+    if (index >= arrayref->length) {
+        printf("ArrayIndexOutOfBoundsException em saload\n");
+        exit(1);
+    }
+
+    if (arrayref->atype != JVM_ATYPE_SHORT) {
+        printf("ArrayStoreTypeMismatch em saload\n");
+        exit(1);
+    }
+
+    int16_t short_val =
+        ((int16_t*)arrayref->data)[index];
+
+    u4 value =
+        (u4)(int32_t)short_val;
+
+    push(frame->operand_stack, &value);
+
+    return pc + 1;
+}
+
+/* Armazena um short da operand stack em um array. */
+static u4 handle_sastore(RuntimeContext *ctx, Code_attribute *code_attr) {
+
+    u4 pc = ctx->thread->pc;
+    ReferenceMap* reference_map = ctx->reference_map;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+
+    u4 value =
+        *((u4*)getTop(frame->operand_stack));
+    pop(frame->operand_stack);
+
+    u4 index =
+        *((u4*)getTop(frame->operand_stack));
+    pop(frame->operand_stack);
+
+    u4 ref_key =
+        *((u4*)getTop(frame->operand_stack));
+    pop(frame->operand_stack);
+
+    JVMArray* arrayref =
+        (JVMArray*)reference_map->entries[ref_key];
+
+    if (arrayref == NULL) {
+        printf("NullPointerException em sastore\n");
+        exit(1);
+    }
+
+    if (index >= arrayref->length) {
+        printf("ArrayIndexOutOfBoundsException em sastore\n");
+        exit(1);
+    }
+
+    if (arrayref->atype != JVM_ATYPE_SHORT) {
+        printf("ArrayStoreTypeMismatch em sastore\n");
+        exit(1);
+    }
+
+    ((int16_t*)arrayref->data)[index] =
+        (int16_t)value;
+
+    return pc + 1;
+}
 
 // ============================================================
 // Execution loop
