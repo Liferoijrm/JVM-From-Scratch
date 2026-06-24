@@ -1780,10 +1780,30 @@ static u4 handle_anewarray(RuntimeContext *ctx, Code_attribute *code_attr) {
     return pc + 2;
 }
 
+// da pop de uma referencia de array e da push do seu comprimento
 static u4 handle_arraylength(RuntimeContext *ctx, Code_attribute *code_attr) {
-    //(void)frame; (void)code;
-    // TODO: pop array ref, push length
-    //return pc + 1;
+    u4 pc = ctx->thread->pc;
+    ReferenceMap* reference_map = ctx->reference_map;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+
+    // 1. pop da referencia do array
+    u4 ref_key = *((u4*) getTop(frame->operand_stack));
+    pop(frame->operand_stack);
+
+    // 2. checa se a referencia existe no reference map
+    if (ref_key >= reference_map->size) {
+        printf("NullPointerException: ref_key (%u) invalida em arraylength\n", ref_key);
+        exit(1);
+    }
+
+    // 3. resgata o array do reference map
+    JVMArray* arrayref = (JVMArray*) reference_map->entries[ref_key];
+
+    // 4. da push do comprimento do array como int (u4)
+    u4 length = arrayref->length;
+    push(frame->operand_stack, (void*)&length);
+
+    return pc + 1;
 }
 
 // da push de uma variavel local de referencia no indice idx na operand stack
@@ -2379,12 +2399,139 @@ static u4 handle_wide(RuntimeContext *ctx, Code_attribute *code_attr) {
     }
 }
 
+// mapea os descriptors da JVM pros ATYPE constants internos
+static u1 atype_from_base_descriptor(char base_char) {
+    switch (base_char) {
+        case 'B': return JVM_ATYPE_BYTE;
+        case 'C': return JVM_ATYPE_CHAR;
+        case 'D': return JVM_ATYPE_DOUBLE;
+        case 'F': return JVM_ATYPE_FLOAT;
+        case 'I': return JVM_ATYPE_INT;
+        case 'J': return JVM_ATYPE_LONG;
+        case 'S': return JVM_ATYPE_SHORT;
+        case 'Z': return JVM_ATYPE_BOOLEAN;
+        case 'L': 
+        case '[': return JVM_ATYPE_OBJECT;
+        default:  return 0;
+    }
+}
+
+// constroi recursivamente a arvore de array multi-dimensional 
+// current_depth: 0 = outermost array 
+// total_depth - 1 = innermost allocated array.
+static u4 create_multi_dim_array(RuntimeContext *ctx, u1 leaf_atype, int current_depth, int total_depth, u4 *sizes) {
+    ReferenceMap *ref_map = ctx->reference_map;
+    u4 count = sizes[current_depth];
+
+    JVMArray *array = (JVMArray *)malloc(sizeof(JVMArray));
+    if (!array) {
+        printf("OutOfMemoryError: Allocating JVMArray\n");
+        exit(1);
+    }
+    
+    array->length = count;
+
+    if (ref_map->size >= MAX_REF_MAP) {
+        printf("OutOfMemoryError: ReferenceMap exhausted\n");
+        exit(1);
+    }
+
+    if (current_depth == total_depth - 1) {
+        // caso base
+        array->atype = leaf_atype;
+        size_t elem_size = (leaf_atype == JVM_ATYPE_OBJECT) ? sizeof(u4) : ArrayTypeSize(leaf_atype);
+        array->data = (count > 0) ? calloc(count, elem_size) : NULL;
+        
+        if (count > 0 && !array->data) {
+            printf("OutOfMemoryError: Allocating leaf array data\n");
+            exit(1);
+        }
+    } else {
+        // caso recursivo
+        array->atype = JVM_ATYPE_OBJECT;
+        array->data = (count > 0) ? calloc(count, sizeof(u4)) : NULL;
+
+        if (count > 0 && !array->data) {
+            printf("OutOfMemoryError: Allocating sub-array reference block\n");
+            exit(1);
+        }
+
+        // instacia recursivamente e linka os sub-arrays
+        if (count > 0) {
+            u4 *sub_keys = (u4 *)array->data;
+            for (u4 i = 0; i < count; i++) {
+                sub_keys[i] = create_multi_dim_array(ctx, leaf_atype, current_depth + 1, total_depth, sizes);
+            }
+        }
+    }
+
+    // registra a instancia e retorna a key
+    u4 ref_key = ref_map->size++;
+    ref_map->entries[ref_key] = (void *)array;
+    return ref_key;
+}
+
+// cria um array multidimensional
 static u4 handle_multianewarray(RuntimeContext *ctx, Code_attribute *code_attr) {
-    //(void)frame;
-    //u2 class_index = ((u2)code[pc + 1] << 8) | code[pc + 2];
-    //u1 dimensions = code[pc + 3];
-    // TODO: pop N dimension sizes, allocate multi-dimensional array
-    //return pc + 4;
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+    u1* code = code_attr->code;
+    Cp_info *constant_pool = frame->class_file->constant_pool;
+
+    // 1. resolve o descritor da classe
+    u2 class_index = ((u2)code[pc + 1] << 8) | code[pc + 2];
+    Cp_info class_entry = constant_pool[class_index];
+    
+    if (class_entry.tag != CONSTANT_Class) {
+        printf("VerifyError: Invalid CP entry for multianewarray\n");
+        exit(1);
+    }
+    
+    u2 name_index = class_entry.info.Class.name_index;
+    char *descriptor = (char *)constant_pool[name_index].info.Utf8.bytes;
+    u2 desc_len = constant_pool[name_index].info.Utf8.length;
+
+    // 2. parsing das dimensoes do
+    int total_dims = 0;
+    while (total_dims < desc_len && descriptor[total_dims] == '[') {
+        total_dims++;
+    }
+
+    u1 dimensions = code[pc + 3];
+    if (dimensions == 0 || dimensions > total_dims) {
+        printf("VerifyError: Invalid dimensions requested (%u)\n", dimensions);
+        exit(1);
+    }
+
+    // 3. pop do tamanho das dimensões da operand stack
+    u4 sizes[256]; // Safe buffer, JVM restricts dimensions to 255
+    for (int i = dimensions - 1; i >= 0; i--) {
+        sizes[i] = *((u4 *)getTop(frame->operand_stack));
+        pop(frame->operand_stack);
+        
+        if ((int32_t)sizes[i] < 0) {
+            printf("NegativeArraySizeException\n");
+            exit(1);
+        }
+    }
+
+    // 4. determina o tipo de alocacao de memoria pro node folha
+    char base_char = descriptor[total_dims];
+    u1 actual_leaf_type = atype_from_base_descriptor(base_char);
+    
+    if (!actual_leaf_type) {
+        printf("VerifyError: Invalid base type '%c'\n", base_char);
+        exit(1);
+    }
+
+    // If partial dimensions are requested (e.g., new int[2][]), the leaf is still a reference
+    u1 allocation_type = (dimensions < total_dims) ? JVM_ATYPE_OBJECT : actual_leaf_type;
+
+    // 5. constroi a arvore de array
+    u4 ref_key = create_multi_dim_array(ctx, allocation_type, 0, dimensions, sizes);
+    push(frame->operand_stack, (void *)&ref_key);
+
+    return pc + 4;
 }
 
 static u4 handle_if_acmpeq(RuntimeContext *ctx, Code_attribute *code_attr) {
