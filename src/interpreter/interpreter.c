@@ -1976,10 +1976,10 @@ static u4 handle_anewarray(RuntimeContext *ctx, Code_attribute *code_attr) {
         // Classes nativas (String, StringBuffer, ...) não têm ClassFile real
         // carregado na MethodArea, então pulamos a validação pra elas.
         if (!is_native_class(comp_name, comp_name_len)) {
-            ClassFile *resolved_class = MethodAreaFindClass(method_area, (u1*) comp_name);
+            ClassFile *resolved_class = get_class_from_constant_pool(ctx->thread, ctx->method_area, frame, comp_name);
+            // <se for NULL, clinit foi empilhado e volta pra executar
             if (resolved_class == NULL) {
-                printf("ClassNotFoundException: Não foi possível resolver a classe para o array de referência\n");
-                exit(1);
+                return ctx->thread->pc;
             }
         }
     }
