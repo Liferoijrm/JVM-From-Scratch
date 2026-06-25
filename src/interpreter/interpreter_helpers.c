@@ -355,3 +355,128 @@ u1 IsMethodNamed(Method_info *method, ClassFile *class_file, const char *name, s
 
     return (cp->tag == CONSTANT_Utf8 && cp->info.Utf8.length == len && memcmp(cp->info.Utf8.bytes, name, len) == 0);
 }
+
+static void MarkClinitDoneIfApplicable(MethodArea* method_area, Frame *frame) {
+    if (IsMethodNamed(frame->method, frame->class_file, "<clinit>", 8)) {
+        char *class_name = GetClassName(frame->class_file, frame->class_file->this_class);
+        MethodAreaEntry *entry = MethodAreaGetEntry(method_area, class_name);
+        if (entry != NULL) entry->state = CLASS_INITIALIZED;
+    }
+}
+
+// Busca exata (nome+descritor) só nos métodos declarados em cf, sem subir hierarquia.
+static Method_info* FindMethodExact(ClassFile *cf, const char *name, size_t name_len,
+                                     const char *descriptor, size_t descriptor_len) {
+    if (cf == NULL) return NULL;
+
+    for (u2 i = 0; i < cf->methods_count; i++) {
+        Method_info *method = &cf->methods[i];
+        Cp_info *name_cp = &cf->constant_pool[method->name_index];
+        Cp_info *desc_cp = &cf->constant_pool[method->descriptor_index];
+
+        if (name_cp->info.Utf8.length == name_len &&
+            memcmp(name_cp->info.Utf8.bytes, name, name_len) == 0 &&
+            desc_cp->info.Utf8.length == descriptor_len &&
+            memcmp(desc_cp->info.Utf8.bytes, descriptor, descriptor_len) == 0) {
+            return method;
+        }
+    }
+    return NULL;
+}
+
+// Procura nome+descritor em start_class e, se não achar, sobe a cadeia de superclasses.
+// out_owner recebe a ClassFile que de fato declara o método (Method_info não guarda
+// isso, então precisamos rastrear separadamente — necessário pra pushFrame depois).
+Method_info* ResolveMethod(MethodArea *method_area, ClassFile *start_class,
+                            const char *name, size_t name_len,
+                            const char *descriptor, size_t descriptor_len,
+                            ClassFile **out_owner) {
+    ClassFile *cf = start_class;
+
+    while (cf != NULL) {
+        Method_info *method = FindMethodExact(cf, name, name_len, descriptor, descriptor_len);
+        if (method != NULL) {
+            if (out_owner != NULL) *out_owner = cf;
+            return method;
+        }
+
+        if (cf->super_class == 0) break;
+        char *super_name = GetClassName(cf, cf->super_class);
+        if (super_name == NULL) break;
+
+        MethodAreaEntry *super_entry = MethodAreaGetEntry(method_area, super_name);
+        cf = (super_entry != NULL) ? super_entry->class_file : NULL;
+    }
+    return NULL;
+}
+
+// Largura (em slots de 32 bits) de cada parâmetro do descritor, na ordem em que
+// aparecem. J/D ocupam 2 slots; o resto (refs e arrays são sempre 1 ref_key) ocupa 1.
+u2 ParseArgWidths(const char *descriptor, u1 *widths, u2 *out_total_slots) {
+    u2 n_args = 0, total = 0;
+    const char *p = descriptor;
+
+    if (p == NULL || *p != '(') { if (out_total_slots) *out_total_slots = 0; return 0; }
+    p++;
+
+    while (*p != ')') {
+        u1 width = 1;
+        switch (*p) {
+            case 'J': case 'D': width = 2; p++; break;
+            case 'L': p++; while (*p != ';') p++; p++; break;
+            case '[':
+                while (*p == '[') p++;
+                if (*p == 'L') { while (*p != ';') p++; }
+                p++;
+                break;
+            default: p++; break; // B C F I S Z
+        }
+        widths[n_args++] = width;
+        total += width;
+    }
+
+    if (out_total_slots) *out_total_slots = total;
+    return n_args;
+}
+
+// Desempilha os argumentos (NÃO o objectref) da operand stack do chamador, conforme
+// o descritor, e escreve em arg_words na ordem em que vão para as locals do callee
+// (a partir do índice 1, depois do objectref). Retorna o total de slots usados.
+u2 PopArguments(Frame *caller_frame, const char *descriptor, u4 *arg_words) {
+    u1 widths[256];
+    u2 total_slots;
+    u2 n_args = ParseArgWidths(descriptor, widths, &total_slots);
+    u2 offset = total_slots;
+
+    for (int i = n_args - 1; i >= 0; i--) {
+        u1 w = widths[i];
+        offset -= w;
+
+        if (w == 2) {
+            u4 low  = *((u4*) getTop(caller_frame->operand_stack)); pop(caller_frame->operand_stack);
+            u4 high = *((u4*) getTop(caller_frame->operand_stack)); pop(caller_frame->operand_stack);
+            arg_words[offset]     = high;
+            arg_words[offset + 1] = low;
+        } else {
+            u4 v = *((u4*) getTop(caller_frame->operand_stack)); pop(caller_frame->operand_stack);
+            arg_words[offset] = v;
+        }
+    }
+    return total_slots;
+}
+
+// Empilha um Frame novo para 'method' (declarado em 'owner'), reaproveitando pushFrame
+// (que já lê max_stack/max_locals do atributo Code). local[0] = objectref,
+// local[1..n] = argumentos. Retorna 0 — mesmo motivo de InitializeClass fazer
+// thread->pc = 0 ao empilhar um <clinit>: pc é global da thread, não por frame.
+u4 PushUserMethodFrame(JVMThread *thread, ClassFile *owner, Method_info *method,
+                               u4 objectref, u4 *arg_words, u2 total_slots, u4 return_pc) {
+    pushFrame(thread, owner, method, return_pc);
+
+    Frame *new_frame = (Frame*) getTop(thread->frame_stack);
+    new_frame->local_variables[0] = objectref;
+    for (u2 i = 0; i < total_slots; i++) {
+        new_frame->local_variables[1 + i] = arg_words[i];
+    }
+    return 0;
+}

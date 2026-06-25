@@ -1175,10 +1175,7 @@ static u4 handle_i_return(RuntimeContext *ctx, Code_attribute *code_attr) {
     u4 value = *((u4*)getTop(frame->operand_stack));
     u4 return_pc = frame->return_pc;
 
-    if(isMethodNamed(frame->method, frame->class_file, "<clinit>", 8)){
-        MethodAreaEntry* entry = MethodAreaGetEntry(ctx->method_area, "<clinit>");
-        entry->state = CLASS_INITIALIZED;
-    }
+    MarkClinitDoneIfApplicable(ctx->method_area, frame);
 
     pop(thread->frame_stack);
 
@@ -1204,10 +1201,7 @@ static u4 handle_lreturn(RuntimeContext *ctx, Code_attribute *code_attr) {
 
     u4 return_pc = frame->return_pc;
 
-    if(isMethodNamed(frame->method, frame->class_file, "<clinit>", 8)){
-        MethodAreaEntry* entry = MethodAreaGetEntry(ctx->method_area, GetClassName(frame->class_file, frame->class_file->this_class));
-        entry->state = CLASS_INITIALIZED;
-    }
+    MarkClinitDoneIfApplicable(ctx->method_area, frame);
 
     pop(thread->frame_stack);
 
@@ -1229,10 +1223,7 @@ static u4 handle_freturn(RuntimeContext *ctx, Code_attribute *code_attr) {
     u4 value = *((u4*)getTop(frame->operand_stack));
     u4 return_pc = frame->return_pc;
 
-    if(IsMethodNamed(frame->method, frame->class_file, "<clinit>", 8)){
-        MethodAreaEntry* entry = MethodAreaGetEntry(ctx->method_area, "<clinit>");
-        entry->state = CLASS_INITIALIZED;
-    }
+    MarkClinitDoneIfApplicable(ctx->method_area, frame);
 
     pop(thread->frame_stack);
 
@@ -1258,10 +1249,7 @@ static u4 handle_dreturn(RuntimeContext *ctx, Code_attribute *code_attr) {
 
     u4 return_pc = frame->return_pc;
 
-    if(isMethodNamed(frame->method, frame->class_file, "<clinit>", 8)){
-        MethodAreaEntry* entry = MethodAreaGetEntry(ctx->method_area, "<clinit>");
-        entry->state = CLASS_INITIALIZED;
-    }
+    MarkClinitDoneIfApplicable(ctx->method_area, frame);
 
     pop(thread->frame_stack);
 
@@ -1283,10 +1271,7 @@ static u4 handle_areturn(RuntimeContext *ctx, Code_attribute *code_attr) {
     u4 value = *((u4*)getTop(frame->operand_stack));
     u4 return_pc = frame->return_pc;
 
-    if(isMethodNamed(frame->method, frame->class_file, "<clinit>", 8)){
-        MethodAreaEntry* entry = MethodAreaGetEntry(ctx->method_area, "<clinit>");
-        entry->state = CLASS_INITIALIZED;
-    }
+    MarkClinitDoneIfApplicable(ctx->method_area, frame);
 
     pop(thread->frame_stack);
 
@@ -1306,10 +1291,7 @@ static u4 handle_return(RuntimeContext *ctx, Code_attribute *code_attr) {
     Frame *frame = (Frame*)getTop(thread->frame_stack);
     u4 return_pc = frame->return_pc;
 
-    if(isMethodNamed(frame->method, frame->class_file, "<clinit>", 8)){
-        MethodAreaEntry* entry = MethodAreaGetEntry(ctx->method_area, "<clinit>");
-        entry->state = CLASS_INITIALIZED;
-    }
+    MarkClinitDoneIfApplicable(ctx->method_area, frame);
 
     pop(thread->frame_stack);
 
@@ -1343,6 +1325,7 @@ static u4 handle_invokevirtual(RuntimeContext *ctx, Code_attribute *code_attr) {
     char *method_name = (char*) cp[name_idx].info.Utf8.bytes;
     u2 method_name_len = cp[name_idx].info.Utf8.length;
     char *descriptor = (char*) cp[desc_idx].info.Utf8.bytes;
+    u2 descriptor_len = cp[desc_idx].info.Utf8.length;
 
     if (class_name_len == 19 && strncmp(class_name, "java/io/PrintStream", 19) == 0) {
         return dispatch_printstream(ctx->thread, ctx->reference_map, method_name_len, descriptor, pc);
@@ -1351,13 +1334,42 @@ static u4 handle_invokevirtual(RuntimeContext *ctx, Code_attribute *code_attr) {
         return dispatch_stringbuffer(ctx->thread, ctx->reference_map, method_name_len, method_name, descriptor, pc);
     }
 
-    // TODO: dispatch de métodos de usuário (Jogador.play, Carta.printOut, ...).
-    // Diferente do invokespecial: aqui a resolução do método deveria usar a classe
-    // RUNTIME do objeto (obj->class_ref, não a classe estática gravada no Methodref) —
-    // é justamente isso que dá ao invokevirtual seu comportamento polimórfico.
-    fprintf(stderr, "invokevirtual: dispatch de usuário ainda não implementado (%.*s.%.*s)\n",
-            class_name_len, class_name, method_name_len, method_name);
-    exit(1);
+    // Despacho de usuário: invokevirtual é polimórfico — a busca tem que começar na
+    // classe REAL do objeto (obj->class_ref), nunca na classe estática do Methodref.
+    u4 arg_words[256];
+    u2 total_slots = PopArguments(frame, descriptor, arg_words);
+
+    u4 objectref = *((u4*) getTop(frame->operand_stack));
+    pop(frame->operand_stack);
+
+    if (objectref == 0) {
+        printf("NullPointerException em invokevirtual\n");
+        exit(1);
+    }
+
+    JVMObject *obj = (JVMObject*) ctx->reference_map->entries[objectref];
+    if (obj == NULL) {
+        printf("NullPointerException: objeto não encontrado no ReferenceMap em invokevirtual\n");
+        exit(1);
+    }
+
+    ClassFile *owner = NULL;
+    Method_info *method = ResolveMethod(ctx->method_area, obj->class_ref,
+                                         method_name, method_name_len,
+                                         descriptor, descriptor_len, &owner);
+
+    if (method == NULL) {
+        fprintf(stderr, "AbstractMethodError: %.*s.%.*s%.*s\n",
+                class_name_len, class_name, method_name_len, method_name, descriptor_len, descriptor);
+        exit(1);
+    }
+    if (method->access_flags & 0x0008) { // ACC_STATIC
+        fprintf(stderr, "IncompatibleClassChangeError: invokevirtual em método estático (%.*s.%.*s)\n",
+                class_name_len, class_name, method_name_len, method_name);
+        exit(1);
+    }
+
+    return PushUserMethodFrame(ctx->thread, owner, method, objectref, arg_words, total_slots, pc + 3);
 }
 
 static u4 handle_invokespecial(RuntimeContext *ctx, Code_attribute *code_attr) {
@@ -1376,29 +1388,60 @@ static u4 handle_invokespecial(RuntimeContext *ctx, Code_attribute *code_attr) {
 
     u2 nat_idx = methodref.info.Methodref.name_and_type_index;
     u2 name_idx = cp[nat_idx].info.NameAndType.name_index;
+    u2 desc_idx = cp[nat_idx].info.NameAndType.descriptor_index;
     char *method_name = (char*) cp[name_idx].info.Utf8.bytes;
     u2 method_name_len = cp[name_idx].info.Utf8.length;
+    char *descriptor = (char*) cp[desc_idx].info.Utf8.bytes;
+    u2 descriptor_len = cp[desc_idx].info.Utf8.length;
 
     u1 is_init = (method_name_len == 6 && strncmp(method_name, "<init>", 6) == 0);
 
     if (is_init && is_native_class(class_name, class_name_len)) {
         // Object/String/StringBuffer: objeto já populado em 'new'.
-        // invokespecial aqui só descarta o objectref empilhado.
         pop(frame->operand_stack);
         return pc + 3;
     }
 
-    // TODO: <init> de classes do usuário, métodos privados, chamadas a super.
-    // Quando implementar: resolver via
-    //   get_class_from_constant_pool(ctx->thread, ctx->method_area, frame, class_name)
-    // (NULL só significa <clinit> empilhado — raro aqui, pois 'new' já força a
-    // inicialização da classe antes do invokespecial rodar); localizar o Method_info
-    // por nome+descriptor; montar um Frame novo com objectref em local[0] + argumentos
-    // copiados da operand stack (definindo apenas new_frame->method e
-    // new_frame->class_file, sem Code_attribute); empilhar e retornar 0 (pc do callee).
-    fprintf(stderr, "invokespecial: dispatch de usuário ainda não implementado (%.*s.%.*s)\n",
-            class_name_len, class_name, method_name_len, method_name);
-    exit(1);
+    // invokespecial resolve SEMPRE a partir da classe gravada no constant pool
+    // (nunca da classe real do objeto) — cobre <init>, método privado e super.metodo()
+    // sem comportamento polimórfico.
+    ClassFile *resolved_class = get_class_from_constant_pool(ctx->thread, ctx->method_area, frame, class_name);
+
+    // NULL = um frame de <clinit> foi empilhado (classe ainda não inicializada).
+    // O pc não avança, então essa mesma instrução roda de novo quando a execução
+    // voltar pra este frame — mesmo padrão que 'new'/'anewarray' já usam.
+    if (resolved_class == NULL) {
+        return ctx->thread->pc;
+    }
+
+    ClassFile *owner = NULL;
+    Method_info *method = ResolveMethod(ctx->method_area, resolved_class,
+                                         method_name, method_name_len,
+                                         descriptor, descriptor_len, &owner);
+
+    if (method == NULL) {
+        fprintf(stderr, "NoSuchMethodError: %.*s.%.*s%.*s\n",
+                class_name_len, class_name, method_name_len, method_name, descriptor_len, descriptor);
+        exit(1);
+    }
+    if (method->access_flags & 0x0008) { // ACC_STATIC
+        fprintf(stderr, "IncompatibleClassChangeError: invokespecial em método estático (%.*s.%.*s)\n",
+                class_name_len, class_name, method_name_len, method_name);
+        exit(1);
+    }
+
+    u4 arg_words[256];
+    u2 total_slots = PopArguments(frame, descriptor, arg_words);
+
+    u4 objectref = *((u4*) getTop(frame->operand_stack));
+    pop(frame->operand_stack);
+
+    if (objectref == 0) {
+        printf("NullPointerException em invokespecial\n");
+        exit(1);
+    }
+
+    return PushUserMethodFrame(ctx->thread, owner, method, objectref, arg_words, total_slots, pc + 3);
 }
 
 static u4 handle_invokeinterface(RuntimeContext *ctx, Code_attribute *code_attr) {
@@ -1948,13 +1991,11 @@ static u4 handle_new(RuntimeContext *ctx, Code_attribute *code_attr) {
         return ctx->thread->pc; 
     }
 
-    JVMObject* new_obj = (JVMObject*) malloc(sizeof(JVMObject));
-    if (new_obj == NULL) {
-        printf("OutOfMemoryError em 'new'\n");
-        exit(1);
+    JVMObject* new_obj = CreateObject(ctx->method_area, resolved_class);
+    if (new_obj == NULL){ 
+        printf("OutOfMemoryError em 'new'\n"); 
+        exit(1); 
     }
-
-    new_obj->class_ref = resolved_class;
 
     u4 ref_key = reference_map->size;
     reference_map->size++;
