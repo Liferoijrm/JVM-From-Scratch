@@ -3202,7 +3202,78 @@ static u4 handle_castore(RuntimeContext *ctx, Code_attribute *code_attr) {
 
     return pc + 1;
 }
-static u4 handle_checkcast(RuntimeContext *ctx, Code_attribute *code_attr) {}
+
+static u4 handle_checkcast(RuntimeContext *ctx, Code_attribute *code_attr) {
+    // TODO: tratar caso o ref_key seja um JVMArray
+    JVMThread *thread = ctx->thread;
+    Frame *frame = (Frame*)getTop(thread->frame_stack);
+    ClassFile *class_file = frame->class_file;
+    Cp_info *constant_pool = class_file->constant_pool;
+
+    u4 pc = thread->pc;
+    u1* code = code_attr->code;
+    u2 class_index = ((u2)code[pc + 1] << 8) | code[pc + 2];
+    u2 name_idx = constant_pool[class_index].info.Class.name_index;
+    char* target_class_name = (char*)constant_pool[name_idx].info.Utf8.bytes;
+    u2 target_class_len = constant_pool[name_idx].info.Utf8.length;
+    u4 ref_key = *((u4*) getTop(frame->operand_stack)); 
+
+    // se for null, o cast sempre passa reto
+    if(ref_key == 0) {
+        return pc + 3;
+    }
+
+    JVMObject* obj = (JVMObject*) ctx->reference_map->entries[ref_key];
+    if(obj == NULL) {
+        printf("Fatal Error: Objeto inválido no ReferenceMap (checkcast)\n");
+        exit(1);
+    }
+
+    // percorre a hierarquia de classes e interfaces
+    ClassFile* curr = obj->class_ref;
+    u1 is_instance = 0; 
+
+    while(curr != NULL) {
+        u2 curr_name_idx = curr->constant_pool[curr->this_class].info.Class.name_index;
+        u2 curr_len = curr->constant_pool[curr_name_idx].info.Utf8.length;
+        char* curr_name = (char*)curr->constant_pool[curr_name_idx].info.Utf8.bytes;
+
+        // valida se eh a própria classe
+        if(curr_len == target_class_len && strncmp(curr_name, target_class_name, target_class_len) == 0) {
+            is_instance = 1;
+            break;
+        }
+
+        // valida as interfaces
+        if (check_interface(ctx, curr, target_class_name, target_class_len)) {
+            is_instance = 1;
+            break;
+        }
+
+        // sobe para a superclasse
+        if(curr->super_class == 0) {
+            curr = NULL;
+        } 
+        else {
+            u2 s_name_idx = curr->constant_pool[curr->super_class].info.Class.name_index;
+            u2 s_len = curr->constant_pool[s_name_idx].info.Utf8.length;
+            char s_name[s_len + 1];
+            memcpy(s_name, curr->constant_pool[s_name_idx].info.Utf8.bytes, s_len);
+            s_name[s_len] = '\0';
+            
+            MethodAreaEntry *entry = MethodAreaGetEntry(ctx->method_area, s_name);
+            curr = entry ? entry->class_file : NULL;
+        }
+    }
+
+    // lança exceção se não for compatível
+    if(!is_instance) {
+        //TODO: verificar problema de exceção
+        printf("ClassCastException: O objeto não pode sofrer cast para a classe alvo\n");
+        exit(1);
+    }
+    return pc + 3;
+}
 
 static u4 handle_dadd(RuntimeContext *ctx, Code_attribute *code_attr) {
     u4 pc = ctx->thread->pc;
@@ -3842,7 +3913,103 @@ static u4 handle_iastore(RuntimeContext *ctx, Code_attribute *code_attr) {
     return pc + 1;
 }
 
-static u4 handle_instanceof(RuntimeContext *ctx, Code_attribute *code_attr) {}
+static int check_interface(RuntimeContext *ctx, ClassFile *cf, char *target_name, u2 target_len) {
+    if(cf == NULL) return 0;
+    for(u2 i = 0; i < cf->interfaces_count; i++) {
+        u2 iface_idx = cf->interfaces[i];
+        u2 i_name_idx = cf->constant_pool[iface_idx].info.Class.name_index;
+        u2 i_len = cf->constant_pool[i_name_idx].info.Utf8.length;
+        char* i_name = (char*)cf->constant_pool[i_name_idx].info.Utf8.bytes;
+
+        // interface atual é a desejada
+        if(i_len == target_len && strncmp(i_name, target_name, target_len) == 0) {
+            return 1;
+        }
+
+        // procura nas superinterfaces dela
+        char s_name[i_len + 1];
+        memcpy(s_name, i_name, i_len);
+        s_name[i_len] = '\0';
+        
+        MethodAreaEntry *entry = MethodAreaGetEntry(ctx->method_area, s_name);
+        ClassFile *iface_cf = entry ? entry->class_file : NULL;
+        
+        // chamada recursiva para buscar na árvore de interfaces dessa interface
+        if(iface_cf != NULL) {
+            if(check_interface(ctx, iface_cf, target_name, target_len)) {
+                return 1;
+            }
+        }
+    }
+    return 0;
+}
+
+static u4 handle_instanceof(RuntimeContext *ctx, Code_attribute *code_attr) {
+    // TODO: tratar caso o ref_key seja um JVMArray
+    JVMThread *thread = ctx->thread;
+    Frame *frame = (Frame*)getTop(thread->frame_stack);
+    ClassFile *class_file = frame->class_file;
+    Cp_info *constant_pool = class_file->constant_pool;
+
+    u4 pc = thread->pc;
+    u1* code = code_attr->code;
+    u2 class_index = ((u2)code[pc + 1] << 8) | code[pc + 2];
+    // pega o nome da classe alvo
+    u2 name_idx = constant_pool[class_index].info.Class.name_index;
+    char* target_class_name = (char*)constant_pool[name_idx].info.Utf8.bytes;
+    u2 target_class_len = constant_pool[name_idx].info.Utf8.length;
+    u4 ref_key = *((u4*) getTop(frame->operand_stack)); 
+    pop(frame->operand_stack);
+
+    if(ref_key == 0) {
+        u4 false_val = 0;
+        push(frame->operand_stack, (void*)&false_val);
+        return pc + 3;
+    }
+
+    JVMObject* obj = (JVMObject*) ctx->reference_map->entries[ref_key];
+    if(obj == NULL) {
+        printf("Fatal Error: Objeto inválido no ReferenceMap (instanceof)\n");
+        exit(1);
+    }
+
+    // percorre a hierarquia de classes
+    ClassFile* curr = obj->class_ref;
+    u4 is_instance = 0;
+    while(curr != NULL) {
+        // compara com a classe atual da iteração
+        u2 curr_name_idx = curr->constant_pool[curr->this_class].info.Class.name_index;
+        u2 curr_len = curr->constant_pool[curr_name_idx].info.Utf8.length;
+        char* curr_name = (char*)curr->constant_pool[curr_name_idx].info.Utf8.bytes;
+        if(curr_len == target_class_len && strncmp(curr_name, target_class_name, target_class_len) == 0) {
+            is_instance = 1;
+            break;
+        }
+        // função auxiliar para verificar interfaces
+        if(check_interface(ctx, curr, target_class_name, target_class_len)) {
+            is_instance = 1;
+            break;
+        }
+
+        // sobe para a superclasse
+        if(curr->super_class == 0) {
+            curr = NULL; // java/lang/Object
+        } 
+        else {
+            u2 s_name_idx = curr->constant_pool[curr->super_class].info.Class.name_index;
+            u2 s_len = curr->constant_pool[s_name_idx].info.Utf8.length;
+            char s_name[s_len + 1];
+            memcpy(s_name, curr->constant_pool[s_name_idx].info.Utf8.bytes, s_len);
+            s_name[s_len] = '\0';
+            
+            MethodAreaEntry *entry = MethodAreaGetEntry(ctx->method_area, s_name);
+            curr = entry ? entry->class_file : NULL;
+        }
+    }
+    // empilha o resultado booleano
+    push(frame->operand_stack, (void*)&is_instance);
+    return pc + 3;
+}
 
 static u4 handle_laload(RuntimeContext *ctx, Code_attribute *code_attr) {
     u4 pc = ctx->thread->pc;
