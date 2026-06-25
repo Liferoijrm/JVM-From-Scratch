@@ -1423,6 +1423,11 @@ static u4 handle_getstatic(RuntimeContext *ctx, Code_attribute *code_attr) {
     // 3. Checa se o entry do constant pool é do tipo Fieldref
     Cp_info field_ref = constant_pool[field_index];
 
+    if (field_ref.tag != CONSTANT_Fieldref) {
+        fprintf(stderr, "Invalid constant pool entry for getstatic\n");
+        exit(1);
+    }
+
     u2 class_idx = field_ref.info.Fieldref.class_index;
     u2 class_name_idx = constant_pool[class_idx].info.Class.name_index;
     char *class_name = (char*) constant_pool[class_name_idx].info.Utf8.bytes;
@@ -1436,38 +1441,42 @@ static u4 handle_getstatic(RuntimeContext *ctx, Code_attribute *code_attr) {
         return pc + 3;
     }
 
-    if (field_ref.tag != CONSTANT_Fieldref) {
-        fprintf(stderr, "Invalid constant pool entry for getstatic\n");
+    // 4. Resgata o array de static fields da classe e o entry do method area correspondente
+    MethodArea *method_area = ctx->method_area;
+    MethodAreaEntry *entry = MethodAreaGetEntry(method_area, class_name);
+    if (entry == NULL) {
+        fprintf(stderr,
+            "Class %s not found in Method Area\n",
+            class_name);
         exit(1);
     }
-    else {
-        // 4. Resgata o array de static fields da classe e o entry do method area correspondente
-        MethodArea *method_area = ctx->method_area;
-        char *name = GetClassName(class_file, class_file->this_class);
-        MethodAreaEntry *entry = MethodAreaGetEntry(method_area, name);
-        StaticField *static_fields = entry->static_fields;
+    StaticField *static_fields = entry->static_fields;
 
-        u2 field_idx = field_ref.info.Fieldref.name_and_type_index;
-        Cp_info name_and_type = constant_pool[field_idx];
-        u2 target_name_index = name_and_type.info.NameAndType.name_index;
-        u2 target_descriptor_index = name_and_type.info.NameAndType.descriptor_index;
-        char fieldType;
+    u2 field_idx = field_ref.info.Fieldref.name_and_type_index;
+    Cp_info name_and_type = constant_pool[field_idx];
+    u2 target_name_index = name_and_type.info.NameAndType.name_index;
+    u2 target_descriptor_index = name_and_type.info.NameAndType.descriptor_index;
+    char *descriptor = (char*)constant_pool[target_descriptor_index].info.Utf8.bytes;
 
-        Field_info *field_info = class_file->fields;
-        u2 static_field_count = entry->static_field_count;
+    u2 static_field_count = entry->static_field_count;
 
-        // 5. Itera sobre os static fields para encontrar o campo correspondente e empilha seu valor na operand stack
-        for (u2 i = 0; i < static_field_count; i++) {
-            StaticField *static_field = &static_fields[i];
-            Field_info *field = &class_file->fields[static_field->field_index];
+    // 5. Itera sobre os static fields para encontrar o campo correspondente e empilha seu valor na operand stack
+    for (u2 i = 0; i < static_field_count; i++) {
+        StaticField *static_field = &static_fields[i];
+        Field_info *field = &entry->class_file->fields[static_field->field_index];
 
-            if (field->name_index == target_name_index && field->descriptor_index == target_descriptor_index) {
-                // 6. Empilha o valor do campo estático na operand stack
-                push(frame->operand_stack, (void*)&static_field->value);
-                break;
+        if (field->name_index == target_name_index && field->descriptor_index == target_descriptor_index) {
+            if (descriptor[0] == 'J' || descriptor[0] == 'D'){
+                push(frame->operand_stack, &static_field->value[1]); // high
+                push(frame->operand_stack, &static_field->value[0]); // low
             }
+            else{
+                push(frame->operand_stack, &static_field->value[0]);
+            }
+            break;
         }
     }
+    
     return pc + 3;
 }
 
@@ -1809,50 +1818,72 @@ static u4 handle_putfield(RuntimeContext *ctx, Code_attribute *code_attr) {
 
 static u4 handle_putstatic(RuntimeContext *ctx, Code_attribute *code_attr) {
 
-    // 1. Pega o frame atual, o method area e o entry correspondente à classe
     JVMThread *thread = ctx->thread;
-    MethodArea *method_area = ctx->method_area;
     Frame *frame = (Frame*)getTop(thread->frame_stack);
-    char *name = GetClassName(frame->class_file, frame->class_file->this_class);
-    MethodAreaEntry *entry = MethodAreaGetEntry(method_area, name);
-    StaticField *static_fields = entry->static_fields;
-
-    // 2. Pega o índice do campo no constant pool a partir do bytecode
-    u4 pc = thread->pc;
-    u1* code = code_attr->code;
-    u2 field_index = ((u2)code[pc + 1] << 8) | code[pc + 2];
-    u2 static_field_count = entry->static_field_count;
-
-    // 3. Checa se o entry do constant pool é do tipo Fieldref
     ClassFile *class_file = frame->class_file;
-    Cp_info field_ref = class_file->constant_pool[field_index];
+    Cp_info *constant_pool = class_file->constant_pool;
+    u4 pc = thread->pc;
+    u1 *code = code_attr->code;
+    u2 field_index = ((u2)code[pc + 1] << 8) | code[pc + 2];
+
+    Cp_info field_ref = constant_pool[field_index];
+
     if (field_ref.tag != CONSTANT_Fieldref) {
         fprintf(stderr, "Invalid constant pool entry for putstatic\n");
         exit(1);
     }
-    else {
-        // 4. Resgata o name_and_type_index do Fieldref e os índices de nome e descriptor
-        u2 name_and_type_index = field_ref.info.Fieldref.name_and_type_index;
-        Cp_info name_and_type = class_file->constant_pool[name_and_type_index];
-        u2 target_name_index = name_and_type.info.NameAndType.name_index;
-        u2 target_descriptor_index = name_and_type.info.NameAndType.descriptor_index;
 
-        // 5. Itera sobre os static fields para encontrar o campo correspondente e atualiza seu valor com o valor da operand stack
-        for(u2 i = 0; i < static_field_count; i++) {
-            StaticField *static_field = &static_fields[i];
-            Field_info *field = &class_file->fields[static_field->field_index];
+    u2 class_idx = field_ref.info.Fieldref.class_index;
+    u2 class_name_idx = constant_pool[class_idx].info.Class.name_index;
+    char *class_name = (char*)constant_pool[class_name_idx].info.Utf8.bytes;
 
-            if (field->name_index == target_name_index && field->descriptor_index == target_descriptor_index) {
-                // 6. Atualiza o valor do campo estático com o valor da operand stack
-                u4 value = *((u4*)getTop(frame->operand_stack));
-                memcpy(&static_field->value, &value, sizeof(u4) * 2);
-                pop(frame->operand_stack);
-                break;
+    MethodArea *method_area = ctx->method_area;
+    MethodAreaEntry *entry = MethodAreaGetEntry(method_area, class_name);
+
+    if (entry == NULL) {
+        fprintf(stderr,
+                "Class %s not found in Method Area\n",
+                class_name);
+        exit(1);
+    }
+
+    StaticField *static_fields = entry->static_fields;
+    u2 static_field_count = entry->static_field_count;
+    u2 nt_index = field_ref.info.Fieldref.name_and_type_index;
+    Cp_info name_and_type = constant_pool[nt_index];
+    u2 target_name_index = name_and_type.info.NameAndType.name_index;
+    u2 target_descriptor_index = name_and_type.info.NameAndType.descriptor_index;
+
+    char *descriptor = (char*)constant_pool[target_descriptor_index].info.Utf8.bytes;
+
+    for (u2 i = 0; i < static_field_count; i++) {
+
+        StaticField *static_field = &static_fields[i];
+
+        Field_info *field =
+            &entry->class_file->fields[static_field->field_index];
+
+        if (field->name_index == target_name_index && field->descriptor_index == target_descriptor_index){
+            if (descriptor[0] == 'J' || descriptor[0] == 'D'){
+                u4 low = *((u4*)getTop(frame->operand_stack)); pop(frame->operand_stack);
+                u4 high = *((u4*)getTop(frame->operand_stack)); pop(frame->operand_stack);
+
+                static_field->value[0] = low;
+                static_field->value[1] = high;
             }
+            else{
+                u4 value = *((u4*)getTop(frame->operand_stack)); pop(frame->operand_stack);
+
+                static_field->value[0] = value;
+                static_field->value[1] = 0;
+            }
+
+            return pc + 3;
         }
     }
 
-    return pc + 3;
+    fprintf(stderr, "Static field not found\n");
+    exit(1);
 }
 
 static u4 handle_new(RuntimeContext *ctx, Code_attribute *code_attr) {
