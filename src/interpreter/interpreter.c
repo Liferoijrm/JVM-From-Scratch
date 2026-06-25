@@ -2691,10 +2691,16 @@ static u4 handle_i2s(RuntimeContext *ctx, Code_attribute *code_attr) {
     return pc + 1;
 }
 
+// carrega o endereco de retorno de uma variavel local e pula pra ele (subrotina)
 static u4 handle_ret(RuntimeContext *ctx, Code_attribute *code_attr) {
-    //(void)frame;
-    // TODO: read local variable, restore pc from subroutine
-    //return pc + 1;
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+    u1* code = code_attr->code;
+
+    u1 index = code[pc + 1];
+    u4 return_addr = frame->local_variables[index];
+
+    return return_addr;
 }
 
 static u4 handle_tableswitch(RuntimeContext *ctx, Code_attribute *code_attr) {
@@ -2974,21 +2980,35 @@ static u4 handle_goto_w(RuntimeContext *ctx, Code_attribute *code_attr) {
     return (u4)(pc + compute_branch_wide(branch_bytes));
 }
 
+// da push do endereco de retorno e salta para a subrotina (jsr)
 static u4 handle_jsr(RuntimeContext *ctx, Code_attribute *code_attr) {
-    //(void)frame;
-    //u2 branch_bytes = ((u2)code[pc + 1] << 8) | code[pc + 2];
-    // TODO: push //return address, jump to subroutine
-    //return (u4)(pc + compute_branch(branch_bytes));
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+    u1* code = code_attr->code;
+
+    u4 return_addr = pc + 3; // endereco da instrucao seguinte ao jsr
+    u2 branch_bytes = (((u2)code[pc + 1] << 8) | code[pc + 2]);
+
+    push(frame->operand_stack, (void*)&return_addr);
+
+    return (u4)(pc + compute_branch(branch_bytes));
 }
 
+// da push do endereco de retorno e salta para a subrotina (jsr_w - wide)
 static u4 handle_jsr_w(RuntimeContext *ctx, Code_attribute *code_attr) {
-    //(void)frame;
-    //u4 branch_bytes = ((u4)code[pc + 1] << 24) |
-    //                  ((u4)code[pc + 2] << 16) |
-    //                  ((u4)code[pc + 3] << 8)  |
-    //                  ((u4)code[pc + 4]);
-    // TODO: push //return address, jump to subroutine
-    //return (u4)(pc + compute_branch_wide(branch_bytes));
+    u4 pc = ctx->thread->pc;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+    u1* code = code_attr->code;
+
+    u4 return_addr = pc + 5; // endereco da instrucao seguinte ao jsr_w
+    u4 branch_bytes = ((u4)code[pc + 1] << 24) |
+                      ((u4)code[pc + 2] << 16) |
+                      ((u4)code[pc + 3] << 8)  |
+                      ((u4)code[pc + 4]);
+
+    push(frame->operand_stack, (void*)&return_addr);
+
+    return (u4)(pc + compute_branch_wide(branch_bytes));
 }
 
 // implementar essas tambem!
