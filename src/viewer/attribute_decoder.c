@@ -105,6 +105,32 @@ void PrintCPoolItem(Cp_info *cpool, u2 index) {
         u2 string_idx = cpool[index].info.String.string_index;
         printf("<\"%s\">", cpool[string_idx].info.Utf8.bytes);
     }
+
+    else if(tag == CONSTANT_Integer) {
+        printf("<%d>", cpool[index].info.Integer.bytes);
+    }
+    else if(tag == CONSTANT_Float) {
+        float f;
+        memcpy(&f, &cpool[index].info.Float.bytes, sizeof(float));
+        printf("<%f>", f);
+    }
+    else if(tag == CONSTANT_Long) {
+        int64_t value =
+            ((uint64_t)cpool[index].info.Long.high_bytes << 32) |
+            cpool[index].info.Long.low_bytes;
+
+        printf("<%lld>", (long long)value);
+    }
+    else if(tag == CONSTANT_Double) {
+        uint64_t bits =
+            ((uint64_t)cpool[index].info.Double.high_bytes << 32) |
+            cpool[index].info.Double.low_bytes;
+
+        double d;
+        memcpy(&d, &bits, sizeof(double));
+
+        printf("<%g>", d);
+    }
 }
 
 // TODO: verificar se está funcionando certinho e implementar outras funções caso necessario
@@ -144,9 +170,9 @@ void ReadCode(Cp_info *cpool, Code_attribute *code_attr) {
             // 0x10 - 0x1F
             case 0x10: printf("bipush %d\n", (int8_t)code_attr->code[pc + 1]); pc += 2; break;
             case 0x11: { int16_t sipush_val = (int16_t)((code_attr->code[pc + 1] << 8) | code_attr->code[pc + 2]); printf("sipush %d\n", sipush_val); pc += 3; break; }
-            case 0x12: printf("ldc #%u\n", code_attr->code[pc + 1]); pc += 2; break;
-            case 0x13: cp_index = (code_attr->code[pc+1]<<8)|code_attr->code[pc+2]; printf("ldc_w #%u\n", cp_index); pc+=3; break;
-            case 0x14: cp_index = (code_attr->code[pc+1]<<8)|code_attr->code[pc+2]; printf("ldc2_w #%u\n", cp_index); pc+=3; break;
+            case 0x12: cp_index = code_attr->code[pc + 1]; printf("ldc #%u ", cp_index); PrintCPoolItem(cpool, cp_index); printf("\n"); pc += 2; break;
+            case 0x13: cp_index = (code_attr->code[pc+1]<<8)|code_attr->code[pc+2]; printf("ldc_w #%u ", cp_index); PrintCPoolItem(cpool, cp_index); printf("\n"); pc+=3; break;
+            case 0x14: cp_index = (code_attr->code[pc+1]<<8)|code_attr->code[pc+2]; printf("ldc2_w #%u ", cp_index); PrintCPoolItem(cpool, cp_index); printf("\n"); pc+=3; break;
             case 0x15: printf("iload %u\n", code_attr->code[pc + 1]); pc += 2; break;
             case 0x16: printf("lload %u\n", code_attr->code[pc + 1]); pc += 2; break;
             case 0x17: printf("fload %u\n", code_attr->code[pc + 1]); pc += 2; break;
@@ -295,24 +321,24 @@ void ReadCode(Cp_info *cpool, Code_attribute *code_attr) {
             case 0x96: printf("fcmpg\n"); pc += 1; break;
             case 0x97: printf("dcmpl\n"); pc += 1; break;
             case 0x98: printf("dcmpg\n"); pc += 1; break;
-            case 0x99: offset = (int16_t)((code_attr->code[pc+1]<<8)|code_attr->code[pc+2]); printf("ifeq %d (+%d)\n", pc+offset, offset); pc+=3; break;
-            case 0x9A: offset = (int16_t)((code_attr->code[pc+1]<<8)|code_attr->code[pc+2]); printf("ifne %d (+%d)\n", pc+offset, offset); pc+=3; break;
-            case 0x9B: offset = (int16_t)((code_attr->code[pc+1]<<8)|code_attr->code[pc+2]); printf("iflt %d (+%d)\n", pc+offset, offset); pc+=3; break;
-            case 0x9C: offset = (int16_t)((code_attr->code[pc+1]<<8)|code_attr->code[pc+2]); printf("ifge %d (+%d)\n", pc+offset, offset); pc+=3; break;
-            case 0x9D: offset = (int16_t)((code_attr->code[pc+1]<<8)|code_attr->code[pc+2]); printf("ifgt %d (+%d)\n", pc+offset, offset); pc+=3; break;
-            case 0x9E: offset = (int16_t)((code_attr->code[pc+1]<<8)|code_attr->code[pc+2]); printf("ifle %d (+%d)\n", pc+offset, offset); pc+=3; break;
-            case 0x9F: offset = (int16_t)((code_attr->code[pc+1]<<8)|code_attr->code[pc+2]); printf("if_icmpeq %d (+%d)\n", pc+offset, offset); pc+=3; break;
+            case 0x99: offset = (int16_t)((code_attr->code[pc+1]<<8)|code_attr->code[pc+2]); printf("ifeq %d (%+d)\n", pc+offset, offset); pc+=3; break;
+            case 0x9A: offset = (int16_t)((code_attr->code[pc+1]<<8)|code_attr->code[pc+2]); printf("ifne %d (%+d)\n", pc+offset, offset); pc+=3; break;
+            case 0x9B: offset = (int16_t)((code_attr->code[pc+1]<<8)|code_attr->code[pc+2]); printf("iflt %d (%+d)\n", pc+offset, offset); pc+=3; break;
+            case 0x9C: offset = (int16_t)((code_attr->code[pc+1]<<8)|code_attr->code[pc+2]); printf("ifge %d (%+d)\n", pc+offset, offset); pc+=3; break;
+            case 0x9D: offset = (int16_t)((code_attr->code[pc+1]<<8)|code_attr->code[pc+2]); printf("ifgt %d (%+d)\n", pc+offset, offset); pc+=3; break;
+            case 0x9E: offset = (int16_t)((code_attr->code[pc+1]<<8)|code_attr->code[pc+2]); printf("ifle %d (%+d)\n", pc+offset, offset); pc+=3; break;
+            case 0x9F: offset = (int16_t)((code_attr->code[pc+1]<<8)|code_attr->code[pc+2]); printf("if_icmpeq %d (%+d)\n", pc+offset, offset); pc+=3; break;
             
             // 0xA0 - 0xAF
-            case 0xA0: offset = (int16_t)((code_attr->code[pc+1]<<8)|code_attr->code[pc+2]); printf("if_icmpne %d (+%d)\n", pc+offset, offset); pc+=3; break;
-            case 0xA1: offset = (int16_t)((code_attr->code[pc+1]<<8)|code_attr->code[pc+2]); printf("if_icmplt %d (+%d)\n", pc+offset, offset); pc+=3; break;
-            case 0xA2: offset = (int16_t)((code_attr->code[pc+1]<<8)|code_attr->code[pc+2]); printf("if_icmpge %d (+%d)\n", pc+offset, offset); pc+=3; break;
-            case 0xA3: offset = (int16_t)((code_attr->code[pc+1]<<8)|code_attr->code[pc+2]); printf("if_icmpgt %d (+%d)\n", pc+offset, offset); pc+=3; break;
-            case 0xA4: offset = (int16_t)((code_attr->code[pc+1]<<8)|code_attr->code[pc+2]); printf("if_icmple %d (+%d)\n", pc+offset, offset); pc+=3; break;
-            case 0xA5: offset = (int16_t)((code_attr->code[pc+1]<<8)|code_attr->code[pc+2]); printf("if_acmpeq %d (+%d)\n", pc+offset, offset); pc+=3; break;
-            case 0xA6: offset = (int16_t)((code_attr->code[pc+1]<<8)|code_attr->code[pc+2]); printf("if_acmpne %d (+%d)\n", pc+offset, offset); pc+=3; break;
-            case 0xA7: offset = (int16_t)((code_attr->code[pc+1]<<8)|code_attr->code[pc+2]); printf("goto %d (+%d)\n", pc+offset, offset); pc+=3; break;
-            case 0xA8: offset = (int16_t)((code_attr->code[pc+1]<<8)|code_attr->code[pc+2]); printf("jsr %d (+%d)\n", pc+offset, offset); pc+=3; break;
+            case 0xA0: offset = (int16_t)((code_attr->code[pc+1]<<8)|code_attr->code[pc+2]); printf("if_icmpne %d (%+d)\n", pc+offset, offset); pc+=3; break;
+            case 0xA1: offset = (int16_t)((code_attr->code[pc+1]<<8)|code_attr->code[pc+2]); printf("if_icmplt %d (%+d)\n", pc+offset, offset); pc+=3; break;
+            case 0xA2: offset = (int16_t)((code_attr->code[pc+1]<<8)|code_attr->code[pc+2]); printf("if_icmpge %d (%+d)\n", pc+offset, offset); pc+=3; break;
+            case 0xA3: offset = (int16_t)((code_attr->code[pc+1]<<8)|code_attr->code[pc+2]); printf("if_icmpgt %d (%+d)\n", pc+offset, offset); pc+=3; break;
+            case 0xA4: offset = (int16_t)((code_attr->code[pc+1]<<8)|code_attr->code[pc+2]); printf("if_icmple %d (%+d)\n", pc+offset, offset); pc+=3; break;
+            case 0xA5: offset = (int16_t)((code_attr->code[pc+1]<<8)|code_attr->code[pc+2]); printf("if_acmpeq %d (%+d)\n", pc+offset, offset); pc+=3; break;
+            case 0xA6: offset = (int16_t)((code_attr->code[pc+1]<<8)|code_attr->code[pc+2]); printf("if_acmpne %d (%+d)\n", pc+offset, offset); pc+=3; break;
+            case 0xA7: offset = (int16_t)((code_attr->code[pc+1]<<8)|code_attr->code[pc+2]); printf("goto %d (%+d)\n", pc+offset, offset); pc+=3; break;
+            case 0xA8: offset = (int16_t)((code_attr->code[pc+1]<<8)|code_attr->code[pc+2]); printf("jsr %d (%+d)\n", pc+offset, offset); pc+=3; break;
             case 0xA9: printf("ret %u\n", code_attr->code[pc+1]); pc+=2; break;
             case 0xAA: {
                 u4 start_pc = pc;
@@ -330,7 +356,7 @@ void ReadCode(Cp_info *cpool, Code_attribute *code_attr) {
                 int32_t high = ReadS4BE(code_attr->code, idx + 8);
                 idx += 12;
 
-                printf("tableswitch low=%d high=%d default=%d (+%d)\n",
+                printf("tableswitch low=%d high=%d default=%d (%+d)\n",
                        (int)low, (int)high, (int)(start_pc + default_off), (int)default_off);
 
                 if (high < low) {
@@ -350,7 +376,7 @@ void ReadCode(Cp_info *cpool, Code_attribute *code_attr) {
                     int32_t off = ReadS4BE(code_attr->code, idx + 4 * i);
                     int32_t key = low + (int32_t)i;
                     int32_t target = (int32_t)start_pc + off;
-                    printf("            %d: %d (+%d)\n", (int)key, (int)target, (int)off);
+                    printf("            %d: %d (%+d)\n", (int)key, (int)target, (int)off);
                 }
 
                 pc = idx + 4 * n;
@@ -371,7 +397,7 @@ void ReadCode(Cp_info *cpool, Code_attribute *code_attr) {
                 int32_t npairs = ReadS4BE(code_attr->code, idx + 4);
                 idx += 8;
 
-                printf("lookupswitch npairs=%d default=%d (+%d)\n",
+                printf("lookupswitch npairs=%d default=%d (%+d)\n",
                        (int)npairs, (int)(start_pc + default_off), (int)default_off);
 
                 if (idx + (u4)(8 * npairs) > code_attr->code_length) {
@@ -384,7 +410,7 @@ void ReadCode(Cp_info *cpool, Code_attribute *code_attr) {
                     int32_t key = ReadS4BE(code_attr->code, idx + 8 * i);
                     int32_t off = ReadS4BE(code_attr->code, idx + 8 * i + 4);
                     int32_t target = (int32_t)start_pc + off;
-                    printf("            %d: %d (+%d)\n", (int)key, (int)target, (int)off);
+                    printf("            %d: %d (%+d)\n", (int)key, (int)target, (int)off);
                 }
 
                 pc = idx + 8 * npairs;
@@ -418,10 +444,10 @@ void ReadCode(Cp_info *cpool, Code_attribute *code_attr) {
             case 0xC2: printf("monitorenter\n"); pc += 1; break;
             case 0xC3: printf("monitorexit\n"); pc += 1; break;
             case 0xC5: { cp_index = (code_attr->code[pc + 1] << 8) | code_attr->code[pc + 2]; u1 dimensions = code_attr->code[pc + 3]; printf("multianewarray #%u dim %u ", cp_index, dimensions); PrintCPoolItem(cpool, cp_index); printf("\n"); pc += 4; break; }
-            case 0xC6: offset = (int16_t)((code_attr->code[pc+1]<<8)|code_attr->code[pc+2]); printf("ifnull %d (+%d)\n", pc+offset, offset); pc+=3; break;
-            case 0xC7: offset = (int16_t)((code_attr->code[pc+1]<<8)|code_attr->code[pc+2]); printf("ifnonnull %d (+%d)\n", pc+offset, offset); pc+=3; break;
-            case 0xC8: { int32_t offset_w = ReadS4BE(code_attr->code, pc + 1); printf("goto_w %d (+%d)\n", pc + offset_w, offset_w); pc += 5; break; }
-            case 0xC9: { int32_t offset_w = ReadS4BE(code_attr->code, pc + 1); printf("jsr_w %d (+%d)\n", pc + offset_w, offset_w); pc += 5; break; }
+            case 0xC6: offset = (int16_t)((code_attr->code[pc+1]<<8)|code_attr->code[pc+2]); printf("ifnull %d (%+d)\n", pc+offset, offset); pc+=3; break;
+            case 0xC7: offset = (int16_t)((code_attr->code[pc+1]<<8)|code_attr->code[pc+2]); printf("ifnonnull %d (%+d)\n", pc+offset, offset); pc+=3; break;
+            case 0xC8: { int32_t offset_w = ReadS4BE(code_attr->code, pc + 1); printf("goto_w %d (%+d)\n", pc + offset_w, offset_w); pc += 5; break; }
+            case 0xC9: { int32_t offset_w = ReadS4BE(code_attr->code, pc + 1); printf("jsr_w %d (%+d)\n", pc + offset_w, offset_w); pc += 5; break; }
             
             // erro
             default: printf("UNKNOWN_OPCODE (0x%02X)\n", opcode); pc+=1; break;

@@ -84,37 +84,39 @@ void PrintClassFile(ClassFile *cf){
         printf("ClassFile NULL\n");
         return;
     }
-    printf("General Information: \n\n======\n");
-    printf("magic: 0x%0x\n======\n", cf->magic);
+    printf("General Information: \n");
+    printf("magic: 0x%0x\n", cf->magic);
     // Como a JVM deve suportar ate Java 8, deve tratar o erro de encontrar uma versao mais nova ou desconhecida
     if(cf->major_version < 45 && cf->minor_version != 0){
         // TODO: Tratamento de excessao para versao invalida
+        printf("minor_version (raw): %d\n", cf->minor_version);
         printf("minor_version: INVALID\n");
         goto MAJOR;
     }
-    printf("minor_version: %u\n======\n", cf->minor_version);
+    printf("minor_version: %u\n", cf->minor_version);
 MAJOR:
     if(cf->major_version < 45 || cf->major_version > 52){
         // TODO: Tratamento de excessao para versao invalida
+        printf("major_version (raw): %d\n", cf->major_version);
         printf("major_version: INVALID\n");
         goto CP;
     }
-    printf("major_version: %u (%s)\n======\n", cf->major_version, GetJavaVersionText(cf->major_version));
-CP: printf("constant_pool_count: %u\n======\n", cf->constant_pool_count);
+    printf("major_version: %u (%s)\n", cf->major_version, GetJavaVersionText(cf->major_version));
+CP: printf("constant_pool_count: %u\n", cf->constant_pool_count);
 
-    printf("access_flags: %s\n======\n", DecodeAccessFlags(cf->access_flags));
+    printf("access_flags: %s\n", DecodeAccessFlags(cf->access_flags));
     c_index = cf->constant_pool[cf->this_class].info.Class.name_index;
-    printf("this_class: #%d %s\n======\n", c_index ,cf->constant_pool[c_index ].info.Utf8.bytes);
+    printf("this_class: #%d %s\n", c_index ,cf->constant_pool[c_index ].info.Utf8.bytes);
     c_index = cf->constant_pool[cf->super_class].info.Class.name_index;
-    printf("super_class: #%d %s\n======\n", c_index ,cf->constant_pool[c_index].info.Utf8.bytes);
+    printf("super_class: #%d %s\n", c_index ,cf->constant_pool[c_index].info.Utf8.bytes);
 
-    printf("interfaces_count: %u\n======\n", cf->interfaces_count);
+    printf("interfaces_count: %u\n", cf->interfaces_count);
 
-    printf("fields_count: %u\n======\n", cf->fields_count);
+    printf("fields_count: %u\n", cf->fields_count);
 
-    printf("methods_count: %u\n======\n", cf->methods_count);
+    printf("methods_count: %u\n", cf->methods_count);
 
-    printf("attributes_count: %u\n======\n", cf->attributes_count);
+    printf("attributes_count: %u\n", cf->attributes_count);
 }
 
 void PrintCpool(Cp_info *cpool, u2 count) {
