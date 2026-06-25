@@ -2634,31 +2634,38 @@ static u4 handle_tableswitch(RuntimeContext *ctx, Code_attribute *code_attr) {
 
     // 2. Calcular o padding necessário para alinhar o próximo valor a 4 bytes e pegar os valores default, low e high
     u1 padding = (4 - ((pc + 1) % 4)) % 4;
-    int32_t default = (int32_t) ((code[pc + 1 + padding] << 24) | (code[pc + 2 + padding] << 16) | (code[pc + 3 + padding] << 8) | code[pc + 4 + padding]);
+    int32_t default_value = (((int32_t)code[pc + 1 + padding] << 24) | ((int32_t) code[pc + 2 + padding] << 16) | ((int32_t) code[pc + 3 + padding] << 8) | ((int32_t) code[pc + 4 + padding]));
     padding += 4;
 
-    int32_t low = (int32_t) ((code[pc + 1 + padding] << 24) | (code[pc + 2 + padding] << 16) | (code[pc + 3 + padding] << 8) | code[pc + 4 + padding]);
+    int32_t low = (((int32_t)code[pc + 1 + padding] << 24) | ((int32_t) code[pc + 2 + padding] << 16) | ((int32_t) code[pc + 3 + padding] << 8) | ((int32_t) code[pc + 4 + padding]));
     padding += 4;
 
-    int32_t high = (int32_t) ((code[pc + 1 + padding] << 24) | (code[pc + 2 + padding] << 16) | (code[pc + 3 + padding] << 8) | code[pc + 4 + padding]);
+    int32_t high = (((int32_t)code[pc + 1 + padding] << 24) | ((int32_t) code[pc + 2 + padding] << 16) | ((int32_t) code[pc + 3 + padding] << 8) | ((int32_t) code[pc + 4 + padding]));
     padding += 4;
+
+    if (high < low) {
+        fprintf(stderr, "Invalid tableswitch\n");
+        exit(1);
+    }
 
     // 3. Alocar memória para armazenar os offsets e preencher o array de offsets
     int32_t *offsets = calloc(high - low + 1, sizeof(int32_t));
     for (int32_t i = low; i <= high; i++) {
-        offsets[i - low] = (int32_t) ((code[pc + 1 + padding] << 24) | (code[pc + 2 + padding] << 16) | (code[pc + 3 + padding] << 8) | code[pc + 4 + padding]);
+        offsets[i - low] = (((int32_t)code[pc + 1 + padding] << 24) | ((int32_t) code[pc + 2 + padding] << 16) | ((int32_t) code[pc + 3 + padding] << 8) | ((int32_t) code[pc + 4 + padding]));
         padding += 4;
     }
 
     // 4. Pegar o índice da operand stack, verificar se está dentro do intervalo e calcular o próximo pc
-    u4 index = *((u4*) getTop(frame->operand_stack));
+    int32_t index = *((int32_t*) getTop(frame->operand_stack));
     pop(frame->operand_stack);
 
     if (index < low || index > high) {
-        return pc + 1 + default;
+        free(offsets);
+        return pc + default_value;
     }
-
-    return pc + 1 + (offsets[index - low] * 4);
+    int32_t offset = offsets[index - low];
+    free(offsets);
+    return pc + offset;
 }
 
 static u4 handle_lookupswitch(RuntimeContext *ctx, Code_attribute *code_attr) {
