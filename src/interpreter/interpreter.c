@@ -2238,10 +2238,121 @@ static u4 handle_swap(RuntimeContext *ctx, Code_attribute *code_attr) {
     return pc + 1;
 }
 
+// verifica se a classe thrown_class eh subclasse ou a mesma que target_class_name
+// percorre a hierarquia de superclasses usando o MethodArea
+static u1 is_subclass_of(JVMObject *obj, MethodArea *method_area, const char *target_name, u2 target_len) {
+    ClassFile *cf = obj->class_ref;
+    while (cf != NULL) {
+        // compara o nome da classe atual
+        char *current_name = GetClassName(cf, cf->this_class);
+        u2 current_len = (u2)strlen(current_name);
+        if (current_len == target_len && strncmp(current_name, target_name, target_len) == 0) {
+            return 1;
+        }
+        // sobe pra superclasse
+        if (cf->super_class == 0) {
+            break;
+        }
+        char *super_name = GetClassName(cf, cf->super_class);
+        if (super_name == NULL) break;
+        MethodAreaEntry *entry = MethodAreaGetEntry(method_area, super_name);
+        cf = (entry != NULL) ? entry->class_file : NULL;
+    }
+    return 0;
+}
+
+// procura um handler de excecao na exception_table do frame atual
+// retorna o handler_pc ou 0 se nao encontrar
+static u2 find_exception_handler(Frame *frame, Code_attribute *code_attr, u4 exception_pc, JVMObject *exc_obj, MethodArea *method_area) {
+    u2 table_len = code_attr->exception_table_length;
+    for (u2 i = 0; i < table_len; i++) {
+        Exception_code *entry = &code_attr->exception_table[i];
+        // verifica se o PC esta dentro do intervalo protegido [start_pc, end_pc)
+        if (exception_pc < entry->start_pc || exception_pc >= entry->end_pc) {
+            continue;
+        }
+        // catch_type == 0 captura qualquer excecao (finally)
+        if (entry->catch_type == 0) {
+            return entry->handler_pc;
+        }
+        // catch_type > 0: verifica se a excecao IS-A a classe referenciada
+        Cp_info *cp = frame->class_file->constant_pool;
+        u2 class_name_idx = cp[entry->catch_type].info.Class.name_index;
+        char *catch_name = (char*) cp[class_name_idx].info.Utf8.bytes;
+        u2 catch_name_len = cp[class_name_idx].info.Utf8.length;
+        if (is_subclass_of(exc_obj, method_area, catch_name, catch_name_len)) {
+            return entry->handler_pc;
+        }
+    }
+    return 0; // nenhum handler encontrado
+}
+
+// pop da referencia de excecao e propaga (athrow)
 static u4 handle_athrow(RuntimeContext *ctx, Code_attribute *code_attr) {
-    //(void)frame; (void)code;
-    // TODO: pop exception, resolve handler or propagate
-    //return pc;
+    JVMThread *thread = ctx->thread;
+    ReferenceMap *reference_map = ctx->reference_map;
+    MethodArea *method_area = ctx->method_area;
+
+    // 1. pop da referencia da excecao da operand stack
+    Frame *current_frame = (Frame*)getTop(thread->frame_stack);
+    u4 ref_key = *((u4*)getTop(current_frame->operand_stack));
+    pop(current_frame->operand_stack);
+
+    if (ref_key == 0) {
+        printf("NullPointerException em athrow\n");
+        exit(1);
+    }
+
+    JVMObject *exc_obj = (JVMObject*) reference_map->entries[ref_key];
+    if (exc_obj == NULL) {
+        printf("NullPointerException: objeto de excecao invalido em athrow\n");
+        exit(1);
+    }
+
+    u4 exception_pc = thread->pc; // PC onde a excecao foi lancada
+
+    // 2. loop de desempilhamento procurando handler
+    while (!isEmpty(thread->frame_stack)) {
+        Frame *frame = (Frame*)getTop(thread->frame_stack);
+        // obtem o Code_attribute do metodo do frame atual
+        Code_attribute *frame_code = getCodeAttributeFromTopFrame(thread->frame_stack);
+        if (frame_code == NULL) {
+            // metodo abstrato/nativo sem Code — desempilha
+            u4 ret_pc = frame->return_pc;
+            MarkClinitDoneIfApplicable(method_area, frame);
+            pop(thread->frame_stack);
+            FreeCodeAttribute(frame_code);
+            thread->pc = ret_pc;
+            continue;
+        }
+
+        // procura handler no frame atual
+        u2 handler_pc = find_exception_handler(frame, frame_code, exception_pc, exc_obj, method_area);
+
+        if (handler_pc > 0) {
+            // handler encontrado! limpa operand stack, empilha excecao e ajusta PC
+            Stack *opstack = frame->operand_stack;
+            while (opstack->size > 0) pop(opstack);
+            push(opstack, (void*)&ref_key);
+            FreeCodeAttribute(frame_code);
+            return handler_pc; // continua execucao no handler
+        }
+
+        // sem handler neste frame: desempilha
+        u4 ret_pc = frame->return_pc;
+        MarkClinitDoneIfApplicable(method_area, frame);
+        pop(thread->frame_stack);
+        FreeCodeAttribute(frame_code);
+
+        // exception_pc passa a ser o return_pc do frame desempilhado
+        // (para verificar o catch do caller no ponto certo)
+        exception_pc = ret_pc;
+        thread->pc = ret_pc;
+    }
+
+    // 3. nenhum frame restante: excecao nao capturada
+    printf("Uncaught exception!\n");
+    exit(1);
 }
 
 static u4 handle_ifnull(RuntimeContext *ctx, Code_attribute *code_attr) {
