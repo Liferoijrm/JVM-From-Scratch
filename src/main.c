@@ -73,11 +73,13 @@ int main(int argc, char **argv){
 
     printf("[LINKING] %u classe(s) linkada(s) com sucesso\n", MethodAreaCount(method_area));
 
-    // TODO: DAR PUSH NO METODO MAIN DA CLASSE PRINCIPAL
+    // alocando o frame do metodo main
+    MethodAreaEntry *main_entry = MethodAreaGetEntry(method_area, class_name);
+    Method_info* main_method = ResolveMethod(method_area, main_entry->class_file, "main", 4, "([String)V", 10, NULL);
+    pushFrame(thread, main_entry->class_file, main_method, 0);
 
     printf("[INITIALIZATION] Inicializando '%s'...\n", class_name);
 
-    MethodAreaEntry *main_entry = MethodAreaGetEntry(method_area, class_name);
     if (main_entry == NULL) {
         fprintf(stderr, "Erro interno: entrada da classe principal não encontrada\n");
         freeStack(thread->frame_stack);
