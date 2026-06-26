@@ -214,6 +214,28 @@ Code_attribute* getCodeAttributeFromTopFrame(Stack* frame_stack) {
     return NULL;
 }
 
+static u1 read_u1(u1 **ptr) {
+    return *(*ptr)++;
+}
+
+static u2 read_u2(u1 **ptr) {
+    u2 value = ((u2)(*ptr)[0] << 8) |
+               ((u2)(*ptr)[1]);
+
+    *ptr += 2;
+    return value;
+}
+
+static u4 read_u4(u1 **ptr) {
+    u4 value = ((u4)(*ptr)[0] << 24) |
+               ((u4)(*ptr)[1] << 16) |
+               ((u4)(*ptr)[2] << 8)  |
+               ((u4)(*ptr)[3]);
+
+    *ptr += 4;
+    return value;
+}
+
 static Code_attribute *ParseCodeAttribute(Attribute_info *attr) {
     if (attr == NULL || attr->info == NULL)
         return NULL;
@@ -332,19 +354,6 @@ void FreeCodeAttribute(Code_attribute *code) {
     free(code);
 }
 
-char* GetClassName(ClassFile *cf, u2 class_index) {
-    // Validação de segurança básica (ausência de superclasse)
-    if (!cf || class_index == 0) {
-        return NULL; 
-    }
-
-    u2 name_index = cf->constant_pool[class_index].info.Class.name_index;
-
-    char *class_name = (char*) cf->constant_pool[name_index].info.Utf8.bytes;
-
-    return class_name;
-}
-
 u1 IsMethodNamed(Method_info *method, ClassFile *class_file, const char *name, size_t len) {
     u2 idx = method->name_index;
 
@@ -356,7 +365,7 @@ u1 IsMethodNamed(Method_info *method, ClassFile *class_file, const char *name, s
     return (cp->tag == CONSTANT_Utf8 && cp->info.Utf8.length == len && memcmp(cp->info.Utf8.bytes, name, len) == 0);
 }
 
-static void MarkClinitDoneIfApplicable(MethodArea* method_area, Frame *frame) {
+void MarkClinitDoneIfApplicable(MethodArea* method_area, Frame *frame) {
     if (IsMethodNamed(frame->method, frame->class_file, "<clinit>", 8)) {
         char *class_name = GetClassName(frame->class_file, frame->class_file->this_class);
         MethodAreaEntry *entry = MethodAreaGetEntry(method_area, class_name);

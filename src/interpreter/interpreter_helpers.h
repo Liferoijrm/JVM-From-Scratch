@@ -6,14 +6,15 @@
 #include "../runtime_data/method_area/methodarea.h"
 #include "../runtime_data/thread_data/thread_data.h"
 #include "../class_loader/loading/classparser.h"
+#include "../class_loader/loading/classloader.h"
+#include "../class_loader/initialization/initialization.h"
+#include "../class_loader/linking/linking.h"
 
 Code_attribute* getCodeAttributeFromTopFrame(Stack* frame_stack);
 
 void FreeCodeAttribute(Code_attribute *code);
 
-char* GetClassName(ClassFile* class_file, u2 this_class);
-
-static void MarkClinitDoneIfApplicable(MethodArea* method_area, Frame *frame);
+void MarkClinitDoneIfApplicable(MethodArea* method_area, Frame *frame);
 
 Method_info* ResolveMethod(MethodArea *method_area, ClassFile *start_class, const char *name, size_t name_len, const char *descriptor, size_t descriptor_len, ClassFile **out_owner);
 

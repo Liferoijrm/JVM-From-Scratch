@@ -2,7 +2,7 @@
 #define CLASSPARSER_H
 
 #include <stdio.h>
-#include "../utils/utils.h"
+#include "../../utils/utils.h"
 
 // Tags para cp_info
 #define CONSTANT_Invalid 0

@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "verifier.h"
-#include "../utils/stack.h"
+#include "../../utils/stack.h"
 
 u4 getInstructionSize(const u1 *code, u4 pc){
     u1 opcode = code[pc];
