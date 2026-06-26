@@ -2860,10 +2860,70 @@ u4 handle_tableswitch(RuntimeContext *ctx, Code_attribute *code_attr) {
 }
 
 u4 handle_lookupswitch(RuntimeContext *ctx, Code_attribute *code_attr) {
-    printf("n implementou ainda pai o lookupswitch\n");
-    //(void)frame;
-    // TODO: parse padding, match pairs, compute jump target
-    //return pc;
+
+    // PC atual e vetor de bytecodes
+    u4 pc = ctx->thread->pc;
+    u1 *code = code_attr->code;
+
+    // Frame atual
+    Frame *frame =
+        (Frame*)getTop(ctx->thread->frame_stack);
+
+    // Calcula o padding
+    u1 padding =
+        (4 - ((pc + 1) % 4)) % 4;
+
+    // Lê o offset default
+    int32_t default_offset =
+        ((int32_t)code[pc + 1 + padding] << 24) |
+        ((int32_t)code[pc + 2 + padding] << 16) |
+        ((int32_t)code[pc + 3 + padding] << 8)  |
+        ((int32_t)code[pc + 4 + padding]);
+
+    padding += 4;
+
+    // Lê npairs
+    int32_t npairs =
+        ((int32_t)code[pc + 1 + padding] << 24) |
+        ((int32_t)code[pc + 2 + padding] << 16) |
+        ((int32_t)code[pc + 3 + padding] << 8)  |
+        ((int32_t)code[pc + 4 + padding]);
+
+    padding += 4;
+
+    // Valor procurado
+    int32_t key =
+        *((int32_t*)getTop(frame->operand_stack));
+
+    pop(frame->operand_stack);
+
+    // Percorre todos os pares
+    for (int32_t i = 0; i < npairs; i++) {
+
+        int32_t match =
+            ((int32_t)code[pc + 1 + padding] << 24) |
+            ((int32_t)code[pc + 2 + padding] << 16) |
+            ((int32_t)code[pc + 3 + padding] << 8)  |
+            ((int32_t)code[pc + 4 + padding]);
+
+        padding += 4;
+
+        int32_t offset =
+            ((int32_t)code[pc + 1 + padding] << 24) |
+            ((int32_t)code[pc + 2 + padding] << 16) |
+            ((int32_t)code[pc + 3 + padding] << 8)  |
+            ((int32_t)code[pc + 4 + padding]);
+
+        padding += 4;
+
+        // Encontrou o match
+        if (key == match) {
+            return pc + offset;
+        }
+    }
+
+    // Nenhum match encontrado
+    return pc + default_offset;
 }
 
 u4 handle_wide(RuntimeContext *ctx, Code_attribute *code_attr) {
