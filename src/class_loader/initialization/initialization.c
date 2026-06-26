@@ -45,11 +45,24 @@ u1 InitializeClass(MethodArea *method_area, MethodAreaEntry *entry, JVMThread *t
         return 1;
     }
 
-    // Altera o estado para impedimento de loops infinitos no <clinit>
     entry->state = CLASS_INITIALIZING;
 
     /*
-     * Inicializa a superclasse primeiro (se houver)
+     * Empurra o <clinit> da própria classe ANTES de inicializar a superclasse.
+     * Como a frame_stack é LIFO, o <clinit> da superclasse (empurrado depois)
+     * ficará no topo e será executado primeiro pelo interpretador — ordem correta.
+     */
+    clinit = FindMethod(entry->class_file, "<clinit>", "()V");
+
+    if (clinit != NULL) {
+        printf("[INITIALIZATION] <clinit> encontrado na classe %s\n", entry->class_name);
+        pushFrame(thread, entry->class_file, clinit, thread->pc);
+    } else {
+        entry->state = CLASS_INITIALIZED;
+    }
+
+    /*
+     * Inicializa a superclasse depois (seu frame fica no topo → roda primeiro).
      */
     if (entry->class_file->super_class != 0) {
         char *super_name = GetClassName(entry->class_file, entry->class_file->super_class);
@@ -57,30 +70,12 @@ u1 InitializeClass(MethodArea *method_area, MethodAreaEntry *entry, JVMThread *t
         if (super_name != NULL) {
             MethodAreaEntry *super_entry = MethodAreaGetEntry(method_area, super_name);
 
-            // A superclasse precisa já estar carregada/alocada na Method Area
             if (super_entry != NULL) {
                 if (!InitializeClass(method_area, super_entry, thread)) {
-                    return 0; // Falha na inicialização da superclasse aborta a atual
+                    return 0;
                 }
             }
         }
-    }
-
-    /*
-     * 5. Busca e executa o <clinit> da própria classe
-     * O descritor de um <clinit> é sempre "()V"
-     */
-    clinit = FindMethod(entry->class_file, "<clinit>", "()V");
-
-    if (clinit != NULL) {
-        printf("[INITIALIZATION] <clinit> encontrado na classe %s\n", entry->class_name);
-
-        /*
-         * Futuramente: 
-         * o frame vai ser executado pelo interpretador primeiro, pois foi o último a ser alocado (LIFO)
-         */
-        pushFrame(thread, entry->class_file, clinit, thread->pc);
-        // interpreter deve setar como inicializada apos executar <clinit>
     }
 
     printf("[INITIALIZATION] Classe %s inicializada com sucesso.\n", entry->class_name);

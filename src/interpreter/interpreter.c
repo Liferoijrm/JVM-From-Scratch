@@ -2645,7 +2645,7 @@ static u4 handle_sastore(RuntimeContext *ctx, Code_attribute *code_attr) {}
 void interpret(RuntimeContext *ctx){
     JVMThread* thread = ctx->thread;
     while (!isEmpty(thread->frame_stack)){
-        Code_attribute* code_attr = getCodeFromTopFrame(thread->frame_stack);
+        Code_attribute* code_attr = getCodeAttributeFromTopFrame(thread->frame_stack);
         u1* code = code_attr->code;
         u1 opcode = code[thread->pc];
         InstructionHandler handler = decode(opcode);

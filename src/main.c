@@ -94,20 +94,12 @@ int main(int argc, char **argv){
         return 1;
     }
 
-    /*
-        Quando for interpretar:
-        RuntimeContext ctx = {
-            .thread = thread,
-            .method_area = method_area
-            // talvez o contexto dos objetos e arrays instanciados
-        };
+    RuntimeContext ctx = {
+        .thread = thread,
+        .method_area = method_area
+    };
 
-        interpret(&ctx);
-
-        // OU CRIA UM PONTEIRO DE CTX EM VEZ DE PASSAR POR REFERENCIA COM &
-    */
-
-    printf("Interpretador nao implementado ainda\n");
+    interpret(&ctx);
 
     freeStack(thread->frame_stack);
     free(thread);
