@@ -76,8 +76,8 @@ InstructionHandler decode(u1 opcode);
 #define OP_NEWARRAY           0xBC
 #define OP_ANEWARRAY          0xBD
 #define OP_ARRAYLENGTH        0xBE
-#define OP_ALOAD              0x32
-#define OP_ASTORE             0x53
+#define OP_ALOAD              0x19
+#define OP_ASTORE             0x3A
 #define OP_POP                0x57
 #define OP_DUP                0x59
 #define OP_SWAP               0x5F

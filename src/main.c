@@ -75,7 +75,7 @@ int main(int argc, char **argv){
 
     // alocando o frame do metodo main
     MethodAreaEntry *main_entry = MethodAreaGetEntry(method_area, class_name);
-    Method_info* main_method = ResolveMethod(method_area, main_entry->class_file, "main", 4, "([String)V", 10, NULL);
+    Method_info* main_method = ResolveMethod(method_area, main_entry->class_file, "main", 4, "([Ljava/lang/String;)V", 22, NULL);
     pushFrame(thread, main_entry->class_file, main_method, 0);
 
     printf("[INITIALIZATION] Inicializando '%s'...\n", class_name);
@@ -96,30 +96,38 @@ int main(int argc, char **argv){
         return 1;
     }
 
-    /*
-        Quando for interpretar:
+    ReferenceMap* ref_map = (ReferenceMap*) malloc(sizeof(ReferenceMap));
+    ref_map->entries = (void**) calloc(MAX_REF_MAP, sizeof(void*));
+    ref_map->entries[0] = NULL;
+    ref_map->size = 1;
 
-        cria um ReferenceMap (usar calloc com MAX_REF_MAP para entries)
+    RuntimeContext ctx = {
+        .thread = thread,
+        .method_area = method_area,
+        .reference_map = ref_map
+    };
 
-        cria um
-        RuntimeContext ctx = {
-            .thread = thread,
-            .method_area = method_area
-            .reference_map = reference_map
-        };
+    // TEMPORARIO (N tem invokestatic ainda pra inicializar a classe object ent vou dar pop no clinit dela)
+    pop(thread->frame_stack);
+    printf("Metodo <clinit> de object ignorado por enquanto!\n");
 
-        interpret(&ctx);
+    interpret(&ctx);
 
-        // OU CRIA UM PONTEIRO DE CTX EM VEZ DE PASSAR POR REFERENCIA COM &
-
-        // tem que dar free nessas estruturas dps tambem
-    */
-
-    printf("Interpretador nao implementado ainda\n");
+    printf("Interpretado!\n");
 
     freeStack(thread->frame_stack);
     free(thread);
     DestroyMethodArea(method_area);
+
+    if (ref_map != NULL) {
+        if (ref_map->entries != NULL) {
+            for (size_t i = 0; i < ref_map->size; i++) {
+                free(ref_map->entries[i]);
+            }
+            free(ref_map->entries);
+        }
+        free(ref_map);
+    }
     
     return 0;
 }

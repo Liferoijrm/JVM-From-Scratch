@@ -382,7 +382,6 @@ static Method_info* FindMethodExact(ClassFile *cf, const char *name, size_t name
         Method_info *method = &cf->methods[i];
         Cp_info *name_cp = &cf->constant_pool[method->name_index];
         Cp_info *desc_cp = &cf->constant_pool[method->descriptor_index];
-
         if (name_cp->info.Utf8.length == name_len &&
             memcmp(name_cp->info.Utf8.bytes, name, name_len) == 0 &&
             desc_cp->info.Utf8.length == descriptor_len &&

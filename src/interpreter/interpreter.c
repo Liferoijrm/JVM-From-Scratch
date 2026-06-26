@@ -1299,6 +1299,7 @@ u4 handle_return(RuntimeContext *ctx, Code_attribute *code_attr) {
 }
 
 u4 handle_invokestatic(RuntimeContext *ctx, Code_attribute *code_attr) {
+    printf("n implementou ainda pai o invokestatic\n");
     //(void)frame;
     //u2 method_index = ((u2)code[pc + 1] << 8) | code[pc + 2];
     // TODO: resolve method, create new frame, push to stack
@@ -1445,6 +1446,7 @@ u4 handle_invokespecial(RuntimeContext *ctx, Code_attribute *code_attr) {
 }
 
 u4 handle_invokeinterface(RuntimeContext *ctx, Code_attribute *code_attr) {
+    printf("n implementou ainda pai o invokeinterface\n");
     //(void)frame;
     // TODO: parse method reference and optional count field
     //return pc + 5;
@@ -2858,6 +2860,7 @@ u4 handle_tableswitch(RuntimeContext *ctx, Code_attribute *code_attr) {
 }
 
 u4 handle_lookupswitch(RuntimeContext *ctx, Code_attribute *code_attr) {
+    printf("n implementou ainda pai o lookupswitch\n");
     //(void)frame;
     // TODO: parse padding, match pairs, compute jump target
     //return pc;
@@ -3122,10 +3125,58 @@ u4 handle_jsr_w(RuntimeContext *ctx, Code_attribute *code_attr) {
     return (u4)(pc + compute_branch_wide(branch_bytes));
 }
 
-// implementar essas tambem!
+u4 handle_aaload(RuntimeContext *ctx, Code_attribute *code_attr) {
+    u4 pc = ctx->thread->pc;
+    ReferenceMap* reference_map = ctx->reference_map;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
 
-u4 handle_aaload(RuntimeContext *ctx, Code_attribute *code_attr) {}
-u4 handle_aastore(RuntimeContext *ctx, Code_attribute *code_attr) {}
+    u4 index = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    u4 ref_key = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+
+    JVMArray* arrayref = (JVMArray*) reference_map->entries[ref_key];
+
+    if (arrayref == NULL) {
+        printf("NullPointerException em aaload\n");
+        exit(1);
+    }
+
+    if (index >= arrayref->length) {
+        printf("ArrayIndexOutOfBoundsException em aaload\n");
+        exit(1);
+    }
+
+    u4 value = ((u4*)arrayref->data)[index];
+    push(frame->operand_stack, (void*)&value);
+
+    return pc + 1;
+}
+
+u4 handle_aastore(RuntimeContext *ctx, Code_attribute *code_attr) {
+    u4 pc = ctx->thread->pc;
+    ReferenceMap* reference_map = ctx->reference_map;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+
+    u4 value = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    u4 index = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    u4 ref_key = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+
+    JVMArray* arrayref = (JVMArray*) reference_map->entries[ref_key];
+
+    if (arrayref == NULL) {
+        printf("NullPointerException em aastore\n");
+        exit(1);
+    }
+
+    if (index >= arrayref->length) {
+        printf("ArrayIndexOutOfBoundsException em aastore\n");
+        exit(1);
+    }
+
+    ((u4*)arrayref->data)[index] = value;
+
+    return pc + 1;
+}
+
 // da push de uma variavel local de referencia no indice 1 na operand stack
 u4 handle_aload_1(RuntimeContext *ctx, Code_attribute *code_attr) {
     u4 pc = ctx->thread->pc;
@@ -3286,7 +3337,7 @@ u4 handle_caload(RuntimeContext *ctx, Code_attribute *code_attr) {
     u4 value =
         (u4)((uint16_t*)arrayref->data)[index];
 
-    push(frame->operand_stack, &value);
+    push(frame->operand_stack, (void*)&value);
 
     return pc + 1;
 }
@@ -3470,8 +3521,8 @@ u4 handle_daload(RuntimeContext *ctx, Code_attribute *code_attr) {
     u4 high = (u4)(value >> 32);
     u4 low  = (u4)(value & 0xFFFFFFFF);
 
-    push(frame->operand_stack, &high);
-    push(frame->operand_stack, &low);
+    push(frame->operand_stack, (void*)&high);
+    push(frame->operand_stack, (void*)&low);
 
     return pc + 1;
 }
@@ -3742,8 +3793,67 @@ u4 handle_fadd(RuntimeContext *ctx, Code_attribute *code_attr) {
     return pc + 1;
 }
 
-u4 handle_faload(RuntimeContext *ctx, Code_attribute *code_attr) {}
-u4 handle_fastore(RuntimeContext *ctx, Code_attribute *code_attr) {}
+u4 handle_faload(RuntimeContext *ctx, Code_attribute *code_attr) {
+    u4 pc = ctx->thread->pc;
+    ReferenceMap* reference_map = ctx->reference_map;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+
+    u4 index = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    u4 ref_key = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+
+    JVMArray* arrayref = (JVMArray*) reference_map->entries[ref_key];
+
+    if (arrayref == NULL) {
+        printf("NullPointerException em faload\n");
+        exit(1);
+    }
+
+    if (index >= arrayref->length) {
+        printf("ArrayIndexOutOfBoundsException em faload\n");
+        exit(1);
+    }
+
+    if (arrayref->atype != JVM_ATYPE_FLOAT) {
+        printf("ArrayStoreTypeMismatch em faload\n");
+        exit(1);
+    }
+
+    u4 value = ((u4*)arrayref->data)[index];
+    push(frame->operand_stack, (void*)&value);
+
+    return pc + 1;
+}
+
+u4 handle_fastore(RuntimeContext *ctx, Code_attribute *code_attr) {
+    u4 pc = ctx->thread->pc;
+    ReferenceMap* reference_map = ctx->reference_map;
+    Frame* frame = (Frame*)getTop(ctx->thread->frame_stack);
+
+    u4 value = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    u4 index = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+    u4 ref_key = *((u4*) getTop(frame->operand_stack)); pop(frame->operand_stack);
+
+    JVMArray* arrayref = (JVMArray*) reference_map->entries[ref_key];
+
+    if (arrayref == NULL) {
+        printf("NullPointerException em fastore\n");
+        exit(1);
+    }
+
+    if (index >= arrayref->length) {
+        printf("ArrayIndexOutOfBoundsException em fastore\n");
+        exit(1);
+    }
+
+    if (arrayref->atype != JVM_ATYPE_FLOAT) {
+        printf("ArrayStoreTypeMismatch em fastore\n");
+        exit(1);
+    }
+
+    ((u4*)arrayref->data)[index] = value;
+
+    return pc + 1;
+}
 
 // da push de 0.0f na operand stack
 u4 handle_fconst_0(RuntimeContext *ctx, Code_attribute *code_attr) {
@@ -4319,13 +4429,16 @@ u4 handle_sastore(RuntimeContext *ctx, Code_attribute *code_attr) {
 // ============================================================
 void interpret(RuntimeContext *ctx){
     JVMThread* thread = ctx->thread;
+    u4 i = 0;
     while (!isEmpty(thread->frame_stack)){
+        i++;
         Code_attribute* code_attr = getCodeAttributeFromTopFrame(thread->frame_stack);
         u1* code = code_attr->code;
         u1 opcode = code[thread->pc];
+        printf("[INTERPRETER] %d Interpretando opcode 0x%0x\n", i, opcode);
         InstructionHandler handler = decode(opcode);
         if (handler == NULL){
-            // TODO: handle unimplemented opcode / throw error
+            printf("[INTERPRETER] erro no opcode 0x%0x\n", opcode);
             FreeCodeAttribute(code_attr);
             break;
         }
