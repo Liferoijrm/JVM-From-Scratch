@@ -107,10 +107,6 @@ int main(int argc, char **argv){
         .reference_map = ref_map
     };
 
-    // TEMPORARIO (N tem invokestatic ainda pra inicializar a classe object ent vou dar pop no clinit dela)
-    pop(thread->frame_stack);
-    printf("Metodo <clinit> de object ignorado por enquanto!\n");
-
     interpret(&ctx);
 
     printf("Interpretado!\n");
