@@ -102,9 +102,9 @@ InstructionHandler decode(u1 opcode);
 #define OP_L2D                0x8A
 #define OP_F2I                0x8B
 #define OP_F2L                0x8C
-#define OP_F2D                0x8E
-#define OP_D2I                0x8F
-#define OP_D2L                0x90
+#define OP_F2D                0x8D
+#define OP_D2I                0x8E
+#define OP_D2L                0x8F
 #define OP_D2F                0x90
 #define OP_LSHL               0x79
 #define OP_LSHR               0x7B

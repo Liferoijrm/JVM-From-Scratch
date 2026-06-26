@@ -31,7 +31,7 @@ ClassFile* get_class_from_constant_pool(JVMThread* thread, MethodArea* method_ar
 
     // 3. Verifica se precisa de inicialização (<clinit>)
     // Assumindo que sua MethodAreaEntry tenha um campo 'state' (ex: CLASS_LOADED, CLASS_INITIALIZED)
-    if (entry->state < CLASS_INITIALIZED) {
+    if (entry->state < CLASS_INITIALIZING) {
         printf("[RESOLVE] Inicializando a classe '%s'...\n", class_name);
         
         // Esta função deve procurar o método <clinit>. 

@@ -4435,7 +4435,7 @@ void interpret(RuntimeContext *ctx){
         Code_attribute* code_attr = getCodeAttributeFromTopFrame(thread->frame_stack);
         u1* code = code_attr->code;
         u1 opcode = code[thread->pc];
-        printf("[INTERPRETER] %d Interpretando opcode 0x%0x\n", i, opcode);
+        printf("[INTERPRETER] %d Interpretando opcode 0x%0x (pc = %d)\n", i, opcode, thread->pc);
         InstructionHandler handler = decode(opcode);
         if (handler == NULL){
             printf("[INTERPRETER] erro no opcode 0x%0x\n", opcode);
