@@ -1298,12 +1298,88 @@ u4 handle_return(RuntimeContext *ctx, Code_attribute *code_attr) {
     return return_pc;
 }
 
+// Conta quantos slots u32 os parametros de um descritor JVM ocupam.
+// J e D ocupam 2 slots; todo o resto (incluindo referencias e arrays) ocupa 1.
+// Exemplo: "(JILjava/lang/String;)V" → 4
+static u2 count_arg_slots(const char *descriptor) {
+    u2 slots = 0;
+    const char *p = descriptor + 1; // pula '('
+    while (*p != ')') {
+        switch (*p) {
+            case 'J': case 'D':
+                slots += 2;
+                p++;
+                break;
+            case 'L':
+                slots++;
+                while (*p != ';') p++; // avança até ';'
+                p++;                   // pula ';'
+                break;
+            case '[':
+                slots++;
+                p++; // pula o primeiro '['
+                while (*p == '[') p++; // pula dimensões extras
+                if (*p == 'L') {
+                    while (*p != ';') p++;
+                    p++; // pula ';'
+                } else {
+                    p++; // pula o tipo base (B, C, D, F, I, J, S, Z)
+                }
+                break;
+            default: // B, C, F, I, S, Z
+                slots++;
+                p++;
+                break;
+        }
+    }
+    return slots;
+}
+
+// Coleta nslots valores u32 do topo da operand_stack do chamador,
+// preservando a ordem (stack: argN no topo, arg0 embaixo → args[0]=arg0).
+static void collect_args(Stack *operand_stack, u4 *args, u2 nslots) {
+    for (int i = (int)nslots - 1; i >= 0; i--) {
+        args[i] = *((u4*)getTop(operand_stack));
+        pop(operand_stack);
+    }
+}
+
 u4 handle_invokestatic(RuntimeContext *ctx, Code_attribute *code_attr) {
-    printf("n implementou ainda pai o invokestatic\n");
-    //(void)frame;
-    //u2 method_index = ((u2)code[pc + 1] << 8) | code[pc + 2];
-    // TODO: resolve method, create new frame, push to stack
-    //return pc + 3;
+    u4 pc          = ctx->thread->pc;
+    Frame *caller  = (Frame*)getTop(ctx->thread->frame_stack);
+    u1 *code       = code_attr->code;
+    Cp_info *cp    = caller->class_file->constant_pool;
+
+    u2 method_index = ((u2)code[pc + 1] << 8) | code[pc + 2];
+
+    u2 class_idx  = cp[method_index].info.Methodref.class_index;
+    u2 nat_idx    = cp[method_index].info.Methodref.name_and_type_index;
+    char *class_name  = (char*)cp[cp[class_idx].info.Class.name_index].info.Utf8.bytes;
+    char *method_name = (char*)cp[cp[nat_idx].info.NameAndType.name_index].info.Utf8.bytes;
+    char *descriptor  = (char*)cp[cp[nat_idx].info.NameAndType.descriptor_index].info.Utf8.bytes;
+
+    ClassFile *callee_cf = MethodAreaFindClass(ctx->method_area, class_name);
+    if (!callee_cf) return pc + 3;
+
+    Method_info *callee_method = MethodAreaFindMethod(callee_cf, method_name, descriptor);
+    if (!callee_method) return pc + 3;
+
+    u2 nargs = count_arg_slots(descriptor);
+    u4 *args = NULL;
+    if (nargs > 0) {
+        args = (u4*)malloc(nargs * sizeof(u4));
+        collect_args(caller->operand_stack, args, nargs);
+    }
+
+    pushFrame(ctx->thread, callee_cf, callee_method, pc + 3);
+
+    Frame *callee = (Frame*)getTop(ctx->thread->frame_stack);
+    for (u2 i = 0; i < nargs; i++)
+        callee->local_variables[i] = args[i];
+
+    free(args);
+
+    return 0;
 }
 
 u4 handle_invokevirtual(RuntimeContext *ctx, Code_attribute *code_attr) {
@@ -1446,10 +1522,36 @@ u4 handle_invokespecial(RuntimeContext *ctx, Code_attribute *code_attr) {
 }
 
 u4 handle_invokeinterface(RuntimeContext *ctx, Code_attribute *code_attr) {
-    printf("n implementou ainda pai o invokeinterface\n");
-    //(void)frame;
-    // TODO: parse method reference and optional count field
-    //return pc + 5;
+    u4 pc         = ctx->thread->pc;
+    Frame *caller = (Frame*)getTop(ctx->thread->frame_stack);
+    u1 *code      = code_attr->code;
+    Cp_info *cp   = caller->class_file->constant_pool;
+
+    u2 method_index = ((u2)code[pc + 1] << 8) | code[pc + 2];
+    u2 class_idx      = cp[method_index].info.InterfaceMethodref.class_index;
+    u2 nat_idx        = cp[method_index].info.InterfaceMethodref.name_and_type_index;
+    char *iface_name  = (char*)cp[cp[class_idx].info.Class.name_index].info.Utf8.bytes;
+    char *method_name = (char*)cp[cp[nat_idx].info.NameAndType.name_index].info.Utf8.bytes;
+    char *descriptor  = (char*)cp[cp[nat_idx].info.NameAndType.descriptor_index].info.Utf8.bytes;
+
+    ClassFile *callee_cf = MethodAreaFindClass(ctx->method_area, iface_name);
+    if (!callee_cf) return pc + 5;
+
+    Method_info *callee_method = MethodAreaFindMethod(callee_cf, method_name, descriptor);
+    if (!callee_method) return pc + 5;
+
+    u2 nargs = count_arg_slots(descriptor) + 1;
+    u4 *args = (u4*)malloc(nargs * sizeof(u4));
+    collect_args(caller->operand_stack, args, nargs);
+    pushFrame(ctx->thread, callee_cf, callee_method, pc + 5);
+
+    Frame *callee = (Frame*)getTop(ctx->thread->frame_stack);
+    for (u2 i = 0; i < nargs; i++)
+        callee->local_variables[i] = args[i];
+
+    free(args);
+
+    return 0;
 }
 
 u4 handle_getstatic(RuntimeContext *ctx, Code_attribute *code_attr) {

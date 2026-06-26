@@ -280,6 +280,16 @@ u2 MethodAreaCountInstanceFields(const MethodArea *method_area, ClassFile *class
 	return (u2)(count + MethodAreaCountStaticFields(method_area, super_class_file));
 }*/
 
+Method_info *MethodAreaFindMethod(ClassFile *cf, const char *name, const char *descriptor) {
+	for (u2 i = 0; i < cf->methods_count; i++) {
+		char *m_name = (char*)cf->constant_pool[cf->methods[i].name_index].info.Utf8.bytes;
+		char *m_desc = (char*)cf->constant_pool[cf->methods[i].descriptor_index].info.Utf8.bytes;
+		if (strcmp(m_name, name) == 0 && strcmp(m_desc, descriptor) == 0)
+			return &cf->methods[i];
+	}
+	return NULL;
+}
+
 MethodAreaEntry* MethodAreaGetEntry(MethodArea* ma, const char* class_name){
 	if(ma == NULL || class_name == NULL){ 
 		return NULL;

@@ -1,5 +1,15 @@
 CC            ?= gcc
-CFLAGS        ?= -Wall -Wextra -std=c99 -I src -I src/class_loader/loading -I src/viewer -I src/utils -I src/runtime_data/method_area
+CFLAGS        ?= -Wall -Wextra -std=c99 \
+                  -I src \
+                  -I src/class_loader/loading \
+                  -I src/class_loader/linking \
+                  -I src/class_loader/initialization \
+                  -I src/interpreter \
+                  -I src/viewer \
+                  -I src/utils \
+                  -I src/runtime_data/method_area \
+                  -I src/runtime_data/thread_data \
+                  -I src/runtime_data/allocation
 DEBUG_FLAGS   ?= -g -fsanitize=address,undefined
 SRC_DIR       := src
 OBJ_DIR       := build
@@ -43,7 +53,7 @@ $(TARGET): $(OBJS) | $(BIN_DIR)
 	$(CC) $(CFLAGS) $^ -o $@ -lm
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c | $(OBJ_DIR)
-	@mkdir -p $(dir $@)
+	$(call MKDIR,$(dir $@))
 	$(CC) $(CFLAGS) -c $< -o $@
 
 $(OBJ_DIR):
@@ -53,7 +63,7 @@ $(BIN_DIR):
 	$(call MKDIR,$(BIN_DIR))
 
 clean:
-	$(RM) $(OBJ_DIR) $(BIN_DIR) $(TARGET)
+	$(RM) $(OBJ_DIR) $(BIN_DIR)
 
 debug: CFLAGS += $(DEBUG_FLAGS)
 debug: clean all
