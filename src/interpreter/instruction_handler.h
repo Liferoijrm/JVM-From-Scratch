@@ -14,7 +14,7 @@ typedef u4 (*InstructionHandler)(RuntimeContext *ctx, Code_attribute *code_attr)
 
 // Dispatch: given a bytecode opcode, returns the corresponding handler.
 // Returns NULL if opcode is not implemented.
-InstructionHandler decode(u1 opcode);
+static InstructionHandler decode(u1 opcode);
 
 // ============================================================
 // Opcode constants (JVM spec) — subset, expand as needed
