@@ -76,7 +76,13 @@ int main(int argc, char **argv){
     // alocando o frame do metodo main
     MethodAreaEntry *main_entry = MethodAreaGetEntry(method_area, class_name);
     Method_info* main_method = ResolveMethod(method_area, main_entry->class_file, "main", 4, "([Ljava/lang/String;)V", 22, NULL);
+    if(main_method == NULL){
+        printf("[ERROR] Classe nao possui metodo main\n");
+        return 1;
+    }
     pushFrame(thread, main_entry->class_file, main_method, 0);
+
+    // TODO: empilhar "args" em local variables do main
 
     printf("[INITIALIZATION] Inicializando '%s'...\n", class_name);
 

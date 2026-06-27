@@ -1,5 +1,6 @@
 #include "interpreter.h"
 #include "instruction_handler.h"
+#include "../viewer/classviewer.h"
 #include <math.h>
 
 //TODO: verificar se o tamanho da stack de frames ou de operandos é excedido e tratar
@@ -1298,86 +1299,63 @@ u4 handle_return(RuntimeContext *ctx, Code_attribute *code_attr) {
     return return_pc;
 }
 
-// Conta quantos slots u32 os parametros de um descritor JVM ocupam.
-// J e D ocupam 2 slots; todo o resto (incluindo referencias e arrays) ocupa 1.
-// Exemplo: "(JILjava/lang/String;)V" → 4
-static u2 count_arg_slots(const char *descriptor) {
-    u2 slots = 0;
-    const char *p = descriptor + 1; // pula '('
-    while (*p != ')') {
-        switch (*p) {
-            case 'J': case 'D':
-                slots += 2;
-                p++;
-                break;
-            case 'L':
-                slots++;
-                while (*p != ';') p++; // avança até ';'
-                p++;                   // pula ';'
-                break;
-            case '[':
-                slots++;
-                p++; // pula o primeiro '['
-                while (*p == '[') p++; // pula dimensões extras
-                if (*p == 'L') {
-                    while (*p != ';') p++;
-                    p++; // pula ';'
-                } else {
-                    p++; // pula o tipo base (B, C, D, F, I, J, S, Z)
-                }
-                break;
-            default: // B, C, F, I, S, Z
-                slots++;
-                p++;
-                break;
-        }
-    }
-    return slots;
-}
-
-// Coleta nslots valores u32 do topo da operand_stack do chamador,
-// preservando a ordem (stack: argN no topo, arg0 embaixo → args[0]=arg0).
-static void collect_args(Stack *operand_stack, u4 *args, u2 nslots) {
-    for (int i = (int)nslots - 1; i >= 0; i--) {
-        args[i] = *((u4*)getTop(operand_stack));
-        pop(operand_stack);
-    }
-}
-
 u4 handle_invokestatic(RuntimeContext *ctx, Code_attribute *code_attr) {
-    u4 pc          = ctx->thread->pc;
-    Frame *caller  = (Frame*)getTop(ctx->thread->frame_stack);
-    u1 *code       = code_attr->code;
-    Cp_info *cp    = caller->class_file->constant_pool;
+    u4 pc         = ctx->thread->pc;
+    Frame *caller = (Frame*)getTop(ctx->thread->frame_stack);
+    Cp_info *cp   = caller->class_file->constant_pool;
+    u1 *code      = code_attr->code;
 
     u2 method_index = ((u2)code[pc + 1] << 8) | code[pc + 2];
+    Cp_info methodref = cp[method_index];
 
-    u2 class_idx  = cp[method_index].info.Methodref.class_index;
-    u2 nat_idx    = cp[method_index].info.Methodref.name_and_type_index;
-    char *class_name  = (char*)cp[cp[class_idx].info.Class.name_index].info.Utf8.bytes;
-    char *method_name = (char*)cp[cp[nat_idx].info.NameAndType.name_index].info.Utf8.bytes;
-    char *descriptor  = (char*)cp[cp[nat_idx].info.NameAndType.descriptor_index].info.Utf8.bytes;
+    u2 class_idx      = methodref.info.Methodref.class_index;
+    u2 class_name_idx = cp[class_idx].info.Class.name_index;
+    char *class_name     = (char*) cp[class_name_idx].info.Utf8.bytes;
+    u2 class_name_len    = cp[class_name_idx].info.Utf8.length;
 
-    ClassFile *callee_cf = MethodAreaFindClass(ctx->method_area, class_name);
-    if (!callee_cf) return pc + 3;
+    u2 nat_idx  = methodref.info.Methodref.name_and_type_index;
+    u2 name_idx = cp[nat_idx].info.NameAndType.name_index;
+    u2 desc_idx = cp[nat_idx].info.NameAndType.descriptor_index;
+    char *method_name   = (char*) cp[name_idx].info.Utf8.bytes;
+    u2 method_name_len  = cp[name_idx].info.Utf8.length;
+    char *descriptor    = (char*) cp[desc_idx].info.Utf8.bytes;
+    u2 descriptor_len   = cp[desc_idx].info.Utf8.length;
 
-    Method_info *callee_method = MethodAreaFindMethod(callee_cf, method_name, descriptor);
-    if (!callee_method) return pc + 3;
-
-    u2 nargs = count_arg_slots(descriptor);
-    u4 *args = NULL;
-    if (nargs > 0) {
-        args = (u4*)malloc(nargs * sizeof(u4));
-        collect_args(caller->operand_stack, args, nargs);
+    // mesmo caminho de new/invokespecial: carrega, linka e garante <clinit>
+    ClassFile *resolved_class = get_class_from_constant_pool(ctx->thread, ctx->method_area, caller, class_name);
+    if (resolved_class == NULL) {
+        return ctx->thread->pc; // <clinit> empilhado — reexecuta esta instrução depois
     }
 
-    pushFrame(ctx->thread, callee_cf, callee_method, pc + 3);
+    if (strcmp(class_name, "java/lang/Object") == 0 && strcmp(method_name, "registerNatives") == 0) {
+        // Do nothing. It's a native method, we are ignoring JNI.
+        // Just pop the arguments (if any) and continue execution.
+        return pc + 3; 
+    }
 
+    ClassFile *owner = NULL;
+    Method_info *method = ResolveMethod(ctx->method_area, resolved_class,
+                                         method_name, method_name_len,
+                                         descriptor, descriptor_len, &owner);
+
+    if (method == NULL) {
+        fprintf(stderr, "NoSuchMethodError: %.*s.%.*s%.*s\n",
+                class_name_len, class_name, method_name_len, method_name, descriptor_len, descriptor);
+        exit(1);
+    }
+    if (!(method->access_flags & 0x0008)) { // precisa ser ACC_STATIC
+        fprintf(stderr, "IncompatibleClassChangeError: invokestatic em método de instância (%.*s.%.*s)\n",
+                class_name_len, class_name, method_name_len, method_name);
+        exit(1);
+    }
+
+    u4 arg_words[256];
+    u2 total_slots = PopArguments(caller, descriptor, arg_words);
+
+    pushFrame(ctx->thread, owner, method, pc + 3);
     Frame *callee = (Frame*)getTop(ctx->thread->frame_stack);
-    for (u2 i = 0; i < nargs; i++)
-        callee->local_variables[i] = args[i];
-
-    free(args);
+    for (u2 i = 0; i < total_slots; i++)
+        callee->local_variables[i] = arg_words[i];
 
     return 0;
 }
@@ -1524,34 +1502,60 @@ u4 handle_invokespecial(RuntimeContext *ctx, Code_attribute *code_attr) {
 u4 handle_invokeinterface(RuntimeContext *ctx, Code_attribute *code_attr) {
     u4 pc         = ctx->thread->pc;
     Frame *caller = (Frame*)getTop(ctx->thread->frame_stack);
-    u1 *code      = code_attr->code;
     Cp_info *cp   = caller->class_file->constant_pool;
+    u1 *code      = code_attr->code;
 
     u2 method_index = ((u2)code[pc + 1] << 8) | code[pc + 2];
+    // code[pc+3] = count, code[pc+4] = 0 (bytes históricos, não usados)
+
     u2 class_idx      = cp[method_index].info.InterfaceMethodref.class_index;
-    u2 nat_idx        = cp[method_index].info.InterfaceMethodref.name_and_type_index;
-    char *iface_name  = (char*)cp[cp[class_idx].info.Class.name_index].info.Utf8.bytes;
-    char *method_name = (char*)cp[cp[nat_idx].info.NameAndType.name_index].info.Utf8.bytes;
-    char *descriptor  = (char*)cp[cp[nat_idx].info.NameAndType.descriptor_index].info.Utf8.bytes;
+    u2 class_name_idx = cp[class_idx].info.Class.name_index;
+    char *iface_name     = (char*) cp[class_name_idx].info.Utf8.bytes;
+    u2 iface_name_len    = cp[class_name_idx].info.Utf8.length;
 
-    ClassFile *callee_cf = MethodAreaFindClass(ctx->method_area, iface_name);
-    if (!callee_cf) return pc + 5;
+    u2 nat_idx  = cp[method_index].info.InterfaceMethodref.name_and_type_index;
+    u2 name_idx = cp[nat_idx].info.NameAndType.name_index;
+    u2 desc_idx = cp[nat_idx].info.NameAndType.descriptor_index;
+    char *method_name   = (char*) cp[name_idx].info.Utf8.bytes;
+    u2 method_name_len  = cp[name_idx].info.Utf8.length;
+    char *descriptor    = (char*) cp[desc_idx].info.Utf8.bytes;
+    u2 descriptor_len   = cp[desc_idx].info.Utf8.length;
 
-    Method_info *callee_method = MethodAreaFindMethod(callee_cf, method_name, descriptor);
-    if (!callee_method) return pc + 5;
+    u4 arg_words[256];
+    u2 total_slots = PopArguments(caller, descriptor, arg_words);
 
-    u2 nargs = count_arg_slots(descriptor) + 1;
-    u4 *args = (u4*)malloc(nargs * sizeof(u4));
-    collect_args(caller->operand_stack, args, nargs);
-    pushFrame(ctx->thread, callee_cf, callee_method, pc + 5);
+    u4 objectref = *((u4*) getTop(caller->operand_stack));
+    pop(caller->operand_stack);
 
-    Frame *callee = (Frame*)getTop(ctx->thread->frame_stack);
-    for (u2 i = 0; i < nargs; i++)
-        callee->local_variables[i] = args[i];
+    if (objectref == 0) {
+        printf("NullPointerException em invokeinterface\n");
+        exit(1);
+    }
 
-    free(args);
+    JVMObject *obj = (JVMObject*) ctx->reference_map->entries[objectref];
+    if (obj == NULL) {
+        printf("NullPointerException: objeto não encontrado no ReferenceMap em invokeinterface\n");
+        exit(1);
+    }
 
-    return 0;
+    // polimórfico, igual invokevirtual: busca a partir da classe REAL do objeto
+    ClassFile *owner = NULL;
+    Method_info *method = ResolveMethod(ctx->method_area, obj->class_ref,
+                                         method_name, method_name_len,
+                                         descriptor, descriptor_len, &owner);
+
+    if (method == NULL) {
+        fprintf(stderr, "AbstractMethodError: %.*s.%.*s%.*s\n",
+                iface_name_len, iface_name, method_name_len, method_name, descriptor_len, descriptor);
+        exit(1);
+    }
+    if (method->access_flags & 0x0008) { // ACC_STATIC
+        fprintf(stderr, "IncompatibleClassChangeError: invokeinterface em método estático (%.*s.%.*s)\n",
+                iface_name_len, iface_name, method_name_len, method_name);
+        exit(1);
+    }
+
+    return PushUserMethodFrame(ctx->thread, owner, method, objectref, arg_words, total_slots, pc + 5);
 }
 
 u4 handle_getstatic(RuntimeContext *ctx, Code_attribute *code_attr) {
@@ -1829,7 +1833,6 @@ u4 handle_putfield(RuntimeContext *ctx, Code_attribute *code_attr) {
 
     ClassFile* declaring_class = NULL;
     Field_info* resolved_field = NULL;
-
     while (res_class != NULL) {
         for (u2 i = 0; i < res_class->fields_count; i++) {
             Field_info* f = &res_class->fields[i];
@@ -1907,10 +1910,10 @@ u4 handle_putfield(RuntimeContext *ctx, Code_attribute *code_attr) {
     
     while (curr != NULL && h_count < 128) {
         hierarchy[h_count++] = curr;
-        
+
         if (curr->super_class == 0) {
-            curr = NULL; 
-        } 
+            curr = NULL;
+        }
         else {
             u2 s_name_in = curr->constant_pool[curr->super_class].info.Class.name_index;
             u2 s_len = curr->constant_pool[s_name_in].info.Utf8.length;
@@ -1950,7 +1953,6 @@ u4 handle_putfield(RuntimeContext *ctx, Code_attribute *code_attr) {
         printf("NoSuchFieldError: Campo resolvido não existe na hierarquia do objeto real instanciado\n");
         exit(1);
     }
-
     // atribui os valores no heap do objeto
     if (field_type_char == 'J' || field_type_char == 'D') {
         obj->fields[slot_offset] = high;
@@ -1959,7 +1961,6 @@ u4 handle_putfield(RuntimeContext *ctx, Code_attribute *code_attr) {
     else {
         obj->fields[slot_offset] = value;
     }
-
     return pc + 3;
 }
 
@@ -2218,7 +2219,8 @@ u4 handle_anewarray(RuntimeContext *ctx, Code_attribute *code_attr) {
         if (!is_native_class(comp_name, comp_name_len)) {
             ClassFile *resolved_class = get_class_from_constant_pool(ctx->thread, ctx->method_area, frame, comp_name);
             // <se for NULL, clinit foi empilhado e volta pra executar
-            if (resolved_class == NULL) {
+            if (resolved_class == NULL){
+                push(frame->operand_stack, (void*)&count);
                 return ctx->thread->pc;
             }
         }
@@ -4597,7 +4599,7 @@ void interpret(RuntimeContext *ctx){
         Code_attribute* code_attr = getCodeAttributeFromTopFrame(thread->frame_stack);
         u1* code = code_attr->code;
         u1 opcode = code[thread->pc];
-        printf("[INTERPRETER] %d Interpretando opcode 0x%0x (pc = %d)\n", i, opcode, thread->pc);
+        //printf("[INTERPRETER] %d Interpretando opcode 0x%0x (pc = %d)\n", i, opcode, thread->pc);
         InstructionHandler handler = decode(opcode);
         if (handler == NULL){
             printf("[INTERPRETER] erro no opcode 0x%0x\n", opcode);

@@ -57,6 +57,4 @@ u2 MethodAreaCountStaticFields(const MethodArea *method_area, ClassFile *class_f
 
 MethodAreaEntry* MethodAreaGetEntry(MethodArea* ma, const char* class_name);
 
-Method_info *MethodAreaFindMethod(ClassFile *cf, const char *name, const char *descriptor);
-
 #endif
