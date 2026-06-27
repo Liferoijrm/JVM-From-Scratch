@@ -65,12 +65,12 @@ static u1 LinkAllLoaded(MethodArea *method_area){
 
 static void print_java_float(float f) {
     if (f == (long long)f && fabsf(f) < 1e7f) printf("%.1f", f);
-    else printf("%g", f);
+    else printf("%.7g", f);
 }
 
 static void print_java_double(double d) {
     if (d == (long long)d && fabs(d) < 1e15) printf("%.1f", d);
-    else printf("%g", d);
+    else printf("%.16g", d);
 }
 
 u1 is_native_class(const char *name, u2 len) {
