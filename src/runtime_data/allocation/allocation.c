@@ -1,40 +1,40 @@
-#include "allocation.h"
+/**
+ * @file allocation.c
+ * @brief Implementação das rotinas de alocação de memória para o runtime da JVM.
+ */
 
+#include "allocation.h"
 #include <stdlib.h>
 
 size_t ArrayTypeSize(u1 atype) {
-	switch(atype) {
-		case JVM_ATYPE_BOOLEAN:
-		case JVM_ATYPE_BYTE:
-			return sizeof(uint8_t);
-		case JVM_ATYPE_CHAR:
-		case JVM_ATYPE_SHORT:
-			return sizeof(uint16_t);
-		case JVM_ATYPE_FLOAT:
-		case JVM_ATYPE_INT:
-			return sizeof(uint32_t);
-		case JVM_ATYPE_DOUBLE:
-		case JVM_ATYPE_LONG:
-			return sizeof(uint64_t);
-		default:
-			return 0;
-	}
+    switch(atype) {
+        case JVM_ATYPE_BOOLEAN:
+        case JVM_ATYPE_BYTE:
+            return sizeof(uint8_t);
+        case JVM_ATYPE_CHAR:
+        case JVM_ATYPE_SHORT:
+            return sizeof(uint16_t);
+        case JVM_ATYPE_FLOAT:
+        case JVM_ATYPE_INT:
+            return sizeof(uint32_t);
+        case JVM_ATYPE_DOUBLE:
+        case JVM_ATYPE_LONG:
+            return sizeof(uint64_t);
+        default:
+            return 0;
+    }
 }
 
 JVMObject *CreateObject(const MethodArea *method_area, ClassFile *class_file) {
     JVMObject *object;
     u2 slot_count;
 
-    if(!class_file) {
-        return NULL;
-    }
+    if(!class_file) return NULL;
 
     slot_count = MethodAreaCountInstanceFields(method_area, class_file);
     
     object = (JVMObject *) calloc(1, sizeof(JVMObject));
-    if(!object) {
-        return NULL;
-    }
+    if(!object) return NULL;
 
     object->class_ref = class_file;
 
@@ -50,24 +50,18 @@ JVMObject *CreateObject(const MethodArea *method_area, ClassFile *class_file) {
 
     return object;
 }
-
+ 
 JVMArray *CreatePrimitiveArray(u1 atype, int32_t length) {
     JVMArray *array;
     size_t element_size;
 
-    if(length < 0) {
-        return NULL;
-    }
+    if(length < 0) return NULL;
 
     element_size = ArrayTypeSize(atype);
-    if(element_size == 0) {
-        return NULL;
-    }
+    if(element_size == 0) return NULL;
 
     array = (JVMArray *) calloc(1, sizeof(JVMArray));
-    if(!array) {
-        return NULL;
-    }
+    if(!array) return NULL;
 
     array->length = (u4) length;
     array->atype = atype;
@@ -84,4 +78,3 @@ JVMArray *CreatePrimitiveArray(u1 atype, int32_t length) {
 
     return array;
 }
-
