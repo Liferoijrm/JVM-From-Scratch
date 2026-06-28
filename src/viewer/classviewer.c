@@ -1,3 +1,8 @@
+/**
+ * @file classviewer.c
+ * @brief Implementação das funções de visualização (viewer) e decodificação do ClassFile.
+ */
+
 #include <stdio.h>
 #include <string.h>
 #include "./classviewer.h"
@@ -8,7 +13,6 @@
 #define TWO_BYTES 2
 #define THREE_BYTES 3
 
-// loop principal do bytecode viewer
 void ViewClass(ClassFile *cf){
     int option, exit = 0;
 
@@ -77,7 +81,6 @@ const char* GetJavaVersionText(u2 major){
     return "Versao desconhecida ou futura";
 }
 
-// função temporária de print para testes do ClassFile
 void PrintClassFile(ClassFile *cf){
     int c_index;
     if (!cf) {
@@ -86,9 +89,7 @@ void PrintClassFile(ClassFile *cf){
     }
     printf("General Information: \n");
     printf("magic: 0x%0x\n", cf->magic);
-    // Como a JVM deve suportar ate Java 8, deve tratar o erro de encontrar uma versao mais nova ou desconhecida
     if(cf->major_version < 45 && cf->minor_version != 0){
-        // TODO: Tratamento de excessao para versao invalida
         printf("minor_version (raw): %d\n", cf->minor_version);
         printf("minor_version: INVALID\n");
         goto MAJOR;
@@ -96,7 +97,6 @@ void PrintClassFile(ClassFile *cf){
     printf("minor_version: %u\n", cf->minor_version);
 MAJOR:
     if(cf->major_version < 45 || cf->major_version > 52){
-        // TODO: Tratamento de excessao para versao invalida
         printf("major_version (raw): %d\n", cf->major_version);
         printf("major_version: INVALID\n");
         goto CP;
@@ -131,8 +131,6 @@ void PrintCpool(Cp_info *cpool, u2 count) {
         Cp_info entry = cpool[i];
 
         printf("[%u] ", i);
-
-        // TODO: tratamento de excessao para acesso de indices invalidos no pool de constantes, como um indice que aponte para uma entrada do tipo errado ou indices fora do range
 
         switch (entry.tag) {
             case CONSTANT_Class: {
@@ -427,13 +425,26 @@ void DecodeDescriptor(u1 *descriptor, u2 len){
     }
 }
 
+/**
+ * @brief Verifica se o n-ésimo bit está aceso em uma bitmask.
+ * @param bitmask Valor onde a verificação será feita.
+ * @param n Posição do bit (0-indexado).
+ * @return 1 se o bit estiver aceso, 0 caso contrário.
+ */
 u1 NthBitIsLit(u2 bitmask, u1 n){
     if (bitmask & (1 << n)) return 1;
     return 0;
 }
 
-// função auxiliar para construir a string de flags a partir da bitmask
-// recebe o buffer, seu tamanho, a bitmask, o número do bit a verificar, o nome da flag e um ponteiro para indicar se é a primeira flag a ser adicionada (para formatação)
+/**
+ * @brief Adiciona o nome de uma flag ao buffer de saída, gerenciando a formatação.
+ * @param buffer Buffer de destino para armazenar as flags.
+ * @param bufsize Tamanho máximo do buffer.
+ * @param bitmask Bitmask a ser verificada.
+ * @param n Posição do bit da flag.
+ * @param flag String contendo o nome da flag.
+ * @param first Ponteiro para controle de vírgulas e espaçamento na string.
+ */
 static void AddFlag(char *buffer, size_t bufsize, u2 bitmask, u1 n, const char *flag, int *first) {
     if (!NthBitIsLit(bitmask, n)) return;
 
@@ -448,7 +459,11 @@ static void AddFlag(char *buffer, size_t bufsize, u2 bitmask, u1 n, const char *
     }
 }
 
-// recebe a bitmask de 16 bits e retorna string com nomes das access flags separadas por ", "
+/**
+ * @warning Esta função utiliza um buffer de caracteres estático interno (`static char buffer`).
+ * Múltiplas chamadas simultâneas (ex: no mesmo printf) farão com que a última chamada
+ * sobrescreva os dados retornados pelas anteriores.
+ */
 const char *DecodeAccessFlags(u2 bitmask){
     static char buffer[256] = "";
     buffer[0] = '\0';
@@ -472,8 +487,11 @@ const char *DecodeAccessFlags(u2 bitmask){
     return buffer;
 }
 
-// recebe a bitmask de 16 bits e retorna string com nomes das access flags separadas por ", "
-// essa função especifica para metodos foi necessaria pois suas flags diferem em relacao a outras estruturas
+/**
+ * @warning Esta função utiliza um buffer de caracteres estático interno (`static char buffer`).
+ * Evite realizar mais de uma chamada para esta função na mesma linha de execução ou printf, 
+ * pois chamadas subsequentes sobrescreverão os dados da memória estática.
+ */
 const char* DecodeMethodAccessFlags(u2 bitmask){
     static char buffer[256] = "";
     buffer[0] = '\0';
@@ -515,7 +533,6 @@ void printModifiedUtf8(u1 *bytes, u2 length){
     }
 }
 
-// limpa o buffer de entrada
 void cleanBuffer(){
     while (getchar() != '\n');
 }
