@@ -1,3 +1,7 @@
+/**
+ * @file methodarea.h
+ * @brief Implementações das estruturas de controle de threads e frames na JVM.
+ */
 #include "thread_data.h"
 #include <string.h>
 

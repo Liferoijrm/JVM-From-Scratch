@@ -1,5 +1,8 @@
+/**
+ * @file methodarea.h
+ * @brief Implementações da Method Area da JVM e das operações de gerenciamento de classes carregadas.
+ */
 #include "methodarea.h"
-
 #include <stdio.h>
 
 #define METHOD_AREA_INITIAL_CAPACITY 4
@@ -176,42 +179,8 @@ u1 MethodAreaAddClass(MethodArea* method_area, ClassFile* class_file) {
 	method_area->entries[method_area->count].state = CLASS_LOADED;
 	method_area->count++;
 
-	// OBS: nem essa funcao nem MethodAreaCountStaticFields estao sendo usadas de fato para preparation da classe
-	//status = MethodAreaPrepareClass(method_area, class_file);
 	return status;
 }
-
-// OBS: nem essa funcao nem MethodAreaCountStaticFields estao sendo usadas de fato para preparation da classe 
-/*u1 MethodAreaPrepareClass(MethodArea *method_area, ClassFile *class_file) {
-	const char *class_name;
-	u2 static_count;
-
-	if(!method_area || !class_file) {
-		return METHOD_AREA_NULL_POINTER;
-	}
-
-	class_name = GetClassNameFromClassFile(class_file);
-	if(!class_name) {
-		return METHOD_AREA_INVALID_CLASS;
-	}
-
-	static_count = MethodAreaCountStaticFields(method_area, class_file);
-
-	for(u2 i = 0; i < method_area->count; i++) {
-		if(method_area->entries[i].class_file == class_file) {
-			method_area->entries[i].static_field_count = static_count;
-			if(static_count > 0) {
-				method_area->entries[i].static_fields = (StaticField *)calloc(static_count, sizeof(StaticField));
-				if(!method_area->entries[i].static_fields) {
-					return METHOD_AREA_ALLOC_ERROR;
-				}
-			}
-			return METHOD_AREA_OK;
-		}
-	}
-
-	return METHOD_AREA_INVALID_CLASS;
-}*/
 
 ClassFile *MethodAreaFindClass(const MethodArea* method_area, const char* class_name) {
 	if(!method_area || !class_name) {
@@ -256,29 +225,6 @@ u2 MethodAreaCountInstanceFields(const MethodArea *method_area, ClassFile *class
 
 	return (u2)(count + MethodAreaCountInstanceFields(method_area, super_class_file));
 }
-
-// OBS: nem essa funcao nem MethodAreaPrepareClass estao sendo usadas de fato para preparation da classe
-/*u2 MethodAreaCountStaticFields(const MethodArea *method_area, ClassFile *class_file) {
-	u2 count = CountDeclaredStaticFields(class_file);
-	char *super_name;
-	ClassFile *super_class_file;
-
-	if(!method_area || !class_file || class_file->super_class == 0) {
-		return count;
-	}
-
-	super_name = GetClassName(class_file, class_file->super_class);
-	if(!super_name) {
-		return count;
-	}
-
-	super_class_file = MethodAreaFindClass(method_area, super_name);
-	if(!super_class_file || super_class_file == class_file) {
-		return count;
-	}
-
-	return (u2)(count + MethodAreaCountStaticFields(method_area, super_class_file));
-}*/
 
 MethodAreaEntry* MethodAreaGetEntry(MethodArea* ma, const char* class_name){
 	if(ma == NULL || class_name == NULL){ 
