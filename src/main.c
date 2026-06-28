@@ -1,3 +1,13 @@
+/**
+ * @file main.c
+ * @brief Ponto de entrada principal para a Java Virtual Machine (JVM).
+ *
+ * Este arquivo contém a função principal que inicializa a JVM, processa os argumentos
+ * da linha de comando, executa o ciclo de vida das classes (carregamento, linking e 
+ * inicialização) e inicia o interpretador de bytecode. Também inclui a funcionalidade 
+ * de visualização de arquivos .class.
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -10,11 +20,36 @@
 #include "runtime_data/thread_data/thread_data.h"
 #include "interpreter/interpreter.h"
 
+/**
+ * @brief Capacidade máxima da pilha de frames (Frame Stack) da thread da JVM.
+ */
 #define FRAME_STACK_MAX 512
 
-// forward declaration para a main
+/**
+ * @brief Realiza o processo de linking para todas as classes atualmente carregadas.
+ *
+ * Itera sobre todas as entradas presentes na Method Area e aplica a etapa de linking
+ * (verificação, preparação e resolução) nas classes que estão no estado CLASS_LOADED.
+ *
+ * @param method_area Ponteiro para a Method Area que contém as classes a serem linkadas.
+ * @return u1 Retorna 1 se todas as classes foram linkadas com sucesso, ou 0 em caso de falha.
+ */
 static u1 LinkAllLoaded(MethodArea *method_area);
 
+/**
+ * @brief Função principal da JVM.
+ *
+ * Lida com os argumentos passados por linha de comando para definir a operação:
+ * - "run <arquivo>": Carrega e executa a classe principal na JVM.
+ * - "view <arquivo>": Atua como um visualizador (leitor) da estrutura do arquivo .class.
+ *
+ * No modo de execução, gerencia a criação da Method Area, da Thread principal, aloca 
+ * o frame para o método "main", inicializa o mapa de referências e chama o interpretador.
+ *
+ * @param argc Número de argumentos recebidos pela linha de comando.
+ * @param argv Vetor de strings contendo os argumentos.
+ * @return int Retorna 0 em caso de execução bem-sucedida, ou 1 em caso de erro.
+ */
 int main(int argc, char **argv){
 
     if (argc < 3 || (strcmp(argv[1], "run") && strcmp(argv[1], "view"))) {
@@ -73,7 +108,6 @@ int main(int argc, char **argv){
 
     printf("[LINKING] %u classe(s) linkada(s) com sucesso\n", MethodAreaCount(method_area));
 
-    // alocando o frame do metodo main
     MethodAreaEntry *main_entry = MethodAreaGetEntry(method_area, class_name);
     Method_info* main_method = ResolveMethod(method_area, main_entry->class_file, "main", 4, "([Ljava/lang/String;)V", 22, NULL);
     if(main_method == NULL){
@@ -81,8 +115,6 @@ int main(int argc, char **argv){
         return 1;
     }
     pushFrame(thread, main_entry->class_file, main_method, 0);
-
-    // TODO: empilhar "args" em local variables do main
 
     printf("[INITIALIZATION] Inicializando '%s'...\n", class_name);
 
