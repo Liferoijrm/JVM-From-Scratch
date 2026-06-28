@@ -33,7 +33,6 @@ void pushFrame(JVMThread* thread, ClassFile* cf, Method_info* method, u4 return_
         }
     }
 
-    //TODO: juntar 2 slots p/ 64bits futuramente no interpretador creio eu
     // aloca variaveis locais e pilha de operandos
     if(max_locals > 0){
         frame.local_variables = (u4*) calloc(max_locals, sizeof(u4));
