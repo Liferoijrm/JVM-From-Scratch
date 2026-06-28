@@ -1,9 +1,19 @@
+/**
+ * @file attribute_decoder.c
+ * @brief Implementação das funções de decodificação e exibição dos atributos de classes, campos e métodos
+ */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "./attribute_decoder.h"
-//funcao especifica pro tableswitch (pode colocar em outro lugar depois)
+
+/**
+ * @brief Lê um valor de 4 bytes com sinal em Big-Endian (específico para tableswitch).
+ * * @param code Ponteiro para o array de bytes do código.
+ * @param idx Índice inicial de onde os bytes serão lidos.
+ * @return int32_t Valor lido decodificado.
+ */
 static int32_t ReadS4BE(const u1 *code, u4 idx) {
     return (int32_t)((uint32_t)code[idx] << 24 |
                      (uint32_t)code[idx + 1] << 16 |
@@ -11,6 +21,11 @@ static int32_t ReadS4BE(const u1 *code, u4 idx) {
                      (uint32_t)code[idx + 3]);
 }
 
+/**
+ * @brief Imprime um array de bytes no formato hexadecimal.
+ * * @param bytes Ponteiro para os bytes.
+ * @param length Quantidade de bytes a ser impressa.
+ */
 static void PrintRawBytes(const u1 *bytes, u4 length) {
     for (u4 i = 0; i < length; i++) {
         printf("%02X", bytes[i]);
@@ -18,6 +33,13 @@ static void PrintRawBytes(const u1 *bytes, u4 length) {
     }
 }
 
+/**
+ * @brief Desmonta e extrai as informações de um atributo Code a partir de um atributo genérico.
+ * * @param cpool Ponteiro para o pool de constantes da classe.
+ * @param code_attr Ponteiro para a estrutura Code_attribute que será preenchida com os dados decodificados.
+ * @param attribute Ponteiro para o atributo genérico (Attribute_info) contendo o array de bytes bruto.
+ * @return Code_attribute* Ponteiro para a estrutura Code_attribute devidamente preenchida.
+ */
 Code_attribute *DisassembleCodeAttribute(Cp_info *cpool, Code_attribute *code_attr, Attribute_info *attribute) {
 
     u2 idx_offset = 0;
@@ -69,6 +91,10 @@ Code_attribute *DisassembleCodeAttribute(Cp_info *cpool, Code_attribute *code_at
     return code_attr;
 }
 
+/**
+ * @brief Imprime em formato textual o tipo de array criado pela instrução 'newarray'.
+ * * @param atype Código numérico indicando o tipo do array (ex: 4 para boolean, 10 para int).
+ */
 void PrintNewArray(u1 atype) {
     char *type_name = "";
     switch(atype){
@@ -85,6 +111,11 @@ void PrintNewArray(u1 atype) {
     printf("newarray %u (%s)\n", atype, type_name);
 }
 
+/**
+ * @brief Resolve e imprime o conteúdo de um item específico do pool de constantes de forma legível.
+ * * @param cpool Ponteiro para o pool de constantes da classe.
+ * @param index Índice do item no pool de constantes que deve ser acessado e impresso.
+ */
 void PrintCPoolItem(Cp_info *cpool, u2 index) {
     u1 tag = cpool[index].tag;
     // trata metodos/campos
@@ -133,7 +164,11 @@ void PrintCPoolItem(Cp_info *cpool, u2 index) {
     }
 }
 
-// TODO: verificar se está funcionando certinho e implementar outras funções caso necessario
+/**
+ * @brief Lê, decodifica e imprime sequencialmente as instruções (bytecodes/opcodes) de um atributo Code.
+ * * @param cpool Ponteiro para o pool de constantes (utilizado para resolver referências de instruções como ldc, invoke*, etc.).
+ * @param code_attr Ponteiro para o atributo de código contendo o array de bytes das instruções e a tabela de exceções.
+ */
 void ReadCode(Cp_info *cpool, Code_attribute *code_attr) {
     printf("\nCode Attribute:\n");
     printf("    max_stack=%u\n", code_attr->max_stack);
@@ -464,7 +499,6 @@ void ReadCode(Cp_info *cpool, Code_attribute *code_attr) {
         }
     }
 
-    // subatributos do code
     if(code_attr->attributes_count > 0) {
         printf("\n    Code Attributes:\n");
         for(u2 i = 0; i < code_attr->attributes_count; i++) {
@@ -504,7 +538,6 @@ void PrintAttributeInfo(Cp_info *cpool, Attribute_info *attribute) {
         return;
     }
 
-    //TODO: implementar o Code e reaproveitar a função na lógica principal
     if (strcmp(attribute_name, "Code") == 0) {
         Code_attribute *code_attr = (Code_attribute *) calloc(1, sizeof(Code_attribute));
         code_attr->attribute_name_index = attribute->attribute_name_index;
