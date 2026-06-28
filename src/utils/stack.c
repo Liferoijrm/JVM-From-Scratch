@@ -1,3 +1,8 @@
+/**
+ * @file stack.c
+ * @brief Implementação das funções de manipulação e controle da pilha genérica.
+ */
+
 #include "stack.h"
 #include <stdlib.h>
 #include <string.h>
@@ -58,29 +63,25 @@ void freeStack(Stack* stack){
     free(stack);
 }
 
-/*
-TUTORIAL:
-
-#define MAX_SIZE 1000000    // valor que caiba em u4
-
-int main(){
-    // CRIACAO: passe o tamanho maximo da stack, o sizeof(tipo) e 
-    // a funcao de free do tipo (se for primitivo, apenas passe "free" como parametro)
-    Stack* stack = createStack(MAX_SIZE, sizeof(int), free);
-
-    int a = 30; // primeiro valor a ser colocado na pilha
-
-    push(stack, (void*)&a);             // PUSH: basta dar um cast para void* e mandar o endereço (retorna 0 se exceder max_size)
-
-    int b = *((int*) getTop(stack));     // GETTOP: basta dar um cast para type* e desrreferenciar com "*"
-
-    pop(stack)                          // POP: basta dar pop na stack
-
-    isEmpty(stack)                      // ISEMPTY: basta usar a funcao, que retorna true se estiver vazio
-
-    freeStack(stack)                    // FREESTACK: basta dar free na stack
-
-    return 0;
-}
-*/
-
+/**
+ * @example
+ * // TUTORIAL DE USO:
+ * * #define MAX_SIZE 1000000    // valor que caiba em u4
+ * * int main(){
+ * // CRIACAO: passe o tamanho maximo da stack, o sizeof(tipo) e 
+ * // a funcao de free do tipo (se for primitivo, apenas passe "free" como parametro)
+ * Stack* stack = createStack(MAX_SIZE, sizeof(int), free);
+ * * int a = 30; // primeiro valor a ser colocado na pilha
+ * * // PUSH: basta dar um cast para void* e mandar o endereço (retorna 0 se exceder max_size)
+ * push(stack, (void*)&a);
+ * * // GETTOP: basta dar um cast para type* e desrreferenciar com "*"
+ * int b = *((int*) getTop(stack));
+ * * // POP: basta dar pop na stack
+ * pop(stack);
+ * * // ISEMPTY: basta usar a funcao, que retorna true se estiver vazio
+ * isEmpty(stack);
+ * * // FREESTACK: basta dar free na stack
+ * freeStack(stack);
+ * * return 0;
+ * }
+ */
