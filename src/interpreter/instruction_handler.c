@@ -1,3 +1,10 @@
+/**
+ * @file instruction_handler.c
+ * @brief Tabela de dispatch de instruções bytecode.
+ *
+ * Mapeia cada opcode (0x00-0xFF) para seu manipulador correspondente,
+ * permitindo que o interpretador execute a instrução correta.
+ */
 #include "instruction_handler.h"
 
 // Decoder Table: maps opcode byte -> function pointer

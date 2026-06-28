@@ -1,5 +1,5 @@
 /**
- * @file methodarea.h
+ * @file methodarea.c
  * @brief Implementações da Method Area da JVM e das operações de gerenciamento de classes carregadas.
  */
 #include "methodarea.h"

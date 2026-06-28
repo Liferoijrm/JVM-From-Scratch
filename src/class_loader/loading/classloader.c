@@ -1,3 +1,10 @@
+/**
+ * @file classloader.c
+ * @brief Implementação do carregador de classes da JVM.
+ *
+ * Gerencia o carregamento recursivo de classes, superclasses e interfaces,
+ * utilizando a Method Area como cache de classes já carregadas.
+ */
 #include "classloader.h"
 #include <stdio.h>
 #include <stdlib.h>

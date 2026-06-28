@@ -1,4 +1,10 @@
-// src/class_loader/linking/linking.c
+/**
+ * @file linking.c
+ * @brief Implementação do processo de linking de classes na JVM.
+ *
+ * Orquestra as etapas de verificação, preparação e resolução
+ * durante o ciclo de vida de uma classe.
+ */
 #include "linking.h"
 #include "verifier.h"
 #include "preparation.h"

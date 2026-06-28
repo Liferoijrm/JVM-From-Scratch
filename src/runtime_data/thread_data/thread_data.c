@@ -1,6 +1,9 @@
 /**
- * @file methodarea.h
+ * @file thread_data.c
  * @brief Implementações das estruturas de controle de threads e frames na JVM.
+ *
+ * Gerencia a criação de threads, push/pop de frames, e alocação
+ * de variáveis locais e pilhas de operandos.
  */
 #include "thread_data.h"
 #include <string.h>

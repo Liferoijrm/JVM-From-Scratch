@@ -1,3 +1,10 @@
+/**
+ * @file interpreter.c
+ * @brief Implementação do interpretador de bytecode da JVM.
+ *
+ * Contém o loop principal de execução (interpretação) e delega
+ * cada opcode ao manipulador correspondente via tabela de dispatch.
+ */
 #include "interpreter.h"
 #include "instruction_handler.h"
 #include "../viewer/classviewer.h"

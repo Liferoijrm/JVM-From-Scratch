@@ -1,3 +1,10 @@
+/**
+ * @file interpreter_helpers.c
+ * @brief Implementação das funções auxiliares do interpretador de bytecode.
+ *
+ * Contém funções de resolução de métodos, dispatch de chamadas nativas,
+ * gerenciamento de frames e análise de descritores.
+ */
 #include "interpreter_helpers.h"
 #include <stdlib.h>
 #include <string.h>

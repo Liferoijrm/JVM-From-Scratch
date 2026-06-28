@@ -1,3 +1,10 @@
+/**
+ * @file initialization.c
+ * @brief Implementação da inicialização de classes na JVM.
+ *
+ * Executa o método <clinit> das classes, gerenciando a inicialização
+ * de superclasses e lidando com dependências circulares.
+ */
 #include "initialization.h"
 #include <stdio.h>
 #include <stdlib.h>

@@ -1,3 +1,10 @@
+/**
+ * @file verifier.c
+ * @brief Implementação da verificação estrutural e de bytecode da JVM.
+ *
+ * Verifica metadados da classe (superclasse, flags) e a integridade
+ * do código bytecode (limites de instruções, tabelas de exceção).
+ */
 #include <stdio.h>
 #include <string.h>
 #include "verifier.h"

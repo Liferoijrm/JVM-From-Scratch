@@ -1,3 +1,11 @@
+/**
+ * @file resolution.c
+ * @brief Implementação da resolução de referências simbólicas na JVM.
+ *
+ * Resolve as referências simbólicas no constant pool durante o linking.
+ * Entradas literais (Utf8, Integer, etc.) são marcadas como resolvidas
+ * imediatamente; as demais são resolvidas sob demanda pelo interpretador.
+ */
 // src/class_loader/linking/resolution.c
 #include "resolution.h"
 #include "../../class_loader/loading/classparser.h"

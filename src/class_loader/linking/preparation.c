@@ -1,3 +1,10 @@
+/**
+ * @file preparation.c
+ * @brief Implementação da preparação de classes na JVM.
+ *
+ * Aloca e inicializa os campos estáticos de uma classe durante
+ * a etapa de preparação do linking.
+ */
 // src/class_loader/linking/preparation.c
 #include <stdlib.h>
 #include "preparation.h"

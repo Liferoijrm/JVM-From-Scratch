@@ -1,3 +1,10 @@
+/**
+ * @file classparser.c
+ * @brief Implementação do parser de arquivos .class da JVM.
+ *
+ * Contém as funções para leitura binária, parsing completo, validação
+ * e liberação de memória de um arquivo .class.
+ */
 #include "classparser.h"
 #include <stdio.h>
 #include <stdlib.h>
