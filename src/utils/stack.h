@@ -1,6 +1,45 @@
 /**
  * @file stack.h
  * @brief Declarações das estruturas e funções para a implementação de uma pilha genérica.
+ * 
+ * @section example Exemplo de utilização
+ *
+ * **1. Criando a pilha**
+ *
+ * @code{.c}
+ * Stack *stack = createStack(MAX_SIZE, sizeof(int), free);
+ * @endcode
+ *
+ * **2. Inserindo um elemento**
+ *
+ * @code{.c}
+ * int a = 30;
+ * push(stack, (void*)&a);
+ * @endcode
+ *
+ * **3. Obtendo o topo**
+ *
+ * @code{.c}
+ * int b = *((int*)getTop(stack));
+ * @endcode
+ *
+ * **4. Removendo o topo**
+ *
+ * @code{.c}
+ * pop(stack);
+ * @endcode
+ *
+ * **5. Verificando se está vazia**
+ *
+ * @code{.c}
+ * u1 empty = isEmpty(stack);
+ * @endcode
+ *
+ * **6. Liberando a memória**
+ *
+ * @code{.c}
+ * freeStack(stack);
+ * @endcode
  */
 
 #ifndef STACK_H

@@ -44,3 +44,6 @@ bin/
 
 # .txt log files
 *.txt
+
+# Doxygen files
+docs/

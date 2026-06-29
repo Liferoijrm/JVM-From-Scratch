@@ -23,7 +23,7 @@ The path to the `.class` file is relative to the directory where the command is 
 
 ## Generate Documentation
 
-This project uses [Doxygen](https://doxygen.nl/) to generate API documentation from Javadoc-style comments. To generate the documentation, run:
+This project uses [Doxygen](https://doxygen.nl/) to generate API documentation from Javadoc-style comments. To generate the documentation, first, install Doxygen. Then, run:
 
 ```
 doxygen Doxyfile
