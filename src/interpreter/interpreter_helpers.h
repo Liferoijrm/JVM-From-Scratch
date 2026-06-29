@@ -11,6 +11,9 @@
 #include "../runtime_data/method_area/methodarea.h"
 #include "../runtime_data/thread_data/thread_data.h"
 #include "../class_loader/loading/classparser.h"
+#include "../class_loader/loading/classloader.h"
+#include "../class_loader/initialization/initialization.h"
+#include "../class_loader/linking/linking.h"
 
 /**
  * @brief Obtém o atributo Code do frame no topo da pilha.
@@ -38,7 +41,7 @@ char* GetClassName(ClassFile* class_file, u2 this_class);
  * @param method_area Ponteiro para a Method Area.
  * @param frame Ponteiro para o frame atual.
  */
-static void MarkClinitDoneIfApplicable(MethodArea* method_area, Frame *frame);
+void MarkClinitDoneIfApplicable(MethodArea* method_area, Frame *frame);
 
 /**
  * @brief Resolve uma referência a método no constant pool.

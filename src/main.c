@@ -1,9 +1,11 @@
 /**
  * @file main.c
- * @brief Ponto de entrada da JVM.
+ * @brief Ponto de entrada principal para a Java Virtual Machine (JVM).
  *
- * Gerencia as fases de inicialização: carregamento (loading), verificação,
- * preparação, resolução e inicialização da classe principal.
+ * Este arquivo contém a função principal que inicializa a JVM, processa os argumentos
+ * da linha de comando, executa o ciclo de vida das classes (carregamento, linking e 
+ * inicialização) e inicia o interpretador de bytecode. Também inclui a funcionalidade 
+ * de visualização de arquivos .class.
  */
 
 #include <stdio.h>
@@ -18,22 +20,35 @@
 #include "runtime_data/thread_data/thread_data.h"
 #include "interpreter/interpreter.h"
 
-/** @brief Tamanho máximo da pilha de frames. */
+/**
+ * @brief Capacidade máxima da pilha de frames (Frame Stack) da thread da JVM.
+ */
 #define FRAME_STACK_MAX 512
 
-/* Forward declaration */
+/**
+ * @brief Realiza o processo de linking para todas as classes atualmente carregadas.
+ *
+ * Itera sobre todas as entradas presentes na Method Area e aplica a etapa de linking
+ * (verificação, preparação e resolução) nas classes que estão no estado CLASS_LOADED.
+ *
+ * @param method_area Ponteiro para a Method Area que contém as classes a serem linkadas.
+ * @return u1 Retorna 1 se todas as classes foram linkadas com sucesso, ou 0 em caso de falha.
+ */
 static u1 LinkAllLoaded(MethodArea *method_area);
 
 /**
  * @brief Função principal da JVM.
  *
- * Suporta dois modos:
- * - "run <classe>": Carrega, linka, inicializa e executa a classe.
- * - "view <classe>": Exibe o conteúdo bytecode da classe.
+ * Lida com os argumentos passados por linha de comando para definir a operação:
+ * - "run <arquivo>": Carrega e executa a classe principal na JVM.
+ * - "view <arquivo>": Atua como um visualizador (leitor) da estrutura do arquivo .class.
  *
- * @param argc Número de argumentos da linha de comando.
- * @param argv Vetor de argumentos da linha de comando.
- * @return 0 em caso de sucesso, 1 em caso de erro.
+ * No modo de execução, gerencia a criação da Method Area, da Thread principal, aloca 
+ * o frame para o método "main", inicializa o mapa de referências e chama o interpretador.
+ *
+ * @param argc Número de argumentos recebidos pela linha de comando.
+ * @param argv Vetor de strings contendo os argumentos.
+ * @return int Retorna 0 em caso de execução bem-sucedida, ou 1 em caso de erro.
  */
 int main(int argc, char **argv){
 
@@ -54,8 +69,6 @@ int main(int argc, char **argv){
         printClass(cf);
         return 0;
     }
-
-    /* --- Modo 'run': Inicialização completa da JVM --- */
 
     MethodArea *method_area = CreateMethodArea();
     if (!method_area) {
@@ -83,7 +96,6 @@ int main(int argc, char **argv){
 
     printf("[LOADING] %u classe(s) carregada(s) na MethodArea\n", MethodAreaCount(method_area));
 
-    /* --- Linking --- */
     printf("[LINKING] Linkando classes...\n");
 
     if (!LinkAllLoaded(method_area)){
@@ -96,10 +108,16 @@ int main(int argc, char **argv){
 
     printf("[LINKING] %u classe(s) linkada(s) com sucesso\n", MethodAreaCount(method_area));
 
-    /* --- Initialization --- */
+    MethodAreaEntry *main_entry = MethodAreaGetEntry(method_area, class_name);
+    Method_info* main_method = ResolveMethod(method_area, main_entry->class_file, "main", 4, "([Ljava/lang/String;)V", 22, NULL);
+    if(main_method == NULL){
+        printf("[ERROR] Classe nao possui metodo main\n");
+        return 1;
+    }
+    pushFrame(thread, main_entry->class_file, main_method, 0);
+
     printf("[INITIALIZATION] Inicializando '%s'...\n", class_name);
 
-    MethodAreaEntry *main_entry = MethodAreaGetEntry(method_area, class_name);
     if (main_entry == NULL) {
         fprintf(stderr, "Erro interno: entrada da classe principal não encontrada\n");
         freeStack(thread->frame_stack);
@@ -116,19 +134,34 @@ int main(int argc, char **argv){
         return 1;
     }
 
-    /*
-     * TODO: Quando for interpretar:
-     * 1. Criar um ReferenceMap (usar calloc com MAX_REF_MAP para entries)
-     * 2. Criar um RuntimeContext e chamar interpret(&ctx)
-     * 3. Liberar as estruturas depois
-     */
+    ReferenceMap* ref_map = (ReferenceMap*) malloc(sizeof(ReferenceMap));
+    ref_map->entries = (void**) calloc(MAX_REF_MAP, sizeof(void*));
+    ref_map->entries[0] = NULL;
+    ref_map->size = 1;
 
-    printf("Interpretador nao implementado ainda\n");
+    RuntimeContext ctx = {
+        .thread = thread,
+        .method_area = method_area,
+        .reference_map = ref_map
+    };
 
-    /* --- Cleanup --- */
+    interpret(&ctx);
+
+    printf("Interpretado!\n");
+
     freeStack(thread->frame_stack);
     free(thread);
     DestroyMethodArea(method_area);
+
+    if (ref_map != NULL) {
+        if (ref_map->entries != NULL) {
+            for (size_t i = 0; i < ref_map->size; i++) {
+                free(ref_map->entries[i]);
+            }
+            free(ref_map->entries);
+        }
+        free(ref_map);
+    }
     
     return 0;
 }
