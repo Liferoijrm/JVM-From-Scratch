@@ -6,7 +6,7 @@ A ground-up implementation of the Java Virtual Machine, exploring class loading,
 Compile the project with:
 
 ```
-gcc -std=c99 -Isrc (Get-ChildItem -Path src -Recurse -Filter *.c | Select-Object -ExpandProperty FullName) -o test.exe
+gcc -std=c99 -Isrc (Get-ChildItem -Path src -Recurse -Filter *.c | Select-Object -ExpandProperty FullName) -o jvm.exe
 ```
 
 ## Run
@@ -14,9 +14,9 @@ gcc -std=c99 -Isrc (Get-ChildItem -Path src -Recurse -Filter *.c | Select-Object
 Execute the program by passing a `.class` file to either be executed or viewed:
 
 ```
-./test run Belote       // .class file available in Examples/
+./jvm run Belote       // .class file available in Examples/
 
-./test view Belote      // .class file available in Examples/
+./jvm view Belote      // .class file available in Examples/
 ```
 
 The path to the `.class` file is relative to the directory where the command is executed.
