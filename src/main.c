@@ -66,6 +66,20 @@ int main(int argc, char **argv){
         snprintf(full_path, sizeof(full_path), "Examples/%s.class", class_name);
 
         ClassFile* cf = ParseClass(full_path);
+        // valida que o this_class bate com o nome usado para carregar a classe
+        char *actual_name = GetClassName(cf, cf->this_class);
+        if (actual_name == NULL || strcmp(actual_name, class_name) != 0) {
+            fprintf(stderr,
+                "NoClassDefFoundError: %s (wrong name: %s)\n",
+                class_name, actual_name ? actual_name : "?");
+            FreeClass(cf);
+            return 1;
+        }
+        //valida consistência entre nome do arquivo e SourceFile
+        if (!CheckSourceFileMatch(cf, class_name)) {
+            fprintf(stderr, "[WARN] Divergencia entre nome do arquivo e SourceFile detectada ao carregar '%s'\n", class_name);
+            //return NULL;
+        }
         printClass(cf);
         return 0;
     }
@@ -83,20 +97,20 @@ int main(int argc, char **argv){
         return 1;
     }
 
-    printf("[LOADING] Carregando '%s'...\n", class_name);
+    //printf("[LOADING] Carregando '%s'...\n", class_name);
 
     ClassFile *main_cf = LoadClass(method_area, class_name);
     if (main_cf == NULL){
-        fprintf(stderr, "Erro: não foi possível carregar a classe '%s'\n", class_name);
+        fprintf(stderr, "Erro: nao foi possivel carregar a classe '%s'\n", class_name);
         freeStack(thread->frame_stack);
         free(thread);
         DestroyMethodArea(method_area);
         return 1;
     }
 
-    printf("[LOADING] %u classe(s) carregada(s) na MethodArea\n", MethodAreaCount(method_area));
+    //printf("[LOADING] %u classe(s) carregada(s) na MethodArea\n", MethodAreaCount(method_area));
 
-    printf("[LINKING] Linkando classes...\n");
+    //printf("[LINKING] Linkando classes...\n");
 
     if (!LinkAllLoaded(method_area)){
         fprintf(stderr, "Erro: falha durante o linking\n");
@@ -106,7 +120,7 @@ int main(int argc, char **argv){
         return 1;
     }
 
-    printf("[LINKING] %u classe(s) linkada(s) com sucesso\n", MethodAreaCount(method_area));
+    //printf("[LINKING] %u classe(s) linkada(s) com sucesso\n", MethodAreaCount(method_area));
 
     MethodAreaEntry *main_entry = MethodAreaGetEntry(method_area, class_name);
     Method_info* main_method = ResolveMethod(method_area, main_entry->class_file, "main", 4, "([Ljava/lang/String;)V", 22, NULL);
@@ -116,7 +130,7 @@ int main(int argc, char **argv){
     }
     pushFrame(thread, main_entry->class_file, main_method, 0);
 
-    printf("[INITIALIZATION] Inicializando '%s'...\n", class_name);
+    //printf("[INITIALIZATION] Inicializando '%s'...\n", class_name);
 
     if (main_entry == NULL) {
         fprintf(stderr, "Erro interno: entrada da classe principal não encontrada\n");
@@ -147,7 +161,7 @@ int main(int argc, char **argv){
 
     interpret(&ctx);
 
-    printf("Interpretado!\n");
+    //printf("Interpretado!\n");
 
     freeStack(thread->frame_stack);
     free(thread);

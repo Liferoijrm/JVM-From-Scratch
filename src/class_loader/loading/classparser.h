@@ -404,4 +404,12 @@ char *Read_flags(u2 access_flag);
  */
 char* GetClassName(ClassFile *cf, u2 class_index);
 
+/**
+ * @brief Verifica se o nome usado para carregar a classe bate com o valor do atributo SourceFile.
+ * @param cf Ponteiro para o ClassFile já parseado.
+ * @param class_name Nome da classe (sem path, sem extensão .class) usado para localizar o arquivo.
+ * @return 1 se bater (ou se a classe não tiver atributo SourceFile), 0 se houver divergência.
+ */
+u1 CheckSourceFileMatch(ClassFile *cf, const char *class_name);
+
 #endif

@@ -453,3 +453,49 @@ char* GetClassName(ClassFile *cf, u2 class_index) {
 
     return class_name;
 }
+
+// retorna 1 se OK (ou atributo ausente), 0 se houver divergência ou dado malformado
+u1 CheckSourceFileMatch(ClassFile *cf, const char *class_name){
+    if (!cf || !class_name) return 0;
+
+    for (u2 i = 0; i < cf->attributes_count; i++){
+        u2 name_idx = cf->attributes[i].attribute_name_index;
+
+        // mesma cautela defensiva usada em GetClassName: valida índice/tag antes de acessar
+        if (name_idx == 0 || name_idx >= cf->constant_pool_count) continue;
+        if (cf->constant_pool[name_idx].tag != CONSTANT_Utf8) continue;
+
+        char *attr_name = (char*) cf->constant_pool[name_idx].info.Utf8.bytes;
+        if (strcmp(attr_name, "SourceFile") != 0) continue;
+
+        // achou o atributo SourceFile
+        if (cf->attributes[i].attribute_length != 2 || cf->attributes[i].info == NULL){
+            fprintf(stderr, "[WARN] Atributo SourceFile malformado em '%s'\n", class_name);
+            return 0;
+        }
+
+        u2 sourcefile_index = (cf->attributes[i].info[0] << 8) | cf->attributes[i].info[1];
+
+        if (sourcefile_index == 0 || sourcefile_index >= cf->constant_pool_count ||
+            cf->constant_pool[sourcefile_index].tag != CONSTANT_Utf8){
+            fprintf(stderr, "[WARN] Indice invalido no atributo SourceFile de '%s'\n", class_name);
+            return 0;
+        }
+
+        char *source_file = (char*) cf->constant_pool[sourcefile_index].info.Utf8.bytes;
+
+        char expected[256];
+        snprintf(expected, sizeof(expected), "%s.java", class_name);
+
+        if (strcmp(source_file, expected) != 0){
+            fprintf(stderr, "[WARN] '%s.class' nao bate com o SourceFile declarado ('%s')\n",
+                    class_name, source_file);
+            return 0;
+        }
+
+        return 1; // bateu certinho
+    }
+
+    // SourceFile é opcional pela spec da JVM — ausência não é erro
+    return 1;
+}

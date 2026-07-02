@@ -65,7 +65,7 @@ u1 InitializeClass(MethodArea *method_area, MethodAreaEntry *entry, JVMThread *t
     clinit = FindMethod(entry->class_file, "<clinit>", "()V");
 
     if (clinit != NULL) {
-        printf("[INITIALIZATION] <clinit> encontrado na classe %s\n", entry->class_name);
+        //printf("[INITIALIZATION] <clinit> encontrado na classe %s\n", entry->class_name);
 
         /*
          * Futuramente:
@@ -102,7 +102,7 @@ u1 InitializeClass(MethodArea *method_area, MethodAreaEntry *entry, JVMThread *t
         }
     }
 
-    printf("[INITIALIZATION] Classe %s inicializada com sucesso.\n", entry->class_name);
+    //printf("[INITIALIZATION] Classe %s inicializada com sucesso.\n", entry->class_name);
 
     return 1;
 }

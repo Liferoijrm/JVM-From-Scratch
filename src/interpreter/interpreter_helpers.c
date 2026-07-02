@@ -20,7 +20,7 @@ ClassFile* get_class_from_constant_pool(JVMThread* thread, MethodArea* method_ar
 
     // 2. Se não estiver carregada, faz Load e Link
     if (entry == NULL) {
-        printf("[RESOLVE] Carregando a classe '%s' dinamicamente...\n", class_name);
+        //printf("[RESOLVE] Carregando a classe '%s' dinamicamente...\n", class_name);
         
         ClassFile* loaded_cf = LoadClass(method_area, class_name);
         if (loaded_cf == NULL) {
@@ -39,7 +39,7 @@ ClassFile* get_class_from_constant_pool(JVMThread* thread, MethodArea* method_ar
     // 3. Verifica se precisa de inicialização (<clinit>)
     // Assumindo que sua MethodAreaEntry tenha um campo 'state' (ex: CLASS_LOADED, CLASS_INITIALIZED)
     if (entry->state < CLASS_INITIALIZING) {
-        printf("[RESOLVE] Inicializando a classe '%s'...\n", class_name);
+        //printf("[RESOLVE] Inicializando a classe '%s'...\n", class_name);
         
         // Esta função deve procurar o método <clinit>. 
         // Se achar, cria o Frame e faz push(thread->frame_stack, clinit_frame).

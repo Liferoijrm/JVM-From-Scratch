@@ -31,8 +31,23 @@ ClassFile* LoadClass(MethodArea *ma, char *class_name) {
 
     if (cf == NULL) {
         // O log de erro específico (FOPEN_ERROR, MAGIC_ERROR, etc.) já foi emitido pelo classparser.c
-        fprintf(stderr, "Erro de Linkage: Falha ao carregar a classe %s\n", class_name);
         return NULL;
+    }
+
+    // valida que o this_class bate com o nome usado para carregar a classe
+    char *actual_name = GetClassName(cf, cf->this_class);
+    if (actual_name == NULL || strcmp(actual_name, class_name) != 0) {
+        fprintf(stderr,
+            "NoClassDefFoundError: %s (wrong this class name: %s)\n",
+            class_name, actual_name ? actual_name : "?");
+        FreeClass(cf);
+        return NULL;
+    }
+
+    //valida consistência entre nome do arquivo e SourceFile
+    if (!CheckSourceFileMatch(cf, class_name)) {
+        fprintf(stderr, "[WARN] Divergencia entre nome do arquivo e SourceFile detectada ao carregar '%s'\n", class_name);
+        //return NULL;
     }
 
     // Injeta a classe validada na Method Area global
