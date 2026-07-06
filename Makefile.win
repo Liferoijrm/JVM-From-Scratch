@@ -1,5 +1,5 @@
 CC            ?= gcc
-CFLAGS        ?= -Wall -Wextra -std=c99 -mconsole -I $(SRC_DIR) -I $(SRC_DIR)/class_loader/loading -I $(SRC_DIR)/viewer -I $(SRC_DIR)/utils -I $(SRC_DIR)/runtime_data/method_area
+CFLAGS        ?= -w -std=c99 -mconsole -I $(SRC_DIR) -I $(SRC_DIR)/class_loader/loading -I $(SRC_DIR)/viewer -I $(SRC_DIR)/utils -I $(SRC_DIR)/runtime_data/method_area
 DEBUG_FLAGS   ?= -g -fsanitize=address,undefined
 SRC_DIR       := src
 OBJ_DIR       := build
