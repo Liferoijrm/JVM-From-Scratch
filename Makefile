@@ -1,5 +1,5 @@
 CC            ?= gcc
-CFLAGS        ?= -Wall -Wextra -std=c99 \
+CFLAGS        ?= -w -std=c99 \
                   -I src \
                   -I src/class_loader/loading \
                   -I src/class_loader/linking \
